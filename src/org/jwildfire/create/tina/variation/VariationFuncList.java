@@ -430,6 +430,7 @@ public class VariationFuncList {
     registerVariationFunc(WaveBlurWFFunc.class);
     registerVariationFunc(MaskFunc.class);
     registerVariationFunc(Rational3Func.class);
+    registerVariationFunc(FDiscFunc.class);
   }
 
   private static void registerVariationFunc(
