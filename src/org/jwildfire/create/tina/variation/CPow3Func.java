@@ -16,9 +16,12 @@
 */
 
 /*
-     Ported from Apophysis Plugin to JWildfire Variation by CozyG
-     original CPow2 Apophysis plugin written by xyrus02:
-     http://sourceforge.net/p/apo-plugins/code/HEAD/tree/personal/georgkiehne/updated_for_x64/cpow2.c
+     CPow3 by CozyG
+     Started as attempt to port CPow2 Apophysis Plugin to JWildfire Variation, 
+          but by happy accident became something else? 
+          (doesn't look at all like cpow2 in Apophysis7x.15D (2.10.15.3))
+          original CPow2 Apophysis plugin written by xyrus02:
+             http://sourceforge.net/p/apo-plugins/code/HEAD/tree/personal/georgkiehne/updated_for_x64/cpow2.c
  */
 package org.jwildfire.create.tina.variation;
 
@@ -42,14 +45,20 @@ public class CPow3Func extends VariationFunc {
   private static final String PARAM_CA = "ca";
   private static final String PARAM_DIVISOR = "divisor";
   private static final String PARAM_SPREAD = "spread";
+  private static final String PARAM_DISCRETE_SPREAD = "discrete_spread";
+  private static final String PARAM_SPREAD2 = "spread2";
+  private static final String PARAM_OFFSET2 = "offset2";
 
-  private static final String[] paramNames = { PARAM_R, PARAM_CA, PARAM_DIVISOR, PARAM_SPREAD };
+  private static final String[] paramNames = { PARAM_R, PARAM_CA, PARAM_DIVISOR, PARAM_SPREAD, PARAM_DISCRETE_SPREAD, PARAM_SPREAD2, PARAM_OFFSET2 };
   
   // Parameters
   private double r = 1.0;
   private double ca = 0.1;
-  private int divisor = 1;
-  private int spread = 1;
+  private double divisor = 1.0;
+  private double spread = 1.0;
+  private double discrete_spread = 1.0;
+  private double spread2 = 0.0;
+  private double offset2 = 1.0;
 
   // Internal fields set in init (based on parameters)
   double c;
@@ -62,7 +71,7 @@ public class CPow3Func extends VariationFunc {
 
   @Override
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
-  /* CPow2 
+  /* CPow2 PluginVarCalc
     double sn, cs;
     double a = atan2(FTy, FTx);
     int n = rand() % VAR(cpow2_spread);
@@ -79,7 +88,8 @@ public class CPow3Func extends VariationFunc {
     */
 
     double a = pAffineTP.getPrecalcAtanYX();
-    int n = (int)(pContext.random() * spread);
+    double n = pContext.random() * spread;
+    if (discrete_spread >= 1.0) { n = (int)n; }
     if (a < 0) { n++; }
     a += 2 * M_PI * n;
     if (cos(a * inv_spread) < (pContext.random() * 2.0 - 1.0)) {
@@ -87,11 +97,9 @@ public class CPow3Func extends VariationFunc {
     }
     double lnr2 = log(pAffineTP.getPrecalcSumsq());
     double r = pAmount * exp(half_c * lnr2 - d * a);
-    
-    double ang2 = c * a * half_d * lnr2 * ang * pContext.random();
+    double ang2 = c * a * half_d * lnr2 * ang * (pContext.random() * spread2 + offset2);
     pVarTP.x += r * cos(ang2);
     pVarTP.y += r * sin(ang2);
-
     if (pContext.isPreserveZCoordinate()) {
       pVarTP.z += pAmount * pAffineTP.z;
     }
@@ -105,20 +113,28 @@ public class CPow3Func extends VariationFunc {
 
   @Override
   public Object[] getParameterValues() {
-    return new Object[] { r, ca, divisor, spread };
+    return new Object[] { r, ca, divisor, spread, discrete_spread, spread2, offset2 };
   }
 
   @Override
   public void setParameter(String pName, double pValue) {
-    // System.out.println("called CPow2.setParameter(), " + pName + ", " + pValue);
     if (PARAM_R.equalsIgnoreCase(pName))
       r = pValue;
     else if (PARAM_CA.equalsIgnoreCase(pName))
       ca = pValue;
     else if (PARAM_DIVISOR.equalsIgnoreCase(pName))
-      divisor = Tools.FTOI(pValue);
+      divisor = pValue;
     else if (PARAM_SPREAD.equalsIgnoreCase(pName)) {
-      spread = Tools.FTOI(pValue);
+      spread = pValue;
+    }
+    else if (PARAM_DISCRETE_SPREAD.equalsIgnoreCase(pName)) {
+      discrete_spread = pValue;
+    }
+    else if (PARAM_SPREAD2.equalsIgnoreCase(pName)) {
+      spread2 = pValue;
+    }
+    else if (PARAM_OFFSET2.equalsIgnoreCase(pName)) {
+      offset2 = pValue;
     }
     else
       throw new IllegalArgumentException(pName);
@@ -131,7 +147,7 @@ public class CPow3Func extends VariationFunc {
 
   @Override
   public void init(FlameTransformationContext pContext, Layer pLayer, XForm pXForm, double pAmount) {
-    /*
+    /* CPow2 PluginVarPrepare()
     VAR(ang) = 2*M_PI / ((double) VAR(cpow2_divisor));
     VAR(c) = VAR(cpow2_r) * cos(M_PI/2*VAR(cpow2_a)) / ((double) VAR(cpow2_divisor));
     VAR(d) = VAR(cpow2_r) * sin(M_PI/2*VAR(cpow2_a)) / ((double) VAR(cpow2_divisor));
@@ -140,11 +156,11 @@ public class CPow3Func extends VariationFunc {
     VAR(inv_spread) = 0.5 / VAR(cpow2_spread);
     VAR(full_spread) = 2*M_PI*VAR(cpow2_spread);
     */
-    c = r * cos(M_PI / 2 * ca) / (double)divisor;
-    d = r * sin(M_PI / 2 * ca) / (double)divisor;
+    c = r * cos(M_PI / 2 * ca) / divisor;
+    d = r * sin(M_PI / 2 * ca) / divisor;
     half_c = c / 2;
     half_d = d / 2;
-    ang = 2.0 * M_PI / (double)divisor;
+    ang = 2.0 * M_PI / divisor;
     inv_spread = 0.5 / spread;
     full_spread = 2 * M_PI * spread;
   }
