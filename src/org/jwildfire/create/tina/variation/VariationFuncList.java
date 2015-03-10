@@ -431,6 +431,7 @@ public class VariationFuncList {
     registerVariationFunc(MaskFunc.class);
     registerVariationFunc(Rational3Func.class);
     registerVariationFunc(FDiscFunc.class);
+    registerVariationFunc(Sin2Func.class);
   }
 
   private static void registerVariationFunc(
