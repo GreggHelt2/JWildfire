@@ -430,12 +430,14 @@ public class VariationFuncList {
     registerVariationFunc(PostHeatFunc.class);
 
     registerVariationFunc(CPow3Func.class);
-    registerVariationFunc(RhodoneaFunc.class);
+
     registerVariationFunc(Glynnia3Func.class);
     registerVariationFunc(MaskFunc.class);
     registerVariationFunc(Rational3Func.class);
     registerVariationFunc(FDiscFunc.class);
     registerVariationFunc(Sin2Func.class);
+    registerVariationFunc(RhodoneaFunc.class);
+    registerVariationFunc(Butterfly2Func.class);
 
   }
 
