@@ -19,6 +19,7 @@ package org.jwildfire.create.tina.variation;
 import static org.jwildfire.base.mathlib.MathLib.cos;
 import static org.jwildfire.base.mathlib.MathLib.sin;
 import static org.jwildfire.base.mathlib.MathLib.atan2;
+import static org.jwildfire.base.mathlib.MathLib.pow;
 
 import org.jwildfire.create.tina.base.Layer;
 import org.jwildfire.create.tina.base.XForm;
@@ -77,8 +78,9 @@ public class RhodoneaFunc extends VariationFunc {
   private static final String PARAM_STRETCH_RATIO = "stretch_ratio";
   private static final String PARAM_CYCLES = "cycles";
   private static final String PARAM_FILL = "fill";
+  private static final String PARAM_ALPHAMEM = "alphamem";
 
-  private static final String[] paramNames = { PARAM_KN, PARAM_KD, PARAM_OFFSET, PARAM_STRETCH, PARAM_STRETCH_RATIO, PARAM_CYCLES, PARAM_FILL };
+  private static final String[] paramNames = { PARAM_KN, PARAM_KD, PARAM_OFFSET, PARAM_STRETCH, PARAM_STRETCH_RATIO, PARAM_CYCLES, PARAM_FILL, PARAM_ALPHAMEM };
 
   private double kn = 3;    // numerator of k,   k = kn/kd
   private double kd = 4;    // denominator of k, k = kn/kd
@@ -90,6 +92,7 @@ public class RhodoneaFunc extends VariationFunc {
 
   private double k;  // k = kn/kd
   private double cycles;  // 1 cycle = 2*PI
+  private double alphamem = 0;
 
   @Override
   public void init(FlameTransformationContext pContext, Layer pLayer, XForm pXForm, double pAmount) {
@@ -133,6 +136,10 @@ public class RhodoneaFunc extends VariationFunc {
     }
   }
 
+  // public double getTAlpha(double t) {
+  //  return (pow(alphamem, t+1) - ((t + 1) * alphamem) + t) / ( (pow(alphamem, t) - 1) * (alphamem - 1) );
+  // }
+
   @Override
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
     /*
@@ -145,7 +152,18 @@ public class RhodoneaFunc extends VariationFunc {
     */
     double theta = atan2(pAffineTP.y, pAffineTP.x);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
     double t = cycles * theta;
-    double r = cos(k * t) + offset;
+    double rt;
+    /* experimenting with adding "memory" to rhodonea function */
+    if (alphamem == 0) {
+      rt = t;
+    }
+    // else if (alphamem == 1) {  // special-casing alphamem = 1 -- otherwise get division by 0...
+    else {  // alphamem != 0
+      // double talpha = (pow(alphamem, t+1) - ((t + 1) * alphamem) + t) / ( (pow(alphamem, t) - 1) * (alphamem - 1) );
+      double talpha = (pow(alphamem, t+1) - ((t+1) * alphamem) + t) / ( (pow(alphamem, t) - 1) * (alphamem - 1) );
+      rt = talpha;
+    }
+    double r = cos(k * rt) + offset;
 
     if (fill != 0) { 
       r = r + (fill * (pContext.random() - 0.5));
@@ -168,7 +186,7 @@ public class RhodoneaFunc extends VariationFunc {
 
   @Override
   public Object[] getParameterValues() {
-    return new Object[] { kn, kd, offset, stretch, stretchRatio, cyclesParam, fill };
+    return new Object[] { kn, kd, offset, stretch, stretchRatio, cyclesParam, fill, alphamem };
   }
 
   @Override
@@ -187,6 +205,8 @@ public class RhodoneaFunc extends VariationFunc {
       cyclesParam = pValue;
     else if (PARAM_FILL.equalsIgnoreCase(pName))
       fill = pValue;
+    else if (PARAM_ALPHAMEM.equalsIgnoreCase(pName))
+      alphamem = pValue;
     else
       throw new IllegalArgumentException(pName);
   }
