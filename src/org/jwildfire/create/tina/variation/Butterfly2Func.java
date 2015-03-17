@@ -57,6 +57,9 @@ public class Butterfly2Func extends VariationFunc {
   private static final String PARAM_STRETCH = "stretch";
   private static final String PARAM_STRETCH_RATIO = "stretch_ratio";
   private static final String PARAM_FILL = "fill";
+  private static final String PARAM_OFFSET2 = "offset2";
+  private static final String PARAM_ALPHAMEM = "alphamem";
+
 
   // my standard approach if there is a cycles variable is that if cycles is set to 0, 
   //     that means function should decide cycle value automatically
@@ -65,7 +68,7 @@ public class Butterfly2Func extends VariationFunc {
   private static final String PARAM_CYCLES = "cycles";
 
 
-  private static final String[] paramNames = { PARAM_OFFSET, PARAM_STRETCH, PARAM_STRETCH_RATIO, PARAM_CYCLES, PARAM_FILL, 
+  private static final String[] paramNames = { PARAM_OFFSET, PARAM_STRETCH, PARAM_STRETCH_RATIO, PARAM_CYCLES, PARAM_OFFSET2, PARAM_FILL, PARAM_ALPHAMEM, 
                                                PARAM_M1, PARAM_M2, PARAM_M3, PARAM_M4, PARAM_M5, PARAM_M6, PARAM_M7, PARAM_M8, 
                                                PARAM_B1, PARAM_B2, PARAM_B3, PARAM_B4, PARAM_B5, PARAM_B6, PARAM_B7 };
   
@@ -90,6 +93,8 @@ public class Butterfly2Func extends VariationFunc {
   private double stretch = 0; // deform based on original x/y
   private double stretchRatio = 1; // how much stretch applies to x relative to y
   private double fill = 0;
+  private double offset2 = 0;
+  private double alphamem = 0;
 
   // GAH 3/13/2015:
   // I don't have a mathematical proof yet, 
@@ -122,11 +127,23 @@ public class Butterfly2Func extends VariationFunc {
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
     double theta = atan2(pAffineTP.y, pAffineTP.x);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
     double t = cycles * theta;
+    double rt; 
+    if (alphamem == 0) {
+      rt = t; 
+    }
+    // else if (alphamem == 1) {  // special-casing alphamem = 1 ?  -- otherwise get division by 0...
+    else {  // alphamem != 0
+      // double talpha = (pow(alphamem, t+1) - ((t + 1) * alphamem) + t) / ( (pow(alphamem, t) - 1) * (alphamem - 1) );
+      double talpha = (pow(alphamem, t+1) - ((t + 1) * alphamem) + t) / ( (pow(alphamem, t) - 1) * (alphamem - 1) );
+      rt = talpha;
+    }
+
     // r = e^cos(t) - 2cos(4t) - sin^5(t/12)
-    // double r = 0.5 * (exp(cos(t)) - (2 * cos(4*t)) - pow(sin(t/12), 5) + offset);
-    //
+    //    double r = 0.5 * (exp(cos(t)) - (2 * cos(4*t)) - pow(sin(t/12), 5) + offset);
+    double r = 0.5 * (exp(cos(rt)) - (2 * cos(4*rt)) - pow(sin(rt/12), 5) + offset);
+    //    double r = 0.5 * (exp(cos(t)) - (2 * cos(4*t)) - pow(sin(t/12), 5) + offset) * pow(sin(t*99999999), 4.0);
     // parameterized version:
-    double r = 0.5 * ( (m1 * exp(m4 * cos(t + b1) + b4)) - (m2 * 2 * (cos(m5*4*t + b2) + b5)) - (m3 * pow(m6 * (sin(m7 * t/12 + b3) + b6), (m8 * 5 + b7))) + offset);
+    // double r = 0.5 * ( (m1 * exp(m4 * cos(t + b1) + b4)) - (m2 * 2 * (cos(m5*4*t + b2) + b5)) - (m3 * pow(m6 * (sin(m7 * t/12 + b3) + b6), (m8 * 5 + b7))) + offset);
     if (fill != 0) { 
       r = r + (fill * (pContext.random() - 0.5));
     }
@@ -148,7 +165,7 @@ public class Butterfly2Func extends VariationFunc {
 
   @Override
   public Object[] getParameterValues() {
-    return new Object[] { offset, stretch, stretchRatio, cyclesParam, fill, 
+    return new Object[] { offset, stretch, stretchRatio, cyclesParam, offset2, fill, alphamem, 
                           m1, m2, m3, m4, m5, m6, m7, m8, 
                           b1, b2, b3, b4, b5, b6, b7 };
   }
@@ -163,8 +180,13 @@ public class Butterfly2Func extends VariationFunc {
       stretchRatio = pValue;
     else if (PARAM_CYCLES.equalsIgnoreCase(pName))
       cyclesParam = pValue;
+    else if (PARAM_OFFSET2.equalsIgnoreCase(pName))
+      offset2 = pValue;
     else if (PARAM_FILL.equalsIgnoreCase(pName))
       fill = pValue;
+    else if (PARAM_ALPHAMEM.equalsIgnoreCase(pName))
+      alphamem = pValue;
+
     else if (PARAM_M1.equalsIgnoreCase(pName))
       m1 = pValue;
     else if (PARAM_M2.equalsIgnoreCase(pName))
