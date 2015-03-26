@@ -34,6 +34,7 @@ public interface ScriptRunnerEnvironment {
   public void setScriptProperty(ScriptRunner runner, String propName, String propVal);
   
   public String getScriptProperty(ScriptRunner runner, String propName);
-  // public String getProperty(ScriptRunner runner, String propName, String defaultVal);
+  
+  public String getScriptProperty(ScriptRunner runner, String propName, String defaultVal);
 
 }

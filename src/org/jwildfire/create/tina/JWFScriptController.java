@@ -1238,6 +1238,9 @@ public class JWFScriptController implements ScriptRunnerEnvironment, JWFScriptEx
   
   public void saveScriptProps()  {
     try {
+      if (!scriptPropFile.exists()) {
+        System.out.println("creating script properties file: " + scriptPropFile);
+      }
       FileOutputStream fos = new FileOutputStream(scriptPropFile);
       scriptProps.store(fos, "JWildfire script properties");
       fos.close();
@@ -1246,7 +1249,7 @@ public class JWFScriptController implements ScriptRunnerEnvironment, JWFScriptEx
       ex.printStackTrace();
     }
   }
-  
+
   @Override
   public void setScriptProperty(ScriptRunner runner, String propName, String propVal) {
     String path = runner.getScriptPath();
@@ -1265,6 +1268,12 @@ public class JWFScriptController implements ScriptRunnerEnvironment, JWFScriptEx
     String propVal = scriptProps.getProperty(normalizedName);
     return propVal;
   }
-  //    public String getProperty(ScriptRunner runner, String propName, String defaultVal)
+  
+  @Override
+  public String getScriptProperty(ScriptRunner runner, String propName, String defaultVal) {
+    String propVal = getScriptProperty(runner, propName);
+    if (propVal == null) { propVal = defaultVal; }
+    return propVal;
+  }
   
 }
