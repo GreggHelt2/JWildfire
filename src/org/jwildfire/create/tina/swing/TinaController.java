@@ -137,11 +137,8 @@ import org.jwildfire.swing.MainController;
 import com.l2fprod.common.beans.editor.FilePropertyEditor;
 import com.l2fprod.common.swing.JFontChooser;
 import com.l2fprod.common.util.ResourceManager;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.util.Properties;
 
-public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnvironment, UndoManagerHolder<Flame>, JWFScriptExecuteController, GradientSelectionProvider,
+public class TinaController implements FlameHolder, LayerHolder, UndoManagerHolder<Flame>, GradientSelectionProvider,
     DetachedPreviewProvider, FlamePanelProvider, RandomBatchHolder, RenderProgressBarHolder {
   public static final int PAGE_INDEX = 0;
 
@@ -204,10 +201,6 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
   private TinaControllerData data = new TinaControllerData();
   private VariationControlsDelegate[] variationControlsDelegates;
   private RGBPalette _lastGradient;
-  
-  static final String SCRIPT_PROPS_FILE = "j-wildfire-scripts.properties";
-  private Properties scriptProps = new Properties();
-  private File scriptPropFile = new File(System.getProperty("user.home"), SCRIPT_PROPS_FILE);
 
   public TinaController(TinaControllerParameter parameterObject) {
     tinaFrame = parameterObject.pTinaFrame;
@@ -747,7 +740,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     refreshQualityProfileCmb(data.swfAnimatorQualityProfileCmb, null);
 
     getFlameBrowserController().init();
-    loadScriptProps();
+
   }
 
   private void enableLayerControls() {
@@ -1097,12 +1090,10 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     refreshFlameImage(true, pMouseDown, 1);
   }
 
-  @Override
   public Flame getCurrFlame() {
     return _currFlame;
   }
 
-  @Override
   public Flame getCurrFlame(boolean autoGenerateIfEmpty) {
     if (_currFlame == null) {
       final int IMG_WIDTH = 80;
@@ -1121,7 +1112,6 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     return _currFlame;
   }
 
-  @Override
   public Layer getCurrLayer() {
     Flame flame = getCurrFlame();
     if (flame != null) {
@@ -1140,7 +1130,6 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     return _currRandomizeFlame;
   }
 
-  @Override
   public void setCurrFlame(Flame pFlame) {
     setCurrFlame(pFlame, true);
   }
@@ -1186,7 +1175,6 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     flamePreviewHelper.refreshFlameImage(pQuickRender, pMouseDown, pDownScale);
   }
 
-  @Override
   public void refreshUI() {
     gridRefreshing = true;
     try {
@@ -3718,20 +3706,9 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     }
   }
 
-  @Override
-  public ScriptRunner compileScript() throws Exception {
-    return ScriptRunner.compile(data.scriptTextArea.getText());
-  }
-
-  @Override
-  public void runScript() throws Exception {
-      System.out.println("WARNING: called TinaController.runScript()");
-      jwfScriptController.scriptRunBtn_clicked();
-  }
-  
   public void compileScriptButton_clicked() {
     try {
-      compileScript();
+      getJwfScriptController().compileScript();
     }
     catch (Throwable ex) {
       errorHandler.handleError(ex);
@@ -5299,7 +5276,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
         }
         button.addActionListener(new java.awt.event.ActionListener() {
           public void actionPerformed(java.awt.event.ActionEvent e) {
-            runScript(macroButton.getMacro(), macroButton.isInternal());
+            getJwfScriptController().runScript(macroButton.getMacro(), macroButton.isInternal());
           }
         });
         data.macroButtonVertPanel.add(button);
@@ -5347,7 +5324,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
         }
         button.addActionListener(new java.awt.event.ActionListener() {
           public void actionPerformed(java.awt.event.ActionEvent e) {
-            runScript(macroButton.getMacro(), macroButton.isInternal());
+            getJwfScriptController().runScript(macroButton.getMacro(), macroButton.isInternal());
           }
         });
         data.macroButtonHorizPanel.add(button);
@@ -5356,37 +5333,6 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     data.macroButtonHorizRootPanel.invalidate();
     data.macroButtonHorizRootPanel.getParent().validate();
     data.macroButtonHorizRootPanel.getParent().repaint();
-  }
-
-  public void runScript(String filename, boolean internal) {
-    try {
-      String script;
-      if (internal) {
-        RGBPaletteReader reader = new Flam3GradientReader();
-        InputStream is = reader.getClass().getResourceAsStream(filename);
-        script = Tools.readUTF8Textfile(is);
-      }
-      else {
-        script = Tools.readUTF8Textfile(filename);
-      }
-      runScript(filename, script);
-    }
-    catch (Throwable ex) {
-      errorHandler.handleError(ex);
-    }
-  }
-
-  public void runScript(String scriptPath, String scriptText) {
-    try  {
-      ScriptRunner scriptRunner = ScriptRunner.compile(scriptText);
-      scriptRunner.setScriptPath(scriptPath);
-      System.out.println("running script: " + scriptRunner.getScriptPath());
-      saveUndoPoint();
-      scriptRunner.run(this);
-    }
-    catch (Throwable ex) {
-      errorHandler.handleError(ex);
-    }
   }
 
   public void resetGridToDefaults() {
@@ -5541,47 +5487,4 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     return tinaFrame.getRenderProgressBar();
   }
 
-  public void loadScriptProps()  {
-    try  {
-      if (scriptPropFile.exists()) {
-        FileInputStream fis = new FileInputStream(scriptPropFile);
-        scriptProps.load(fis);
-        fis.close();
-      }
-    }
-    catch (Exception ex) {
-      ex.printStackTrace();
-    }
-  }
-  
-  public void saveScriptProps()  {
-    try {
-      FileOutputStream fos = new FileOutputStream(scriptPropFile);
-      scriptProps.store(fos, "JWildfire script properties");
-      fos.close();
-    }
-    catch (Exception ex) {
-      ex.printStackTrace();
-    }
-  }
-  
-  @Override
-  public void setScriptProperty(ScriptRunner runner, String propName, String propVal) {
-    String path = runner.getScriptPath();
-    String name = path + "." + propName;
-    String normalizedName = name.replaceAll("[\\s=:]", ".");
-    scriptProps.setProperty(normalizedName, propVal);
-  }
-  
-  @Override
-  public String getScriptProperty(ScriptRunner runner, String propName) {
-    String path = runner.getScriptPath();
-    String name = path + "." + propName;
-    String normalizedName = name.replaceAll("[\\s=:]", ".");
-    System.out.println("path: " + path);
-    System.out.println("norm: " + normalizedName);
-    String propVal = scriptProps.getProperty(normalizedName);
-    return propVal;
-  }
-//    public String getProperty(ScriptRunner runner, String propName, String defaultVal) {
 }

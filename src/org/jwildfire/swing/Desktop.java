@@ -2218,7 +2218,7 @@ public class Desktop extends JApplet {
     }
     try {
       prefs.saveToFromFile();
-      tinaController.saveScriptProps();
+      tinaController.getJwfScriptController().saveScriptProps();
     }
     catch (Exception ex) {
       ex.printStackTrace();

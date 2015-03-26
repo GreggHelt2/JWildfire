@@ -4,11 +4,14 @@ import static org.jwildfire.base.mathlib.MathLib.EPSILON;
 import static org.jwildfire.base.mathlib.MathLib.fabs;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Properties;
 
 import javax.swing.JButton;
 import javax.swing.JPanel;
@@ -30,13 +33,16 @@ import org.jwildfire.create.tina.base.Layer;
 import org.jwildfire.create.tina.base.XForm;
 import org.jwildfire.create.tina.io.Flam3GradientReader;
 import org.jwildfire.create.tina.io.RGBPaletteReader;
+import org.jwildfire.create.tina.script.ScriptRunner;
+import org.jwildfire.create.tina.script.ScriptRunnerEnvironment;
+import org.jwildfire.create.tina.swing.JWFScriptExecuteController;
 import org.jwildfire.create.tina.swing.StandardDialogs;
 import org.jwildfire.create.tina.swing.TinaController;
 import org.jwildfire.create.tina.swing.TinaControllerData;
 import org.jwildfire.create.tina.variation.Variation;
 import org.jwildfire.swing.ErrorHandler;
 
-public class JWFScriptController {
+public class JWFScriptController implements ScriptRunnerEnvironment, JWFScriptExecuteController {
   private final TinaController tinaController;
   private final ErrorHandler errorHandler;
   private final Prefs prefs;
@@ -60,6 +66,10 @@ public class JWFScriptController {
   private boolean editing = false;
   private boolean noTextChange = false;
   private DefaultMutableTreeNode userScriptsRootNode;
+  
+  static final String SCRIPT_PROPS_FILE = "j-wildfire-scripts.properties";
+  private Properties scriptProps = new Properties();
+  private File scriptPropFile = new File(System.getProperty("user.home"), SCRIPT_PROPS_FILE);
 
   public JWFScriptController(TinaController pTinaController, ErrorHandler pErrorHandler, Prefs pPrefs, JPanel pRootPanel, TinaControllerData pData, JTree pScriptTree, JTextArea pScriptDescriptionTextArea,
       JTextArea pScriptTextArea, JButton pCompileScriptButton, JButton pSaveScriptButton, JButton pRevertScriptButton, JButton pRescanScriptsBtn,
@@ -123,6 +133,7 @@ public class JWFScriptController {
     });
 
     //    initScriptLibrary();
+    loadScriptProps();
   }
 
   private boolean _firstActivated = false;
@@ -532,6 +543,47 @@ public class JWFScriptController {
         scriptDescriptionTextArea.setText("");
       }
     }
+  }  
+  
+  @Override
+  public ScriptRunner compileScript() throws Exception {
+    return ScriptRunner.compile(scriptTextArea.getText());
+  }
+
+  @Override
+  public void runScript() throws Exception {
+      scriptRunBtn_clicked();
+  }
+  
+  
+  public void runScript(String filename, boolean internal) {
+    try {
+      String script;
+      if (internal) {
+        RGBPaletteReader reader = new Flam3GradientReader();
+        InputStream is = reader.getClass().getResourceAsStream(filename);
+        script = Tools.readUTF8Textfile(is);
+      }
+      else {
+        script = Tools.readUTF8Textfile(filename);
+      }
+      runScript(filename, script);
+    }
+    catch (Throwable ex) {
+      errorHandler.handleError(ex);
+    }
+  }
+
+  public void runScript(String scriptPath, String scriptText) {
+    try  {
+      ScriptRunner scriptRunner = ScriptRunner.compile(scriptText);
+      scriptRunner.setScriptPath(scriptPath);
+      tinaController.saveUndoPoint();
+      scriptRunner.run(this);
+    }
+    catch (Throwable ex) {
+      errorHandler.handleError(ex);
+    }
   }
 
   public void rescanBtn_clicked() {
@@ -550,7 +602,7 @@ public class JWFScriptController {
               scriptPath = ((ScriptInternalNode)selNode).getResFilename();
           }
       }
-      tinaController.runScript(scriptPath, scriptTextArea.getText());
+      runScript(scriptPath, scriptTextArea.getText());
     }
     catch (Throwable ex) {
       errorHandler.handleError(ex);
@@ -559,7 +611,7 @@ public class JWFScriptController {
 
   public void compileScriptButton_clicked() {
     try {
-      tinaController.compileScript();
+      compileScript();
     }
     catch (Throwable ex) {
       errorHandler.handleError(ex);
@@ -1145,4 +1197,74 @@ public class JWFScriptController {
     refreshMacroButtonsTable();
     enableControls();
   }
+  
+    @Override
+  public Flame getCurrFlame() {
+    return this.tinaController.getCurrFlame();
+  }
+
+  @Override
+  public Flame getCurrFlame(boolean autoGenerateIfEmpty) {
+    return this.tinaController.getCurrFlame(autoGenerateIfEmpty);
+  }
+
+  @Override
+  public void setCurrFlame(Flame pFlame) {
+    this.tinaController.setCurrFlame(pFlame);
+  }
+
+  @Override
+  public Layer getCurrLayer() {
+    return this.tinaController.getCurrLayer();
+  }
+
+  @Override
+  public void refreshUI() {
+    this.tinaController.refreshUI();
+  }
+
+  public void loadScriptProps()  {
+    try  {
+      if (scriptPropFile.exists()) {
+        FileInputStream fis = new FileInputStream(scriptPropFile);
+        scriptProps.load(fis);
+        fis.close();
+      }
+    }
+    catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+  
+  public void saveScriptProps()  {
+    try {
+      FileOutputStream fos = new FileOutputStream(scriptPropFile);
+      scriptProps.store(fos, "JWildfire script properties");
+      fos.close();
+    }
+    catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+  
+  @Override
+  public void setScriptProperty(ScriptRunner runner, String propName, String propVal) {
+    String path = runner.getScriptPath();
+    String name = path + "." + propName;
+    String normalizedName = name.replaceAll("[\\s=:]", ".");
+    scriptProps.setProperty(normalizedName, propVal);
+  }
+  
+  @Override
+  public String getScriptProperty(ScriptRunner runner, String propName) {
+    String path = runner.getScriptPath();
+    String name = path + "." + propName;
+    String normalizedName = name.replaceAll("[\\s=:]", ".");
+    System.out.println("path: " + path);
+    System.out.println("norm: " + normalizedName);
+    String propVal = scriptProps.getProperty(normalizedName);
+    return propVal;
+  }
+  //    public String getProperty(ScriptRunner runner, String propName, String defaultVal)
+  
 }
