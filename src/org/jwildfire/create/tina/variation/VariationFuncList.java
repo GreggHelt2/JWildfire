@@ -432,6 +432,8 @@ public class VariationFuncList {
     registerVariationFunc(Rational3Func.class);
     
     registerVariationFunc(STwinFunc.class);
+    
+    registerVariationFunc(HelicoidFunc.class);
   }
 
   private static void registerVariationFunc(
