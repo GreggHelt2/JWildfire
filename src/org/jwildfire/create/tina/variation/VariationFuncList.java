@@ -433,6 +433,7 @@ public class VariationFuncList {
     
     registerVariationFunc(STwinFunc.class);
     registerVariationFunc(FlowerDbFunc.class);
+    registerVariationFunc(DoubleHelixFunc.class);
   }
 
   private static void registerVariationFunc(
