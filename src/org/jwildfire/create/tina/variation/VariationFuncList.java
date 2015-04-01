@@ -426,19 +426,20 @@ public class VariationFuncList {
     registerVariationFunc(DCBubbleFunc.class);
     registerVariationFunc(DCTriangleFunc.class);
     registerVariationFunc(WaveBlurWFFunc.class);
-
     registerVariationFunc(PostHeatFunc.class);
-
     registerVariationFunc(CPow3Func.class);
 
-    registerVariationFunc(Glynnia3Func.class);
-    registerVariationFunc(MaskFunc.class);
     registerVariationFunc(Rational3Func.class);
+    registerVariationFunc(STwinFunc.class);
+    registerVariationFunc(FlowerDbFunc.class);
+    registerVariationFunc(RosoniFunc.class);
+    registerVariationFunc(Glynnia3Func.class);
+    
+    registerVariationFunc(MaskFunc.class);
     registerVariationFunc(FDiscFunc.class);
     registerVariationFunc(Sin2Func.class);
     registerVariationFunc(RhodoneaFunc.class);
     registerVariationFunc(Butterfly2Func.class);
-
   }
 
   private static void registerVariationFunc(
