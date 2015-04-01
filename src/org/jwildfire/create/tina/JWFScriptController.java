@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Properties;
 
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTree;
@@ -1263,8 +1264,6 @@ public class JWFScriptController implements ScriptRunnerEnvironment, JWFScriptEx
     String path = runner.getScriptPath();
     String name = path + "." + propName;
     String normalizedName = name.replaceAll("[\\s=:]", ".");
-    System.out.println("path: " + path);
-    System.out.println("norm: " + normalizedName);
     String propVal = scriptProps.getProperty(normalizedName);
     return propVal;
   }
@@ -1274,6 +1273,11 @@ public class JWFScriptController implements ScriptRunnerEnvironment, JWFScriptEx
     String propVal = getScriptProperty(runner, propName);
     if (propVal == null) { propVal = defaultVal; }
     return propVal;
+  }
+  
+  @Override
+  public JComponent getParentComponent()  {
+    return this.tinaController.getFlamePanel();
   }
   
 }

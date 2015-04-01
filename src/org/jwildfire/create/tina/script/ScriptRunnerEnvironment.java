@@ -16,6 +16,7 @@
 */
 package org.jwildfire.create.tina.script;
 
+import javax.swing.JComponent;
 import org.jwildfire.create.tina.base.Flame;
 import org.jwildfire.create.tina.base.Layer;
 
@@ -30,6 +31,8 @@ public interface ScriptRunnerEnvironment {
   public Layer getCurrLayer();
 
   public void refreshUI();
+  
+  public JComponent getParentComponent();
   
   public void setScriptProperty(ScriptRunner runner, String propName, String propVal);
   
