@@ -34,6 +34,7 @@ public class DoubleHelixFunc extends VariationFunc {
   // defaults are DNA B-structure in angstroms
   private double diameter = 20;
   private double pitch = 33.2;
+  private double max_radius = 1;
   private double radius;
   
   private double phi = 1.6180339887;
@@ -76,7 +77,7 @@ public class DoubleHelixFunc extends VariationFunc {
   @Override
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
     double theta = atan2(pAffineTP.y, pAffineTP.x);
-    //    double pointR = pAffineTP.getPrecalcSqrt();
+    double r = pAffineTP.getPrecalcSqrt();
     double helix = pContext.random();
     double hoffset = (pContext.random()-0.5) * thickness;
     double rotation = 0;
@@ -84,10 +85,18 @@ public class DoubleHelixFunc extends VariationFunc {
       // shift to second helix
       rotation = minorGroovePercent * 2 * M_PI;
     }
-    pVarTP.x += (pAmount + (xthickness * hoffset)) * cos((turns * theta) + rotation);
-    pVarTP.y += (pAmount + (ythickness * hoffset)) * sin((turns * theta) + rotation);
-
-    pVarTP.z += (pAmount * (pitchScaled / (2 * M_PI)) * turns * theta) + (hoffset * zthickness);
+    if (r <= pAmount)  {
+      pVarTP.x += pAmount * r * cos((turns * theta) + rotation);
+      pVarTP.y += pAmount * r * sin((turns * theta) + rotation);
+      pVarTP.z += pAmount * (pitchScaled / (2 * M_PI)) * turns * theta;
+    }
+    else  {
+      pVarTP.x += (pAmount + (xthickness * hoffset)) * cos((turns * theta) + rotation);
+      pVarTP.y += (pAmount + (ythickness * hoffset)) * sin((turns * theta) + rotation);
+      pVarTP.z += (pAmount * (pitchScaled / (2 * M_PI)) * turns * theta) + (hoffset * zthickness);
+    }
+    
+    
   }
 
   @Override
