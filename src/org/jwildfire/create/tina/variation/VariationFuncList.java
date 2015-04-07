@@ -438,8 +438,8 @@ public class VariationFuncList {
     registerVariationFunc(FDiscFunc.class);
     registerVariationFunc(RhodoneaFunc.class);
     registerVariationFunc(Butterfly2Func.class);
-    
     registerVariationFunc(Sin2Func.class);
+    registerVariationFunc(HelicoidFunc.class);
 
   }
 
