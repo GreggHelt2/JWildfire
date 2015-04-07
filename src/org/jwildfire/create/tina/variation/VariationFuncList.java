@@ -437,6 +437,8 @@ public class VariationFuncList {
     registerVariationFunc(MaskFunc.class);
     registerVariationFunc(FDiscFunc.class);
 
+    registerVariationFunc(CompoundFunc.class);
+    registerVariationFunc(Compound2Func.class);
   }
 
   private static void registerVariationFunc(
