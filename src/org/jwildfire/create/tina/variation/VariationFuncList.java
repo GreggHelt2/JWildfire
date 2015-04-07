@@ -441,6 +441,7 @@ public class VariationFuncList {
     registerVariationFunc(Sin2Func.class);
     registerVariationFunc(HelicoidFunc.class);
 
+    registerVariationFunc(DoubleHelixFunc.class);
   }
 
   private static void registerVariationFunc(
