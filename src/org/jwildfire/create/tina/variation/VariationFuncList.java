@@ -440,8 +440,10 @@ public class VariationFuncList {
     registerVariationFunc(Butterfly2Func.class);
     registerVariationFunc(Sin2Func.class);
     registerVariationFunc(HelicoidFunc.class);
-
     registerVariationFunc(DoubleHelixFunc.class);
+    registerVariationFunc(CompoundFunc.class);
+    // registerVariationFunc(Compound2Func.class);
+
   }
 
   private static void registerVariationFunc(
