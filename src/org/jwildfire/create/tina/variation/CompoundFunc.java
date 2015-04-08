@@ -39,13 +39,22 @@ public class CompoundFunc extends VariationFunc {
   private static final String PARAM_SUM_A = "sumA";
   private static final String PARAM_SUM_B= "sumB";
   private static final String PARAM_MULT = "mult";
-  private static final String PARAM_GEOMETRIC_MEAN = "geomean";
+  private static final String PARAM_ARITHMETIC_MEAN = "arithmeticMean";
+  private static final String PARAM_GEOMETRIC_MEAN = "geoMean";
+  private static final String PARAM_HARMONIC_MEAN = "harmonicMean";
   private static final String PARAM_RADIAL = "radial";
   private static final String PARAM_SIGN_MODE = "signMode";
 
-  private static final String[] paramNames = { PARAM_VARIATION_A, PARAM_VARIATION_B,
-                                               PARAM_SUM_A, PARAM_SUM_B, 
-                                               PARAM_MULT, PARAM_GEOMETRIC_MEAN, PARAM_RADIAL, PARAM_SIGN_MODE };
+  private static final String[] paramNames = { PARAM_VARIATION_A,
+                                               PARAM_VARIATION_B,
+                                               PARAM_SUM_A,
+                                               PARAM_SUM_B, 
+                                               PARAM_MULT,
+                                               PARAM_ARITHMETIC_MEAN,
+                                               PARAM_GEOMETRIC_MEAN,
+                                               PARAM_HARMONIC_MEAN, 
+                                               PARAM_RADIAL,
+                                               PARAM_SIGN_MODE };
                                                
 
   private VariationFunc varA = null;
@@ -54,10 +63,12 @@ public class CompoundFunc extends VariationFunc {
   String defaultVarNameB = "asteria";
   int variationA = 0;  // position of variationA function in sorted Variation fucntion list
   int variationB = 0; // // position of variationB function in sorted Variation fucntion list
-  double sumA = 1;
-  double sumB = 1;
+  double sumA = 1;   // separate linear weighting of A (otherwise could remove in favor of arithmetic mean)
+  double sumB = 1;   // separate linear weighting of B (otherwise could remove in favor of arithmetic mean)
   double mult = 0;
-  double geomean = 0;
+  double amean = 0;
+  double gmean = 0;
+  double hmean = 0;
   double radial = 0;
   int signMode = 1;
   int signModeSign;
@@ -116,12 +127,16 @@ public class CompoundFunc extends VariationFunc {
       signY = pContext.random() >= 0.5 ? 1 : -1;
     }
     
-    pVarTP.x = (mult * signX * (fabs(pointA.x * pointB.x))) + 
-      (geomean * signX * sqrt(fabs(pointA.x * pointB.x))) + 
+    pVarTP.x = (mult * signX * (fabs(pointA.x * pointB.x))) +
+      (amean * signX * (fabs(pointA.x + pointA.x)/2)) + 
+      (gmean * signX * sqrt(fabs(pointA.x * pointB.x))) +
+      (hmean * signX * fabs((2 * pointA.x * pointB.x)/(pointA.x + pointB.x))) + 
       (radial * signX * rx) +
       (sumA * pointA.x) + (sumB * pointB.x);
     pVarTP.y = (mult * signY * (fabs(pointA.y * pointB.y))) +
-      (geomean * signY * sqrt(fabs(pointA.y * pointB.y))) +
+      (amean * signY * (fabs(pointA.y + pointA.y)/2)) + 
+      (gmean * signY * sqrt(fabs(pointA.y * pointB.y))) +
+      (hmean * signY * fabs((2 * pointA.y * pointB.y)/(pointA.y + pointB.y))) + 
       (radial * signY * ry) + 
       (sumA * pointA.y) + (sumB * pointB.y);
     pVarTP.z = pAmount * pAffineTP.z;
@@ -135,7 +150,7 @@ public class CompoundFunc extends VariationFunc {
 
   @Override
   public Object[] getParameterValues() {
-    return new Object[] { variationA, variationB, sumA, sumB, mult, geomean, radial, signMode };
+    return new Object[] { variationA, variationB, sumA, sumB, mult, amean, gmean, hmean, radial, signMode };
   }
 
   @Override
@@ -150,8 +165,12 @@ public class CompoundFunc extends VariationFunc {
       sumB = pValue;
     else if (PARAM_MULT.equalsIgnoreCase(pName))
       mult = pValue;
+    else if (PARAM_ARITHMETIC_MEAN.equalsIgnoreCase(pName))
+      amean = pValue;
     else if (PARAM_GEOMETRIC_MEAN.equalsIgnoreCase(pName))
-      geomean = pValue;
+      gmean = pValue;
+    else if (PARAM_HARMONIC_MEAN.equalsIgnoreCase(pName))
+      hmean = pValue;
     else if (PARAM_RADIAL.equalsIgnoreCase(pName))
       radial = pValue;
     else if (PARAM_SIGN_MODE.equalsIgnoreCase(pName)) 
