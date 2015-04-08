@@ -44,6 +44,10 @@ public class CompoundFunc extends VariationFunc {
   private static final String PARAM_HARMONIC_MEAN = "harmonicMean";
   private static final String PARAM_RADIAL = "radial";
   private static final String PARAM_SIGN_MODE = "signMode";
+  // other means to look at?
+  //    quadratic mean
+  //    logarithmic mean
+  //    contraharmonic mean
 
   private static final String[] paramNames = { PARAM_VARIATION_A,
                                                PARAM_VARIATION_B,
