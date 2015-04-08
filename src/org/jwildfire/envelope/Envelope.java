@@ -18,6 +18,7 @@ package org.jwildfire.envelope;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -201,7 +202,7 @@ public class Envelope implements Serializable {
     updateMinMax();
   }
 
-  private static final Map<InterpolatedPointsKey, InterpolatedPoints> interpolatedPointCache = new WeakHashMap<InterpolatedPointsKey, InterpolatedPoints>();
+  private static final Map<InterpolatedPointsKey, InterpolatedPoints> interpolatedPointCache = new HashMap<InterpolatedPointsKey, InterpolatedPoints>();
 
   private static InterpolatedPoints getInterpolatedPoints(int pX[], double pY[], Interpolation pInterpolation) {
     InterpolatedPointsKey key = new InterpolatedPointsKey(pX, pY, pInterpolation);
