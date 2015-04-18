@@ -34,11 +34,13 @@ import org.jwildfire.create.tina.base.XYZPoint;
   Rhodonea curves (also known as rose curves)
   Implemented by CozyG, March 2015
   For references, see http://en.wikipedia.org/wiki/Rose_%28mathematics%29
-  There are other JWildfire variations (RoseWF, PRose3D) that implement the class of rose curves 
-  where k is an integer and cycles = 1, but Rhodonea implements a fuller range of possibilities (within the 2D plane)
+  There are other JWildfire variations (RoseWF, PRose3D), and an Apophysis rose plugin (http://fardareismai.deviantart.com/art/Apophysis-Plugin-Rose-246324281)
+     that implement the class of rose curves where k is an integer and cycles = 1, 
+     but Rhodonea implements a fuller range of possibilities (at least within the 2D plane)
 
    From reference literature:
-   Up to similarity(?), these curves can all be expressed by a polar equation of the form
+   Rhodonea curves were studied and named by the Italian mathematician Guido Grandi between the year 1723 and 1728
+   These curves can all be expressed by a polar equation of the form
         r = cos(k * theta)   
 
    or, alternatively, as a pair of Cartesian parametric equations of the form
@@ -69,44 +71,50 @@ import org.jwildfire.create.tina.base.XYZPoint;
        r = cos(k * theta) + c
     In the case where the parameter k is an odd integer, the two overlapping halves of the curve separate as the offset changes from zero.
 
-    Rhodonea curves were named by the Italian mathematician Guido Grandi between the year 1723 and 1728
 */
 public class RhodoneaFunc extends VariationFunc {
   private static final long serialVersionUID = 1L;
 
   private static final String PARAM_KNUMER = "knumer";
   private static final String PARAM_KDENOM = "kdenom";
+  private static final String PARAM_INNER_MODE = "inner_mode";
+  private static final String PARAM_OUTER_MODE = "outer_mode";
+  private static final String PARAM_INNER_SPREAD = "inner_spread";
+  private static final String PARAM_OUTER_SPREAD = "outer_spread";
+  private static final String PARAM_INNER_SPREAD_RATIO = "inner_spread_ratio";
+  private static final String PARAM_OUTER_SPREAD_RATIO = "outer_spread_ratio";
+  private static final String PARAM_SPREAD_SPLIT = "spread_split";
+  private static final String PARAM_FILL = "fill";
+  private static final String PARAM_RADIAL_OFFSET = "radial_offset";
   // if cycles is set to 0, function will make best effort to calculate minimum number of cycles needed 
   //     to close curve, or a somewhat arbitrary number if cannot 
-  private static final String PARAM_OFFSET = "offset";
-  private static final String PARAM_INNER_STRETCH = "inner_stretch";
-  private static final String PARAM_OUTER_STRETCH = "outer_stretch";
-  private static final String PARAM_STRETCH_RATIO = "stretch_ratio";
   private static final String PARAM_CYCLES = "cycles";
-  private static final String PARAM_FILL = "fill";
   private static final String PARAM_CYCLE_OFFSET = "cycle_offset";
   private static final String PARAM_METACYCLES = "metacycles"; // only in effect when cycles = 0 (automatic cycle calculations in effect)
   private static final String PARAM_METACYCLE_EXPANSION = "metacycle_expansion";
-  private static final String PARAM_STRETCH_MODE = "stretch_mode";
 
-
-  private static final String[] paramNames = { PARAM_KNUMER, PARAM_KDENOM, PARAM_OFFSET, 
-                                               PARAM_STRETCH_MODE, PARAM_INNER_STRETCH, PARAM_OUTER_STRETCH, PARAM_STRETCH_RATIO, 
+  private static final String[] paramNames = { PARAM_KNUMER, PARAM_KDENOM, 
+                                               PARAM_INNER_MODE, PARAM_OUTER_MODE,
+                                               PARAM_INNER_SPREAD, PARAM_OUTER_SPREAD, PARAM_INNER_SPREAD_RATIO, PARAM_OUTER_SPREAD_RATIO, PARAM_SPREAD_SPLIT,
+                                               PARAM_FILL, PARAM_RADIAL_OFFSET, 
                                                PARAM_CYCLES, PARAM_CYCLE_OFFSET, PARAM_METACYCLES, PARAM_METACYCLE_EXPANSION, 
-                                               PARAM_FILL  };
+                                               };
 
-  private double knumer = 3;    // numerator of k,   k = kn/kd
-  private double kdenom = 4;    // denominator of k, k = kn/kd
-  private double offset = 0;  // offset c from equations
-  private double stretch_mode = 1;
-  private double inner_stretch = 0; // deform based on original x/y
-  private double outer_stretch = 0; // deform based on original x/y
-  private double stretchRatio = 1; // how much stretch applies to x relative to y
-  private double cyclesParam = 0;  // number of cycles (roughly circle loops?), if set to 0 then number of cycles is calculated automatically
-  private double cycle_offset = 0.5;
-  private double metacycle_expansion = 0;
-  private double metacycles = 1;
-  private double fill = 0;
+  private double knumer = 3;    // numerator of k in rose curve equations,   k = kn/kd
+  private double kdenom = 4;    // denominator of k in rose curve equations, k = kn/kd
+  private double radial_offset = 0;  // often called "c" in rose curve modifier equations
+  private int inner_mode = 1; // transform mode to use for incoming points within or on the curve
+  private int outer_mode = 1; // transform mode to use for incoming points outside the curve
+  private double inner_spread = 0; // amount to spread away from rose curve within or on the curve, based on incoming point x/y coords
+  private double outer_spread = 0; // amount to spread away from rose curve outside the curve, based on incoming point x/y coords
+  private double inner_spread_ratio = 1; // how much inner spread applies to x relative to y
+  private double outer_spread_ratio = 1; // how much outer spread applies to x relative to y
+  private double spread_split = 1; // scaling of input point radius to determine inner/outer threshold
+  private double cycles_param = 0;  // number of cycles (roughly circle loops?), if set to 0 then number of cycles is calculated automatically to close curve (if possible)
+  private double cycle_offset = 0; // radians to offset cycle for incoming points
+  private double metacycle_expansion = 0;  // expansion factor for each metacycle
+  private double metacycles = 1; // if cycles is calculated automatically to close the curve, metacycles is number of times to loop over closed curve
+  private double fill = 0;  // amount to thicken curve by randomizing input 
 
   private double kn, kd;
   private double k;  // k = kn/kd
@@ -117,7 +125,7 @@ public class RhodoneaFunc extends VariationFunc {
   // want to figure out (when possible):
   //     number of cycles(radians) to close the curve (radians = 2*PI*cycles)
   //     number of petals in the curve
-  //     given those, can also calculate: for a given input x and y, which petal will it map to.
+  //     given those, can also calculate: for a given input x and y, which petal(s) the point will map to.
   //         
   @Override
   public void init(FlameTransformationContext pContext, Layer pLayer, XForm pXForm, double pAmount) {
@@ -132,7 +140,7 @@ public class RhodoneaFunc extends VariationFunc {
         petal_count = 2*k;
       }
       else  { // k is odd integer, will have k petals (or sometimes 2k with offset)
-        if (offset != 0 || inner_stretch != 0 || outer_stretch != 0 || fill != 0) { cycles_to_close = 1; }  // if adding an offset or stretch, need a full cycle
+        if (radial_offset != 0 || inner_spread != 0 || outer_spread != 0 || fill != 0) { cycles_to_close = 1; }  // if adding an offset or spread, need a full cycle
         else { cycles_to_close = 0.5; }  // (1PI)
         petal_count = k;
       }
@@ -150,8 +158,6 @@ public class RhodoneaFunc extends VariationFunc {
         kd = kd / gcd;
       }
 
-      // kn and kd are both integers
-      //
       // paraphrased from http://www.encyclopediaofmath.org/index.php/Roses_%28curves%29:
       //    If kn and kd are relatively prime, then the rose consists of 2*kn petals if either kn or kd are even, and kn petals if both kn and kd are odd
       //
@@ -167,17 +173,16 @@ public class RhodoneaFunc extends VariationFunc {
       }
     }
 
-
-    /* 
+    // additional special cases:
+    /*  
     // superceded by relative prime conditional?
     else if (((k * 2) % 1) == 0) { // k is a half-integer (1/2, 3/2, 5/2, etc.), will have 4k petals
       cycles_to_close = 2;  // (4PI)
       petal_count = 4*k;
     }
     */
-    /*
+    /* 
     // superceded by relative prime conditional?
-    //
     // If k can be expressed as kn/3, where n is an integer not divisible by 3, the curve will be rose-shaped with n petals if n is odd and 2n petals if n is even.
     //    (case where kn is integer divisible by three is already handled above, where k is integer)
     else if (((k * 3) % 1) == 0) {
@@ -201,7 +206,7 @@ public class RhodoneaFunc extends VariationFunc {
     */
 
     else {
-      //     if one or both of kn and kd are non-integers, then the above may still be true (k may still be [effectively] irrational) but haven't 
+      //     if one or both of kn and kd are non-integers, then the above may still be true (k may still be [effectively] rational) but haven't 
       //          figured out a way to determine this.
       //    could restrict kn and kd to integers to simplify, but that would exclude a huge space of interesting patterns
       //    could set cycles extremely high, but if k is truly irrational this will just approarch a uniform distribution across a circle, 
@@ -213,19 +218,18 @@ public class RhodoneaFunc extends VariationFunc {
       cycles_to_close = 2 * kn * kd;
       if (cycles < 16) { cycles_to_close = 16; } // ???  just want to keep number higher if kn and kd are small but potentially irrational
     }
-    if (cyclesParam == 0) { 
+    if (cycles_param == 0) { 
       // use auto-calculation of cycles (2*PI*radians) to close the curve, 
       //     and metacycles for how many closed curves to cycle through
       cycles = cycles_to_close * metacycles;
     } 
     else  { 
       // manually set number of cycles (cycles are specified in 2*PI*radians)
-      cycles = cyclesParam; 
+      cycles = cycles_param; 
     }
     // System.out.println("cycles to close: " + cycles_to_close);
     // System.out.println("metacycles: " + metacycles);
     // System.out.println("total cycles: " + cycles);
-
   }
 
   @Override
@@ -238,92 +242,120 @@ public class RhodoneaFunc extends VariationFunc {
         x = cos(kt)cos(t)
         y = cos(kt)sin(t)
     */
-    // double rin = pAffineTP.getPrecalcSqrt(); // polar coordinate radius of incoming point
-    double rin = sqrt((pAffineTP.x  * pAffineTP.x) + (pAffineTP.y * pAffineTP.y));
-    // atan2 range is [-PI, PI], so rtheta covers 2PI, or 1 cycle
+    double rin = spread_split * sqrt((pAffineTP.x  * pAffineTP.x) + (pAffineTP.y * pAffineTP.y));
+    // atan2 range is [-PI, PI], so tin covers 2PI, or 1 cycle (from -0.5 to 0.5 cycle)
     double tin = atan2(pAffineTP.y, pAffineTP.x); // polar coordinate angle (theta in radians) of incoming point
-    // double theta = atan2(pAffineTP.x, pAffineTP.y) + (cycle_offset * 2 * M_PI);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
     double t = cycles * (tin + (cycle_offset * 2 * M_PI));  // angle of rose curve
-    double r = cos(k * t) + offset;  // radius of rose curve 
-    // double r = sin(k * t) + offset;
+    double r = cos(k * t) + radial_offset;  // radius of rose curve 
+    // double r = sin(k * t) + radial_offset;  // can use sin instead of cos to rotate by PI/(2*k) radians
     if (fill != 0) { 
       r = r + (fill * (pContext.random() - 0.5));
     }
     double x = r * cos(t);
     double y = r * sin(t);
-    double expansion = floor(t/(cycles_to_close * 2 * M_PI));
+    double expansion = floor((cycles * (tin + M_PI))/(cycles_to_close * 2 * M_PI));
     double adjustedAmount = pAmount + (expansion * metacycle_expansion);
-    // double adjustedAmount = pAmount + (floor(t/(cycles_to_close)) * 2 * M_PI * metacycle_expansion);
-    // double adjustedAmount = pAmount;
+    double xin, yin;
+    double rinx, riny;
 
-    if (stretch_mode == 1) {
-      if (abs(rin) > abs(r))  {   // incoming point lies outside of current petal of rose curve
-        rin = (rin * outer_stretch) - outer_stretch + 1; 
-        pVarTP.x += adjustedAmount * rin * x;
-        pVarTP.y += adjustedAmount * rin * y;       
-        // pVarTP.x += pAffineTP.x;
-        // pVarTP.y += pAffineTP.y;
-      }
-      else  { // incoming point lies inside current petal of rose curve
-        rin = (rin * inner_stretch) - inner_stretch + 1;
-        pVarTP.x += adjustedAmount * rin * x;
-        pVarTP.y += adjustedAmount * rin * y;       
-        // pVarTP.x += pAffineTP.x;
-        // pVarTP.y += pAffineTP.y;
-      }
-      if (pVarTP.y == 0)  { pVarTP.x = 0; }
-    }
-    else if (stretch_mode == 2) {
-      if (abs(rin) > abs(r))  {   // incoming point lies outside of current petal of rose curve
-        rin = (rin * outer_stretch);
-        pVarTP.x += adjustedAmount * rin * x;
-        pVarTP.y += adjustedAmount * rin * y;       
-        // pVarTP.x += pAffineTP.x;
-        // pVarTP.y += pAffineTP.y;
-      }
-      else  { // incoming point lies inside current petal of rose curve
-        rin = (rin * inner_stretch);
-        pVarTP.x += adjustedAmount * rin * x;
-        pVarTP.y += adjustedAmount * rin * y;       
-        // pVarTP.x += pAffineTP.x;
-        // pVarTP.y += pAffineTP.y;
-      }
-    }
-    else if (stretch_mode == 3)  {
-      double xin = Math.abs(pAffineTP.x);
-      double yin = Math.abs(pAffineTP.y);
-      if (x<0) { xin = xin * -1; }
-      if (y<0) { yin = yin * -1; }
-
-      if (abs(rin) > abs(r)) {  // incoming point lies outside current petal of rose curve
-        //pVarTP.x += adjustedAmount * x + ((rin - r) * outer_stretch * stretchRatio);
-        pVarTP.x += adjustedAmount * (x + (outer_stretch * stretchRatio * xin));
-        pVarTP.y += adjustedAmount * (y + (outer_stretch * yin));
-      }
-      else  { // incoming point lies inside current petal of rose curve
-        pVarTP.x += adjustedAmount * (x + (inner_stretch * stretchRatio * xin));
-        pVarTP.y += adjustedAmount * (y + (inner_stretch * yin));
-      }
-    }
-    else if (stretch_mode == 4) {
-      double xin = Math.abs(pAffineTP.x);
-      double yin = Math.abs(pAffineTP.y);
-      if (x<0) { xin = xin * -1; }
-      if (y<0) { yin = yin * -1; }
-
-      if (abs(rin) > abs(r)) {  // incoming point lies outside current petal of rose curve
-        //pVarTP.x += adjustedAmount * x + ((rin - r) * outer_stretch * stretchRatio);
-        pVarTP.x += adjustedAmount * (x + (outer_stretch * stretchRatio * (x-xin)));
-        pVarTP.y += adjustedAmount * (y + (outer_stretch * (y-yin)));
-      }
-      else  { // incoming point lies inside current petal of rose curve
-        pVarTP.x += adjustedAmount * (x + (inner_stretch * stretchRatio * xin));
-        pVarTP.y += adjustedAmount * (y + (inner_stretch * yin));
+    if (abs(rin) > abs(r)) {  // incoming point lies outside of current petal of rose curve
+      switch(outer_mode) {
+        case 0: // no spread
+          pVarTP.x += adjustedAmount * x;
+          pVarTP.y += adjustedAmount * y; 
+          break;
+        case 1:
+          rinx = (rin * outer_spread * outer_spread_ratio) - (outer_spread * outer_spread_ratio) + 1; 
+          riny = (rin * outer_spread) - outer_spread + 1;
+          pVarTP.x += adjustedAmount * rinx * x;
+          pVarTP.y += adjustedAmount * riny * y;       
+          if (pVarTP.y == 0)  { pVarTP.x = 0; }
+          break;
+        case 2:
+          xin = Math.abs(pAffineTP.x);
+          yin = Math.abs(pAffineTP.y);
+          if (x<0) { xin = xin * -1; }
+          if (y<0) { yin = yin * -1; }
+          //pVarTP.x += adjustedAmount * x + ((rin - r) * outer_spread * outer_spread_ratio);
+          pVarTP.x += adjustedAmount * (x + (outer_spread * outer_spread_ratio * (xin-x)));
+          pVarTP.y += adjustedAmount * (y + (outer_spread * (yin-y)));
+          break;
+        case 3:
+          xin = Math.abs(pAffineTP.x);
+          yin = Math.abs(pAffineTP.y);
+          if (x<0) { xin = xin * -1; }
+          if (y<0) { yin = yin * -1; }
+          pVarTP.x += adjustedAmount * (x + (outer_spread * outer_spread_ratio * xin));
+          pVarTP.y += adjustedAmount * (y + (outer_spread * yin));
+          break;
+        case 4:
+          rinx = (0.5 * rin) + (outer_spread * outer_spread_ratio);
+          riny = (0.5 * rin) + outer_spread;
+          pVarTP.x += adjustedAmount * rinx * x;
+          pVarTP.y += adjustedAmount * riny * y;
+          break;
+        case 5:  // mask "inside" the curve
+          pVarTP.x += pAffineTP.x;
+          pVarTP.y += pAffineTP.y;
+          break;
+        case 6:  // mask "outside" the curve
+          pVarTP.doHide = true;
+          break;
+        default:
+          pVarTP.x += adjustedAmount * x;
+          pVarTP.y += adjustedAmount * y; 
+          break;
       }
     }
-    else  {
-      pVarTP.x += adjustedAmount * x;
-      pVarTP.y += adjustedAmount * y;
+    else  {  // incoming point lies on or inside current petal of rose curve
+      switch (inner_mode) {
+        case 0: // no spread, all points map to rose curve
+          pVarTP.x += adjustedAmount * x;
+          pVarTP.y += adjustedAmount * y;
+          break;
+        case 1:
+          // rin = (rin * inner_spread) - inner_spread + 1;
+          rinx = (rin * inner_spread * inner_spread_ratio) - (inner_spread * inner_spread_ratio) + 1;
+          riny = (rin * inner_spread) - inner_spread + 1;
+          pVarTP.x += adjustedAmount * rinx * x;
+          pVarTP.y += adjustedAmount * riny * y;       
+          if (pVarTP.y == 0)  { pVarTP.x = 0; }
+          break;
+        case 2:
+          xin = Math.abs(pAffineTP.x);
+          yin = Math.abs(pAffineTP.y);
+          if (x<0) { xin = xin * -1; }
+          if (y<0) { yin = yin * -1; }
+          pVarTP.x += adjustedAmount * (x - (inner_spread * inner_spread_ratio * (x-xin)));
+          pVarTP.y += adjustedAmount * (y - (inner_spread * (y-yin)));
+          break;
+        case 3:
+          xin = Math.abs(pAffineTP.x);
+          yin = Math.abs(pAffineTP.y);
+          if (x<0) { xin = xin * -1; }
+          if (y<0) { yin = yin * -1; }
+          pVarTP.x += adjustedAmount * (x - (inner_spread * inner_spread_ratio * xin));
+          pVarTP.y += adjustedAmount * (y - (inner_spread * yin));
+          break;
+        case 4:
+          // rin = (0.5 * rin) + inner_spread;
+          rinx = (0.5 * rin) + (inner_spread * inner_spread_ratio);
+          riny = (0.5 * rin) + inner_spread;
+          pVarTP.x += adjustedAmount * rinx * x;
+          pVarTP.y += adjustedAmount * riny * y;
+          break;
+        case 5:  // mask "inside" the curve
+          pVarTP.doHide = true;
+          break;
+        case 6:  // mask "outside" the curve
+          pVarTP.x += pAffineTP.x;
+          pVarTP.y += pAffineTP.y;
+          break;
+        default:  // shouldn't reach here (inner_mode is constrained to be 0-6), but just in case...
+          pVarTP.x += adjustedAmount * x;
+          pVarTP.y += adjustedAmount * y;
+          break;
+      }
     }
 
     boolean draw_diagnostics = false;
@@ -353,12 +385,6 @@ public class RhodoneaFunc extends VariationFunc {
         pVarTP.y = sy;
       }
     }
-
-    
-
-    // pVarTP.x += adjustedAmount * (x + (stretch * stretchRatio * xin));
-    // pVarTP.y += adjustedAmount * (y + (stretch * yin));
-
     if (pContext.isPreserveZCoordinate()) {
       pVarTP.z += pAmount * pAffineTP.z;
     }
@@ -371,9 +397,10 @@ public class RhodoneaFunc extends VariationFunc {
 
   @Override
   public Object[] getParameterValues() {
-    return new Object[] { knumer, kdenom, offset, 
-                          stretch_mode, inner_stretch, outer_stretch, stretchRatio, 
-                          cyclesParam, cycle_offset, metacycles, metacycle_expansion, fill };
+    return new Object[] { knumer, kdenom, 
+                          inner_mode, outer_mode, inner_spread, outer_spread, inner_spread_ratio, outer_spread_ratio, spread_split,
+                          fill, radial_offset, 
+                          cycles_param, cycle_offset, metacycles, metacycle_expansion };
   }
 
   @Override
@@ -382,18 +409,28 @@ public class RhodoneaFunc extends VariationFunc {
       knumer = pValue;
     else if (PARAM_KDENOM.equalsIgnoreCase(pName))
       kdenom = pValue;
-    else if (PARAM_OFFSET.equalsIgnoreCase(pName))
-      offset = pValue;
-    else if (PARAM_STRETCH_MODE.equalsIgnoreCase(pName))
-      stretch_mode = floor(pValue);
-    else if (PARAM_INNER_STRETCH.equalsIgnoreCase(pName))
-      inner_stretch = pValue;
-    else if (PARAM_OUTER_STRETCH.equalsIgnoreCase(pName))
-      outer_stretch = pValue;
-    else if (PARAM_STRETCH_RATIO.equalsIgnoreCase(pName))
-      stretchRatio = pValue;
+    else if (PARAM_RADIAL_OFFSET.equalsIgnoreCase(pName))
+      radial_offset = pValue;
+    else if (PARAM_INNER_MODE.equalsIgnoreCase(pName)) {
+      inner_mode = (int)floor(pValue);
+      if (inner_mode > 6 || inner_mode < 0) { inner_mode = 0; }
+    }
+    else if (PARAM_OUTER_MODE.equalsIgnoreCase(pName)) {
+      outer_mode = (int)floor(pValue);
+      if (outer_mode > 6 || outer_mode < 0) { outer_mode = 0; }
+    }
+    else if (PARAM_INNER_SPREAD.equalsIgnoreCase(pName))
+      inner_spread = pValue;
+    else if (PARAM_OUTER_SPREAD.equalsIgnoreCase(pName))
+      outer_spread = pValue;
+    else if (PARAM_INNER_SPREAD_RATIO.equalsIgnoreCase(pName))
+      inner_spread_ratio = pValue;
+    else if (PARAM_OUTER_SPREAD_RATIO.equalsIgnoreCase(pName))
+      outer_spread_ratio = pValue;
+    else if (PARAM_SPREAD_SPLIT.equalsIgnoreCase(pName))
+      spread_split = pValue;
     else if (PARAM_CYCLES.equalsIgnoreCase(pName))
-      cyclesParam = pValue;
+      cycles_param = pValue;
     else if (PARAM_CYCLE_OFFSET.equalsIgnoreCase(pName))
       cycle_offset = pValue;
     else if (PARAM_METACYCLES.equalsIgnoreCase(pName))
