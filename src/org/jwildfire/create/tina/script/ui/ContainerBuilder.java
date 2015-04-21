@@ -81,6 +81,22 @@ public class ContainerBuilder {
     builder.withInitialValue(pInitialValue);
     return this;
   }
+  
+   public ImageListBuilder openImageList(String pPropertyName, String pCaption) {
+    ImageListBuilder imageList = new ImageListBuilder(this);
+    imageList.withPropertyName(pPropertyName);
+    imageList.withCaption(pCaption);
+    editFields.add(imageList);
+    return imageList;
+  }
+
+  public ContainerBuilder withImageList(String pPropertyName, String pCaption, String imageDir, String pInitialValue) {
+    ImageListBuilder builder = openImageList(pPropertyName, pCaption);
+    builder.withImageDirectory(imageDir);
+    builder.withInitialValue(pInitialValue);
+    return this;
+  }
+
 
   public CheckBoxBuilder openCheckBox(String pPropertyName, String pCaption) {
     CheckBoxBuilder checkBox = new CheckBoxBuilder(this);

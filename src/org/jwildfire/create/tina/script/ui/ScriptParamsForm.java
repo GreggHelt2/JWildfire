@@ -24,10 +24,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.swing.ImageIcon;
 
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JInternalFrame;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
@@ -101,6 +103,13 @@ public class ScriptParamsForm implements ScriptRunnerEnvironment {
       else if (control instanceof JComboBox) {
         JComboBox comboBox = (JComboBox) control;
         params.put(comboBox.getName(), new ScriptParam((String) comboBox.getSelectedItem()));
+      }
+      else if (control instanceof JList) {
+        JList imageList = (JList)control;
+        ImageIcon selectedImage = (ImageIcon)imageList.getSelectedValue();
+        String imageName = selectedImage.getDescription();
+        System.out.println("adding ScriptParam: " + imageList.getName() + ", " + imageName);
+        params.put(imageList.getName(), new ScriptParam(imageName));
       }
       else if (control instanceof JCheckBox) {
         JCheckBox checkBox = (JCheckBox) control;
