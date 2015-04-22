@@ -294,11 +294,20 @@ public class RhodoneaFunc extends VariationFunc {
           pVarTP.x += adjustedAmount * rinx * x;
           pVarTP.y += adjustedAmount * riny * y;
           break;
-        case 5:  // mask "inside" the curve
+        case 5:  // mask, show if "outside" the curve
           pVarTP.x += pAffineTP.x;
           pVarTP.y += pAffineTP.y;
           break;
-        case 6:  // mask "outside" the curve
+        case 6:  // mask, hide if "outside" the curve and don't touch x/y
+          pVarTP.doHide = true;
+          break;
+        case 7:  // mask, show if "outside" the curve
+          pVarTP.x += pAffineTP.x;
+          pVarTP.y += pAffineTP.y;
+          break;
+        case 8:  // mask, hide if "outside" the curve but still modify
+          pVarTP.x += pAffineTP.x;
+          pVarTP.y += pAffineTP.y;
           pVarTP.doHide = true;
           break;
         default:
@@ -344,10 +353,19 @@ public class RhodoneaFunc extends VariationFunc {
           pVarTP.x += adjustedAmount * rinx * x;
           pVarTP.y += adjustedAmount * riny * y;
           break;
-        case 5:  // mask "inside" the curve
+        case 5:  // mask, hide if "inside" the curve and don't touch x/y
           pVarTP.doHide = true;
           break;
-        case 6:  // mask "outside" the curve
+        case 6:  // mask, show if  "inside" the curve
+          pVarTP.x += pAffineTP.x;
+          pVarTP.y += pAffineTP.y;
+          break;
+        case 7:  // mask, hide if "inside" the curve but still modify
+          pVarTP.x += pAffineTP.x;
+          pVarTP.y += pAffineTP.y;
+          pVarTP.doHide = true;
+          break;
+        case 8:  // mask, show if "inside" the curve
           pVarTP.x += pAffineTP.x;
           pVarTP.y += pAffineTP.y;
           break;
@@ -417,7 +435,7 @@ public class RhodoneaFunc extends VariationFunc {
     }
     else if (PARAM_OUTER_MODE.equalsIgnoreCase(pName)) {
       outer_mode = (int)floor(pValue);
-      if (outer_mode > 6 || outer_mode < 0) { outer_mode = 0; }
+      if (outer_mode > 8 || outer_mode < 0) { outer_mode = 0; }
     }
     else if (PARAM_INNER_SPREAD.equalsIgnoreCase(pName))
       inner_spread = pValue;
