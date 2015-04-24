@@ -439,6 +439,7 @@ public class VariationFuncList {
     registerVariationFunc(RhodoneaFunc.class);
     registerVariationFunc(ButterflyFayFunc.class);
 
+    registerVariationFunc(EpitrochoidFunc.class);
   }
 
   private static void registerVariationFunc(
