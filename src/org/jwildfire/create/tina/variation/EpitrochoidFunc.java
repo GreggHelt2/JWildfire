@@ -31,16 +31,36 @@ import org.jwildfire.create.tina.base.XForm;
 import org.jwildfire.create.tina.base.XYZPoint;
 
 /**
-  Butterfly2, a variation based on the Butterfly curve, discovered ~1988 by Temple H. Fay
+  Epitrochoid
   Implemented by CozyG, March 2015
-  For references, see http://en.wikipedia.org/wiki/Butterfly_curve_%28transcendental%29
+
+  Interesting relationships:
+
+  Loops always cross origin (center of circle A?) at c_scale = cusps + 1;  ( c_radius =   
+  Inner loops touch at c_scale ~= 4.5 fro larger # of cusps, and down to a limit of 3 for cusps = 2, ~3.67 for cusps = 3...
+          this is independent of b_radius
+          I think there's probably a way to figure this out into an equation, some factor that weights each succeeding cusp less?
+          (c_radius = 4.5 * b_radius)
+
+    a_radius = b_radius * cusps;
+    c_radius = b_radius * c_scale;
+
+  c_scale = c_radius / b_radius
+  cusps = a_radius / b_radius
+  c_radius / b_radius = (a_radius / b_radius) + 1
+   c_radius = b_radius * ((a_radius / b_radius) + 1)
+   c_radius = a_radius + (1/b_radius)
 */
 public class EpitrochoidFunc extends VariationFunc {
   private static final long serialVersionUID = 1L;
 
-  private static final String PARAM_A_RADIUS = "a_radius";
+  //  private static final String PARAM_A_RADIUS = "a_radius";
+  private static final String PARAM_CUSPS = "cusps";  // a_radius/b_radius (so cusps and b_radius determines a_radius
   private static final String PARAM_B_RADIUS = "b_radius";
-  private static final String PARAM_C_RADIUS = "c_radius";
+  private static final String PARAM_C_SCALE = "c_scale";   // c_radius (distance from point to center of circle B) is determined by b_radius and c_scale
+  private static final String PARAM_SIGN1 = "sign1";
+  private static final String PARAM_SIGN2 = "sign2";
+  private static final String PARAM_SIGN3 = "sign3";
   private static final String PARAM_UNIFIED_INNER_OUTER = "unified_inner_outer";
   private static final String PARAM_INNER_MODE = "inner_mode";
   private static final String PARAM_OUTER_MODE = "outer_mode";
@@ -58,16 +78,21 @@ public class EpitrochoidFunc extends VariationFunc {
   private static final String PARAM_CYCLES = "cycles";
 
 
-  private static final String[] paramNames = { PARAM_A_RADIUS, PARAM_B_RADIUS, PARAM_C_RADIUS,
+  private static final String[] paramNames = { PARAM_CUSPS, PARAM_B_RADIUS, PARAM_C_SCALE,
                                                PARAM_UNIFIED_INNER_OUTER, PARAM_INNER_MODE, PARAM_OUTER_MODE, 
                                                PARAM_INNER_SPREAD, PARAM_OUTER_SPREAD, 
                                                PARAM_INNER_SPREAD_RATIO, PARAM_OUTER_SPREAD_RATIO, PARAM_SPREAD_SPLIT,
                                                PARAM_CYCLES, PARAM_FILL }; 
 
   private double cyclesParam = 0;  // number of cycles (2*PI radians, circle circumference), if set to 0 then number of cycles is calculated automatically
-  private double a_radius = 1;   // radius of circle "A" (the stationary circle)
-  private double b_radius = 1;   // radius of circle "B" (circle that is rolling around outside of circle "A")
-  private double c_radius = 0.3;   // "radius" of point "C" (fixed distnace from center of circle "B" to point "C")
+  // private double a_radius = 1;   // radius of circle "A" (the stationary circle)
+
+  private double b_radius = 0.2;   // radius of circle "B" (circle that is rolling around outside of circle "A")
+  private double a_radius; // radius of circle "A", dermined by b_radius and cusps params
+  private double c_radius; // "radius" of point "C" (fixed distnace from center of circle "B" to point "C")
+  private double cusps = 5;
+
+  private double c_scale = 1.5; 
   private int unified_inner_outer = 1;
   private int inner_mode = 1;
   private int outer_mode = 1;
@@ -97,6 +122,8 @@ public class EpitrochoidFunc extends VariationFunc {
     //     (actually setting cycles = 0 will just yield a single point)
     //  for the butterfly curve I am taking that to mean closing the curve, which as noted above 
     //      I have observationally determined is at exactly 2(PI)^3 radians, which is same as (PI)^2 cycles
+    a_radius = b_radius * cusps;
+    c_radius = b_radius * c_scale;
     if (cyclesParam == 0) {  
       cycles = cycles_to_close;
     }
@@ -114,11 +141,12 @@ public class EpitrochoidFunc extends VariationFunc {
     // x = cos(t)*r
     double rin = spread_split * sqrt((pAffineTP.x  * pAffineTP.x) + (pAffineTP.y * pAffineTP.y));
     // double r = 0.5 * (exp(cos(t)) - (2 * cos(4*t)) - pow(sin(t/12), 5) + offset);
-    // a "fully" parameterized version:
+      // a "fully" parameterized version:
     // double r = 0.5 * ( (m1 * exp(m4 * cos(t + b1) + b4)) - (m2 * 2 * (cos(m5*4*t + b2) + b5)) - (m3 * pow(m6 * (sin(m7 * t/12 + b3) + b6), (m8 * 5 + b7))) + offset);
 
-    double x = ((a_radius + b_radius) * cos(t)) - (c_radius * cos( ((a_radius+b_radius)/b_radius) * t));
-    double y = ((a_radius + b_radius) * sin(t)) - (c_radius * sin( ((a_radius+b_radius)/b_radius) * t));
+        
+    double x = ((a_radius + b_radius) * cos(t)) - (c_radius * cos( ((a_radius + b_radius)/b_radius) * t));
+    double y = ((a_radius + b_radius) * sin(t)) - (c_radius * sin( ((a_radius + b_radius)/b_radius) * t));
     double r = sqrt(x*x + y*y);
 
     if (fill != 0) { 
@@ -228,17 +256,20 @@ public class EpitrochoidFunc extends VariationFunc {
 
   @Override
   public Object[] getParameterValues() {
-    return new Object[] { a_radius, b_radius, c_radius, unified_inner_outer, inner_mode, outer_mode, inner_spread, outer_spread, inner_spread_ratio, outer_spread_ratio, spread_split, cyclesParam, fill };
+    return new Object[] { cusps, b_radius, c_scale,
+                          unified_inner_outer, inner_mode, outer_mode, inner_spread, outer_spread,
+                          inner_spread_ratio, outer_spread_ratio, spread_split,
+                          cyclesParam, fill };
   }
 
   @Override
   public void setParameter(String pName, double pValue) {
-    if (PARAM_A_RADIUS.equalsIgnoreCase(pName))
-      a_radius = pValue;
+    if (PARAM_CUSPS.equalsIgnoreCase(pName))
+      cusps = pValue;
     else if (PARAM_B_RADIUS.equalsIgnoreCase(pName))
       b_radius = pValue;
-    else if (PARAM_C_RADIUS.equalsIgnoreCase(pName))
-      c_radius = pValue;
+    else if (PARAM_C_SCALE.equalsIgnoreCase(pName))
+      c_scale = pValue;
     else if (PARAM_UNIFIED_INNER_OUTER.equalsIgnoreCase(pName)) {
       unified_inner_outer = (pValue == 0 ? 0 : 1);
     }
