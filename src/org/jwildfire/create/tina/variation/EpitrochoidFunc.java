@@ -122,13 +122,14 @@ public class EpitrochoidFunc extends VariationFunc {
 
   @Override
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
-    double theta = atan2(pAffineTP.y, pAffineTP.x);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
-    double t = cycles * theta;
+    double tin = atan2(pAffineTP.y, pAffineTP.x);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
+    double theta = cycles * tin;
     double rin = spread_split * sqrt((pAffineTP.x  * pAffineTP.x) + (pAffineTP.y * pAffineTP.y));
         
-    double x = ((a_radius + b_radius) * cos(t)) - (c_radius * cos( ((a_radius + b_radius)/b_radius) * t));
-    double y = ((a_radius + b_radius) * sin(t)) - (c_radius * sin( ((a_radius + b_radius)/b_radius) * t));
+    double x = ((a_radius + b_radius) * cos(theta)) - (c_radius * cos(((a_radius + b_radius)/b_radius) * theta));
+    double y = ((a_radius + b_radius) * sin(theta)) - (c_radius * sin(((a_radius + b_radius)/b_radius) * theta));
     double r = sqrt(x*x + y*y);
+    double t = atan2(y, x);
 
     if (fill != 0) { 
       r = r + (fill * (pContext.random() - 0.5));
@@ -175,6 +176,14 @@ public class EpitrochoidFunc extends VariationFunc {
           pVarTP.x += pAmount * (x + (outer_spread * outer_spread_ratio * pAffineTP.x));
           pVarTP.y += pAmount * (y + (outer_spread * pAffineTP.y));
           break;
+        case 6: 
+          pVarTP.x += pAmount * pAffineTP.x;
+          pVarTP.y += pAmount * pAffineTP.y;
+          break;
+        case 8:
+          pVarTP.x += pAmount * rin * cos(t) * outer_spread * outer_spread_ratio;
+          pVarTP.y += pAmount * rin * sin(t) * outer_spread;
+          break;
         default:
           pVarTP.x += pAmount * x;
           pVarTP.y += pAmount * y;
@@ -219,6 +228,14 @@ public class EpitrochoidFunc extends VariationFunc {
           pVarTP.x += pAmount * (x + (inner_spread * inner_spread_ratio * pAffineTP.x));
           pVarTP.y += pAmount * (y + (inner_spread * pAffineTP.y));
           break;
+        case 6: 
+          pVarTP.x += pAmount * pAffineTP.x;
+          pVarTP.y += pAmount * pAffineTP.y;
+          break;
+        case 8:
+          pVarTP.x += pAmount * rin * cos(t) * (inner_spread * inner_spread_ratio);
+          pVarTP.y += pAmount * rin * sin(t) * inner_spread;
+          break;
         default:
           pVarTP.x += pAmount * x;
           pVarTP.y += pAmount * y;
@@ -256,11 +273,11 @@ public class EpitrochoidFunc extends VariationFunc {
     }
     else if (PARAM_OUTER_MODE.equalsIgnoreCase(pName)) {
       outer_mode = (int)floor(pValue);
-      if (outer_mode > 5 || outer_mode < 0) { outer_mode = 0; }
+      if (outer_mode > 10 || outer_mode < 0) { outer_mode = 0; }
     }
     else if (PARAM_INNER_MODE.equalsIgnoreCase(pName)) {
       inner_mode = (int)floor(pValue);
-      if (inner_mode > 5 || inner_mode < 0) { inner_mode = 0; }
+      if (inner_mode > 10 || inner_mode < 0) { inner_mode = 0; }
     }
     else if (PARAM_OUTER_SPREAD.equalsIgnoreCase(pName))
       outer_spread = pValue;
