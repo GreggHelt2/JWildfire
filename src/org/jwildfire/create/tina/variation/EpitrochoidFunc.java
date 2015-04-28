@@ -32,11 +32,13 @@ import org.jwildfire.create.tina.base.XYZPoint;
 
 /**
   Epitrochoid
-  Implemented by CozyG, March 2015
+  Implemented by CozyG, April 2015
+  For reference see http://en.wikipedia.org/wiki/Epitrochoid
 
   Interesting relationships:
 
-  Loops always cross origin (center of circle A?) at c_scale = cusps + 1;  ( c_radius =   
+  Loops always cross origin (center of circle A?) at c_scale = cusps + 1; 
+       so when c_radius = a_radius + (1/b_radius)
   Inner loops touch at c_scale ~= 4.5 fro larger # of cusps, and down to a limit of 3 for cusps = 2, ~3.67 for cusps = 3...
           this is independent of b_radius
           I think there's probably a way to figure this out into an equation, some factor that weights each succeeding cusp less?
@@ -48,8 +50,7 @@ import org.jwildfire.create.tina.base.XYZPoint;
   c_scale = c_radius / b_radius
   cusps = a_radius / b_radius
   c_radius / b_radius = (a_radius / b_radius) + 1
-   c_radius = b_radius * ((a_radius / b_radius) + 1)
-   c_radius = a_radius + (1/b_radius)
+  c_radius = a_radius + (1/b_radius)
 */
 public class EpitrochoidFunc extends VariationFunc {
   private static final long serialVersionUID = 1L;
@@ -58,9 +59,6 @@ public class EpitrochoidFunc extends VariationFunc {
   private static final String PARAM_CUSPS = "cusps";  // a_radius/b_radius (so cusps and b_radius determines a_radius
   private static final String PARAM_B_RADIUS = "b_radius";
   private static final String PARAM_C_SCALE = "c_scale";   // c_radius (distance from point to center of circle B) is determined by b_radius and c_scale
-  private static final String PARAM_SIGN1 = "sign1";
-  private static final String PARAM_SIGN2 = "sign2";
-  private static final String PARAM_SIGN3 = "sign3";
   private static final String PARAM_UNIFIED_INNER_OUTER = "unified_inner_outer";
   private static final String PARAM_INNER_MODE = "inner_mode";
   private static final String PARAM_OUTER_MODE = "outer_mode";
@@ -102,14 +100,6 @@ public class EpitrochoidFunc extends VariationFunc {
   private double outer_spread_ratio = 1; // how much outer_spread applies to x relative to y
   private double spread_split = 1;
   private double fill = 0;
-
-  // GAH 3/13/2015:
-  // I don't have a mathematical proof yet, 
-  // but observationally the butterfly curve is closed at 2*(PI)^3 radians (or cycles * (PI)^2 )
-  // can't find this reported anywhere -- did I just make a discovery??
-  // side note: 
-  //      at 2*PI (1 cycle) appears to be closed, but really isn't, this is just a matter of resolution
-  //      2nd cycle almost exactly follows path of 1rst cycle, then with start of 3rd cycle starts to diverge more obviously
   private double cycles;  // 1 cycle = 2*PI
 
   private double cycle_length = 2 * M_PI; // 2(PI)
@@ -120,8 +110,6 @@ public class EpitrochoidFunc extends VariationFunc {
   public void init(FlameTransformationContext pContext, Layer pLayer, XForm pXForm, double pAmount) {
     // setting cyclesParam to 0 is meant to indicate the function should determine how many cycles 
     //     (actually setting cycles = 0 will just yield a single point)
-    //  for the butterfly curve I am taking that to mean closing the curve, which as noted above 
-    //      I have observationally determined is at exactly 2(PI)^3 radians, which is same as (PI)^2 cycles
     a_radius = b_radius * cusps;
     c_radius = b_radius * c_scale;
     if (cyclesParam == 0) {  
@@ -136,14 +124,7 @@ public class EpitrochoidFunc extends VariationFunc {
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
     double theta = atan2(pAffineTP.y, pAffineTP.x);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
     double t = cycles * theta;
-    // r = e^cos(t) - 2cos(4t) - sin^5(t/12)
-    // y = sin(t)*r
-    // x = cos(t)*r
     double rin = spread_split * sqrt((pAffineTP.x  * pAffineTP.x) + (pAffineTP.y * pAffineTP.y));
-    // double r = 0.5 * (exp(cos(t)) - (2 * cos(4*t)) - pow(sin(t/12), 5) + offset);
-      // a "fully" parameterized version:
-    // double r = 0.5 * ( (m1 * exp(m4 * cos(t + b1) + b4)) - (m2 * 2 * (cos(m5*4*t + b2) + b5)) - (m3 * pow(m6 * (sin(m7 * t/12 + b3) + b6), (m8 * 5 + b7))) + offset);
-
         
     double x = ((a_radius + b_radius) * cos(t)) - (c_radius * cos( ((a_radius + b_radius)/b_radius) * t));
     double y = ((a_radius + b_radius) * sin(t)) - (c_radius * sin( ((a_radius + b_radius)/b_radius) * t));
@@ -190,7 +171,7 @@ public class EpitrochoidFunc extends VariationFunc {
           pVarTP.x += pAmount * rinx * x;
           pVarTP.y += pAmount * riny * y;
           break;
-        case 5: // original butterfly2 implementation (same as outer_mode 3, but without the sign modifications)
+        case 5: // same as outer_mode 3, but without the sign modifications
           pVarTP.x += pAmount * (x + (outer_spread * outer_spread_ratio * pAffineTP.x));
           pVarTP.y += pAmount * (y + (outer_spread * pAffineTP.y));
           break;
@@ -234,7 +215,7 @@ public class EpitrochoidFunc extends VariationFunc {
           pVarTP.x += pAmount * rinx * x;
           pVarTP.y += pAmount * riny * y;
           break;
-        case 5: // original butterfly2 implementation (same as inner_mode 3, but without the sign modifications)
+        case 5: // same as inner_mode 3, but without the sign modifications
           pVarTP.x += pAmount * (x + (inner_spread * inner_spread_ratio * pAffineTP.x));
           pVarTP.y += pAmount * (y + (inner_spread * pAffineTP.y));
           break;
