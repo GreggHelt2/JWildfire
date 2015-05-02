@@ -451,12 +451,15 @@ public class VariationFuncList {
     registerVariationFunc(DeltaAFunc.class);
     registerVariationFunc(WDiscFunc.class);
     registerVariationFunc(TradeFunc.class);
+    
     registerVariationFunc(WFunc.class);
     registerVariationFunc(XFunc.class);
     registerVariationFunc(YFunc.class);
     registerVariationFunc(ZFunc.class);
 
+    registerVariationFunc(CustomFullVariationWrapperFunc.class);
     registerVariationFunc(EpitrochoidFunc.class);
+
   }
 
   private static void registerVariationFunc(
@@ -562,5 +565,11 @@ public class VariationFuncList {
     }
     return null;
   }
+
+  public static List<Class<? extends VariationFunc>> getVariationClasses() {
+    return items;
+  }
+
+
 
 }
