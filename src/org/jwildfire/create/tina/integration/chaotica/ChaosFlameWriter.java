@@ -111,19 +111,20 @@ public class ChaosFlameWriter {
 
   public String getFlameXML() throws Exception {
     SimpleXMLBuilder xb = new SimpleXMLBuilder();
+    IdProvider iteratorIdProvider = new IdProvider();
+    IdProvider variatonIdProvider = new IdProvider();
+
     xb.addContent("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
     Layer layer = flame.getFirstLayer();
     xb.beginElement(ELEM_WORLD, xb.createAttrList(xb.createAttr(ATTR_NAME, "World")));
-    addIntProperty(xb, PROPERTY_FORMAT_VERSION, 2);
+    addIntProperty(xb, PROPERTY_FORMAT_VERSION, 2, null);
     xb.beginElement(ELEM_IFS, xb.createAttrList(xb.createAttr(ATTR_NAME, flame.getName())));
     addImaging(xb, flame);
-    addAnimAndCamera(xb, flame);
+    addAnimAndCamera(xb, variatonIdProvider, flame);
 
     xb.beginElement(ELEM_NODE, xb.createAttrList(xb.createAttr(ATTR_NAME, "iterators")));
-    IdProvider iteratorIdProvider = new IdProvider();
-    IdProvider variatonIdProvider = new IdProvider();
     for (XForm xform : layer.getXForms()) {
-      addXForm(xb, layer, xform, false, iteratorIdProvider, variatonIdProvider);
+      addIterator(xb, layer, xform, false, iteratorIdProvider, variatonIdProvider);
     }
     xb.endElement(ELEM_NODE);
     addGradient(xb, layer);
@@ -140,51 +141,10 @@ public class ChaosFlameWriter {
     }
   }
 
-  private void addXForm(SimpleXMLBuilder xb, Layer layer, XForm xform, boolean isFinal, IdProvider iteratorIdProvider, IdProvider variatonIdProvider) {
+  private void addIterator(SimpleXMLBuilder xb, Layer layer, XForm xform, boolean isFinal, IdProvider iteratorIdProvider, IdProvider variatonIdProvider) {
     int iteratorId = iteratorIdProvider.getNextId();
     xb.beginElement(ELEM_ITERATOR, xb.createAttrList(xb.createAttr(ATTR_NAME, "Iterator " + iteratorId)));
-    xb.beginElement(ELEM_FLAM3_TRANSFORM, xb.createAttrList(xb.createAttr(ATTR_NAME, "flam3_xform " + iteratorId)));
-    addAffine(xb, xform, false);
-    if (xform.isHasXYPostCoeffs()) {
-      addAffine(xb, xform, true);
-    }
-    if (xform.getVariationCount() > 0) {
-      xb.beginElement(ELEM_NODE, xb.createAttrList(xb.createAttr(ATTR_NAME, "transforms")));
-      for (int i = 0; i < xform.getVariationCount(); i++) {
-        Variation var = xform.getVariation(i);
-        String varName = var.getFunc().getName();
-        String translatedVarName = translator.translateVarName(varName);
-        if (translatedVarName != null) {
-          xb.beginElement(ELEM_FLAM3_VARIATION, xb.createAttrList(xb.createAttr(ATTR_NAME, "Transform " + variatonIdProvider.getNextId())));
-          addStringProperty(xb, PROPERTY_VARIATION_NAME, translatedVarName);
-          xb.beginElement(ELEM_PARAMS, xb.createAttrList());
-          addRealProperty(xb, translatedVarName, var.getAmount(), var.getAmountCurve());
-          for (String name : var.getFunc().getParameterNames()) {
-            Object param = var.getFunc().getParameter(name);
-            if (param != null) {
-              double value = 0.0;
-              if (param instanceof Double) {
-                value = ((Double) param).doubleValue();
-              }
-              else if (param instanceof Integer) {
-                value = ((Integer) param).intValue();
-              }
-              String propertyName = translator.translatePropertyName(varName, name);
-              if (propertyName != null) {
-                addRealProperty(xb, propertyName, value, var.getMotionCurve(name));
-              }
-            }
-          }
-          for (String fixedValue : translator.getFixedValueNames(varName)) {
-            addRealProperty(xb, translator.translatePropertyName(varName, fixedValue), translator.getFixedValue(varName, fixedValue), null);
-          }
-          xb.endElement(ELEM_PARAMS);
-          xb.endElement(ELEM_FLAM3_VARIATION);
-        }
-      }
-      xb.endElement(ELEM_NODE);
-    }
-    xb.endElement(ELEM_FLAM3_TRANSFORM);
+    addTransform(xb, xform, variatonIdProvider, "flam3_xform " + iteratorId);
 
     xb.beginElement(ELEM_FLAM3_SHADER, xb.createAttrList(xb.createAttr(ATTR_NAME, "flam3 shader")));
     addRealProperty(xb, PROPERTY_PALETTE_INDEX, xform.getColor(), null);
@@ -217,6 +177,103 @@ public class ChaosFlameWriter {
     }
     addRealProperty(xb, PROPERTY_TIME_SCALE, 1.0, null);
     xb.endElement(ELEM_ITERATOR);
+  }
+
+  private void addTransform(SimpleXMLBuilder xb, XForm xform, IdProvider variatonIdProvider, String name) {
+    xb.beginElement(ELEM_FLAM3_TRANSFORM, xb.createAttrList(xb.createAttr(ATTR_NAME, name)));
+    addAffine(xb, xform, false);
+    addAffine(xb, xform, true);
+    {
+      List<Variation> preTransforms = getPreTransforms(xform);
+      if (preTransforms.size() > 0) {
+        addVariations(xb, xform, variatonIdProvider, preTransforms, "pre_transforms");
+      }
+    }
+    {
+      List<Variation> transforms = getTransforms(xform);
+      if (transforms.size() > 0) {
+        addVariations(xb, xform, variatonIdProvider, transforms, "transforms");
+      }
+    }
+    {
+      List<Variation> postTransforms = getPostTransforms(xform);
+      if (postTransforms.size() > 0) {
+        addVariations(xb, xform, variatonIdProvider, postTransforms, "post_transforms");
+      }
+    }
+    xb.endElement(ELEM_FLAM3_TRANSFORM);
+  }
+
+  private List<Variation> getPreTransforms(XForm xform) {
+    List<Variation> res = new ArrayList<Variation>();
+    for (int i = 0; i < xform.getVariationCount(); i++) {
+      Variation var = xform.getVariation(i);
+      if (var.getFunc().getName().startsWith("pre_")) {
+        res.add(var);
+      }
+    }
+    return res;
+  }
+
+  private List<Variation> getTransforms(XForm xform) {
+    List<Variation> res = new ArrayList<Variation>();
+    for (int i = 0; i < xform.getVariationCount(); i++) {
+      Variation var = xform.getVariation(i);
+      if (!var.getFunc().getName().startsWith("pre_") && !var.getFunc().getName().startsWith("post_")) {
+        res.add(var);
+      }
+    }
+    return res;
+  }
+
+  private List<Variation> getPostTransforms(XForm xform) {
+    List<Variation> res = new ArrayList<Variation>();
+    for (int i = 0; i < xform.getVariationCount(); i++) {
+      Variation var = xform.getVariation(i);
+      if (var.getFunc().getName().startsWith("post_")) {
+        res.add(var);
+      }
+    }
+    return res;
+  }
+
+  private void addVariations(SimpleXMLBuilder xb, XForm xform, IdProvider variatonIdProvider, List<Variation> variations, String kind) {
+    xb.beginElement(ELEM_NODE, xb.createAttrList(xb.createAttr(ATTR_NAME, kind)));
+    for (Variation var : variations) {
+      String varName = var.getFunc().getName();
+      String translatedVarName = translator.translateVarName(varName);
+      if (translatedVarName != null) {
+        xb.beginElement(ELEM_FLAM3_VARIATION, xb.createAttrList(xb.createAttr(ATTR_NAME, "Transform " + variatonIdProvider.getNextId())));
+        addStringProperty(xb, PROPERTY_VARIATION_NAME, translatedVarName);
+        xb.beginElement(ELEM_PARAMS, xb.createAttrList());
+        addRealProperty(xb, translatedVarName, var.getAmount(), var.getAmountCurve());
+        for (String name : var.getFunc().getParameterNames()) {
+          Object param = var.getFunc().getParameter(name);
+          if (param != null) {
+            if (param instanceof Double) {
+              double value = ((Double) param).doubleValue();
+              String propertyName = translator.translatePropertyName(varName, name);
+              if (propertyName != null) {
+                addRealProperty(xb, propertyName, value, var.getMotionCurve(name));
+              }
+            }
+            else if (param instanceof Integer) {
+              int value = ((Integer) param).intValue();
+              String propertyName = translator.translatePropertyName(varName, name);
+              if (propertyName != null) {
+                addIntProperty(xb, propertyName, value, var.getMotionCurve(name));
+              }
+            }
+          }
+        }
+        for (String fixedValue : translator.getFixedValueNames(varName)) {
+          addRealProperty(xb, translator.translatePropertyName(varName, fixedValue), translator.getFixedValue(varName, fixedValue), null);
+        }
+        xb.endElement(ELEM_PARAMS);
+        xb.endElement(ELEM_FLAM3_VARIATION);
+      }
+    }
+    xb.endElement(ELEM_NODE);
   }
 
   public class AffineBaseParam {
@@ -511,11 +568,11 @@ public class ChaosFlameWriter {
 
   private void addImaging(SimpleXMLBuilder xb, Flame pFlame) {
     xb.beginElement(ELEM_IMAGING, xb.createAttrList(xb.createAttr(ATTR_NAME, "img")));
-    addIntProperty(xb, PROPERTY_IMAGE_WIDTH, pFlame.getWidth());
-    addIntProperty(xb, PROPERTY_IMAGE_HEIGHT, pFlame.getHeight());
-    addIntProperty(xb, PROPERTY_IMAGE_AA_LEVEL, AA_LEVEL);
-    addIntProperty(xb, PROPERTY_IMAGE_LAYERS, 1);
-    addIntProperty(xb, PROPERTY_IMAGE_QUALITY, 0);
+    addIntProperty(xb, PROPERTY_IMAGE_WIDTH, pFlame.getWidth(), null);
+    addIntProperty(xb, PROPERTY_IMAGE_HEIGHT, pFlame.getHeight(), null);
+    addIntProperty(xb, PROPERTY_IMAGE_AA_LEVEL, AA_LEVEL, null);
+    addIntProperty(xb, PROPERTY_IMAGE_LAYERS, 1, null);
+    addIntProperty(xb, PROPERTY_IMAGE_QUALITY, 0, null);
     addStringProperty(xb, PROPERTY_ANTIALIASING_MODE, "strong");
     addRealProperty(xb, PROPERTY_BRIGHTNESS, pFlame.getBrightness(), null);
     addVec4Property(xb, PROPERTY_BACKGROUND_COLOR, convertColorValue(pFlame.getBGColorRed()), convertColorValue(pFlame.getBGColorGreen()), convertColorValue(pFlame.getBGColorBlue()), convertColorValue(255));
@@ -529,10 +586,10 @@ public class ChaosFlameWriter {
     xb.endElement(ELEM_IMAGING);
   }
 
-  private void addAnimAndCamera(SimpleXMLBuilder xb, Flame pFlame) {
-    addIntProperty(xb, PROPERTY_ANIM_LENGTH, Tools.FTOI((double) pFlame.getFrameCount() / (double) pFlame.getFps()));
-    addIntProperty(xb, PROPERTY_ANIM_FPS, pFlame.getFps());
-    addRealProperty(xb, PROPERTY_ANIM_EXPOSURE_TIME, pFlame.getMotionBlurLength() * pFlame.getMotionBlurTimeStep(), null);
+  private void addAnimAndCamera(SimpleXMLBuilder xb, IdProvider variatonIdProvider, Flame pFlame) {
+    addIntProperty(xb, PROPERTY_ANIM_LENGTH, Tools.FTOI((double) pFlame.getFrameCount() / (double) pFlame.getFps()), null);
+    addIntProperty(xb, PROPERTY_ANIM_FPS, pFlame.getFps(), null);
+    addRealProperty(xb, PROPERTY_ANIM_EXPOSURE_TIME, 1.0 / (double) pFlame.getFps(), null);
     addStringProperty(xb, PROPERTY_ANIM_EXPOSURE_SHAPE, "uniform");
     xb.beginElement(ELEM_CAMERA, xb.createAttrList(xb.createAttr(ATTR_NAME, PROPERTY_FLAM3_CAMERA)));
     addVec2Property(xb, PROPERTY_POS, pFlame.getCentreX(), -pFlame.getCentreY(), pFlame.getCentreXCurve(), pFlame.getCentreYCurve() != null ? pFlame.getCentreYCurve().multiplyValue(-1.0) : null);
@@ -540,11 +597,32 @@ public class ChaosFlameWriter {
     double final_scale = pFlame.getPixelsPerUnit() * pFlame.getCamZoom() * 2.0;
     double sensor_width = (double) (pFlame.getWidth() * AA_LEVEL) / final_scale;
     addRealProperty(xb, PROPERTY_SENSOR_WIDTH, sensor_width, null);
+    Layer layer = pFlame.getFirstLayer();
+    if (layer.getFinalXForms().size() > 0) {
+      addTransform(xb, layer.getFinalXForms().get(0), variatonIdProvider, "Viewing transform");
+    }
     xb.endElement(ELEM_CAMERA);
   }
 
-  private void addIntProperty(SimpleXMLBuilder xb, String property, int value) {
-    xb.simpleElement(ELEM_INT, String.valueOf(value), xb.createAttrList(xb.createAttr(ATTR_NAME, property)));
+  private void addIntProperty(SimpleXMLBuilder xb, String property, int value, MotionCurve pCurve) {
+    if (pCurve == null || pCurve.isEmpty() || !pCurve.isEnabled()) {
+      xb.simpleElement(ELEM_INT, String.valueOf(value), xb.createAttrList(xb.createAttr(ATTR_NAME, property)));
+    }
+    else {
+      xb.beginElement(ELEM_INT, xb.createAttrList(xb.createAttr(ATTR_NAME, property)));
+      xb.beginElement(ELEM_CURVE, xb.createAttrList(xb.createAttr(ATTR_NAME, "val_curve")));
+      List<Double> time = new ArrayList<Double>();
+      List<Double> amp = new ArrayList<Double>();
+      for (int i = 0; i < pCurve.getX().length; i++) {
+        time.add(convertFrameToTime(pCurve.getX()[i]));
+        amp.add(pCurve.getY()[i]);
+      }
+      addTableProperty(xb, "knots", time.toArray(new Double[time.size()]));
+      addTableProperty(xb, "values", amp.toArray(new Double[amp.size()]));
+      xb.endElement(ELEM_CURVE);
+      xb.endElement(ELEM_INT);
+    }
+
   }
 
   private void addStringProperty(SimpleXMLBuilder xb, String property, String value) {

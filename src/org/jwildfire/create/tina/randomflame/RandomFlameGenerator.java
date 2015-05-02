@@ -22,7 +22,7 @@ import org.jwildfire.create.tina.randomgradient.RandomGradientGenerator;
 
 public abstract class RandomFlameGenerator {
 
-  protected abstract Flame prepareFlame(RandomFlameGeneratorState pState);
+  public abstract Flame prepareFlame(RandomFlameGeneratorState pState);
 
   protected abstract Flame postProcessFlame(RandomFlameGeneratorState pState, Flame pFlame);
 
@@ -46,5 +46,9 @@ public abstract class RandomFlameGenerator {
   }
 
   public abstract boolean isUseFilter(RandomFlameGeneratorState pState);
+
+  public boolean supportsSymmetry() {
+    return true;
+  }
 
 }
