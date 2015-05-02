@@ -184,6 +184,11 @@ public class EpitrochoidFunc extends VariationFunc {
           pVarTP.x += pAmount * rin * cos(t) * outer_spread * outer_spread_ratio;
           pVarTP.y += pAmount * rin * sin(t) * outer_spread;
           break;
+        case 9: 
+          double rout = r + ((rin-r) * outer_spread);
+          pVarTP.x += pAmount * rout * cos(t);
+          pVarTP.y += pAmount * rout * sin(t);
+          break;
         default:
           pVarTP.x += pAmount * x;
           pVarTP.y += pAmount * y;
@@ -235,6 +240,12 @@ public class EpitrochoidFunc extends VariationFunc {
         case 8:
           pVarTP.x += pAmount * rin * cos(t) * (inner_spread * inner_spread_ratio);
           pVarTP.y += pAmount * rin * sin(t) * inner_spread;
+          break;
+        case 9: 
+          // double rout = (rin * inner_spread) + (r * (1 - inner_spread));
+          double rout = r + ((rin - r) * inner_spread);
+          pVarTP.x += pAmount * rout * cos(t);
+          pVarTP.y += pAmount * rout * sin(t);
           break;
         default:
           pVarTP.x += pAmount * x;
