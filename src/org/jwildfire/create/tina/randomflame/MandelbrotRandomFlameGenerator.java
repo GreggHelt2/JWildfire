@@ -32,7 +32,7 @@ public class MandelbrotRandomFlameGenerator extends RandomFlameGenerator {
       "spherical", "spiral", "stripes", "unpolar", "waves2", "whorl", "xheart" };
 
   @Override
-  protected Flame prepareFlame(RandomFlameGeneratorState pState) {
+  public Flame prepareFlame(RandomFlameGeneratorState pState) {
     Flame flame = new Flame();
     Layer layer = flame.getFirstLayer();
     flame.setCentreX(0.0);
@@ -46,7 +46,6 @@ public class MandelbrotRandomFlameGenerator extends RandomFlameGenerator {
     flame.setPixelsPerUnit(200);
     layer.getFinalXForms().clear();
     layer.getXForms().clear();
-    flame.setPreserveZ(true);
 
     VariationFunc varFunc;
     // 1st xForm

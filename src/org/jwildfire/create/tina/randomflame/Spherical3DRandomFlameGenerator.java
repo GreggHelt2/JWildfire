@@ -26,7 +26,7 @@ import org.jwildfire.create.tina.variation.VariationFuncList;
 public class Spherical3DRandomFlameGenerator extends RandomFlameGenerator {
 
   @Override
-  protected Flame prepareFlame(RandomFlameGeneratorState pState) {
+  public Flame prepareFlame(RandomFlameGeneratorState pState) {
     Flame flame = new Flame();
     Layer layer = flame.getFirstLayer();
     flame.setCentreX(0.0);
@@ -38,7 +38,6 @@ public class Spherical3DRandomFlameGenerator extends RandomFlameGenerator {
     flame.setPixelsPerUnit(200);
     layer.getFinalXForms().clear();
     layer.getXForms().clear();
-    flame.setPreserveZ(Math.random() < 0.5);
 
     boolean invert = Math.random() > 0.5;
     VariationFunc varFunc;

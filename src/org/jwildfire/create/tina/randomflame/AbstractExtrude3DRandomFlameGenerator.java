@@ -28,7 +28,7 @@ import org.jwildfire.create.tina.variation.VariationFuncList;
 public abstract class AbstractExtrude3DRandomFlameGenerator extends RandomFlameGenerator {
 
   @Override
-  protected Flame prepareFlame(RandomFlameGeneratorState pState) {
+  public Flame prepareFlame(RandomFlameGeneratorState pState) {
     RandomFlameGenerator randGen = createRandGen(pState);
     Flame flame = randGen.prepareFlame(pState);
     flame = preProcessFlame(flame);
@@ -38,7 +38,6 @@ public abstract class AbstractExtrude3DRandomFlameGenerator extends RandomFlameG
     flame.setCamYaw(10 + Math.random() * 20.0);
     flame.setCamPerspective(0.1 + Math.random() * 0.3);
     flame.setCamZoom(0.5);
-    flame.setPreserveZ(true);
     if (Math.random() < 0.5) {
       flame.setCamDOF(0.1 + Math.random() * 0.2);
     }

@@ -19,6 +19,8 @@ package org.jwildfire.create.tina.randomflame;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jwildfire.create.tina.integration.chaotica.ChaoticaExporterRandomFlameGenerator;
+
 public class RandomFlameGeneratorList {
   public static final String DEFAULT_GENERATOR_NAME = new AllRandomFlameGenerator().getName();
   private static List<Class<? extends RandomFlameGenerator>> items = new ArrayList<Class<? extends RandomFlameGenerator>>();
@@ -32,6 +34,7 @@ public class RandomFlameGeneratorList {
     registerRandomFlameGenerator(Brokat3DRandomFlameGenerator.class);
     registerRandomFlameGenerator(BubblesRandomFlameGenerator.class);
     registerRandomFlameGenerator(Bubbles3DRandomFlameGenerator.class);
+    registerRandomFlameGenerator(ChaoticaExporterRandomFlameGenerator.class);
     registerRandomFlameGenerator(CrossRandomFlameGenerator.class);
     registerRandomFlameGenerator(ExperimentalBubbles3DRandomFlameGenerator.class);
     registerRandomFlameGenerator(DualityRandomFlameGenerator.class);
