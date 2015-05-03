@@ -461,7 +461,9 @@ public class VariationFuncList {
     registerVariationFunc(XFunc.class);
     registerVariationFunc(YFunc.class);
     registerVariationFunc(ZFunc.class);
+
     registerVariationFunc(CustomFullVariationWrapperFunc.class);
+    registerVariationFunc(EpitrochoidFunc.class);
 
   }
 
