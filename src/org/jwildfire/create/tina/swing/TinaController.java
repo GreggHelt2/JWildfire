@@ -88,7 +88,8 @@ import org.jwildfire.create.tina.batch.BatchRendererController;
 import org.jwildfire.create.tina.browser.FlameBrowserController;
 import org.jwildfire.create.tina.dance.DancingFractalsController;
 import org.jwildfire.create.tina.edit.UndoManager;
-import org.jwildfire.create.tina.io.ChaosFlameWriter;
+import org.jwildfire.create.tina.integration.chaotica.ChaosFlameWriter;
+import org.jwildfire.create.tina.integration.chaotica.ChaoticaLauncher;
 import org.jwildfire.create.tina.io.Flam3GradientReader;
 import org.jwildfire.create.tina.io.FlameReader;
 import org.jwildfire.create.tina.io.FlameWriter;
@@ -444,7 +445,6 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     data.affineRotateEditMotionCurveBtn = parameterObject.affineRotateEditMotionCurveBtn;
     data.affineScaleEditMotionCurveBtn = parameterObject.affineScaleEditMotionCurveBtn;
     data.affineEditPostTransformSmallButton = parameterObject.pAffineEditPostTransformSmallButton;
-    data.affinePreserveZButton = parameterObject.pAffinePreserveZButton;
     data.affineScaleXButton = parameterObject.pAffineScaleXButton;
     data.affineScaleYButton = parameterObject.pAffineScaleYButton;
 
@@ -529,6 +529,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     data.motionBlurTimeStepSlider = parameterObject.motionBlurTimeStepSlider;
     data.motionBlurDecayField = parameterObject.motionBlurDecayField;
     data.motionBlurDecaySlider = parameterObject.motionBlurDecaySlider;
+    data.flameFPSField = parameterObject.flameFPSField;
 
     data.postSymmetryTypeCmb = parameterObject.postSymmetryTypeCmb;
     data.postSymmetryDistanceREd = parameterObject.postSymmetryDistanceREd;
@@ -1226,8 +1227,6 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
       flameControls.refreshFlameValues();
 
       refreshBGColorIndicator();
-
-      data.affinePreserveZButton.setSelected(getCurrFlame().isPreserveZ());
 
       gridRefreshing = true;
       try {
@@ -2128,7 +2127,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
             if (!filename.endsWith("." + Tools.FILEEXT_CHAOS)) {
               filename += "." + Tools.FILEEXT_CHAOS;
             }
-            new ChaosFlameWriter().writeFlame(generateExportFlame(getCurrFlame()), filename);
+            new ChaosFlameWriter(generateExportFlame(getCurrFlame())).writeFlame(filename);
           }
           else {
             if (!filename.endsWith("." + Tools.FILEEXT_FLAME)) {
@@ -3064,6 +3063,10 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
                     String valStr = dlg.getRessourceValue();
                     byte[] valByteArray = valStr != null ? valStr.getBytes() : null;
                     var.getFunc().setRessource(rName, valByteArray);
+                    if (var.getFunc().ressourceCanModifyParams()) {
+                      // forcing refresh of params UI in case setting resource changes available params or param values
+                      this.refreshParamCmb(data.TinaNonlinearControlsRows[pIdx], xForm, var);
+                    }
                   }
                   catch (Throwable ex) {
                     errorHandler.handleError(ex);
@@ -3916,17 +3919,6 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
 
   public void setInteractiveRendererCtrl(TinaInteractiveRendererController interactiveRendererCtrl) {
     this.interactiveRendererCtrl = interactiveRendererCtrl;
-  }
-
-  public void affinePreserveZButton_clicked() {
-    if (gridRefreshing || cmbRefreshing) {
-      return;
-    }
-    if (getCurrFlame() != null) {
-      saveUndoPoint();
-      getCurrFlame().setPreserveZ(data.affinePreserveZButton.isSelected());
-      refreshFlameImage(false);
-    }
   }
 
   private void setupProfiles(Flame pFlame) {
@@ -5638,11 +5630,8 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
   public void exportToChaotica() {
     try {
       if (getCurrFlame() != null) {
-        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        String xml = new ChaosFlameWriter().getFlameXML(generateExportFlame(getCurrFlame()));
-        StringSelection data = new StringSelection(xml);
-        clipboard.setContents(data, data);
-        messageHelper.showStatusMessage(getCurrFlame(), "flame converted and saved to the clipboard");
+        new ChaoticaLauncher().launchChaotica(generateExportFlame(getCurrFlame()));
+        messageHelper.showStatusMessage(getCurrFlame(), "flame sucessfully exported");
       }
     }
     catch (Throwable ex) {

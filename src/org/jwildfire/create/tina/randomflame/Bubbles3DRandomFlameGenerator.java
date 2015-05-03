@@ -26,7 +26,7 @@ import org.jwildfire.create.tina.variation.VariationFuncList;
 public class Bubbles3DRandomFlameGenerator extends RandomFlameGenerator {
 
   @Override
-  protected Flame prepareFlame(RandomFlameGeneratorState pState) {
+  public Flame prepareFlame(RandomFlameGeneratorState pState) {
     Flame flame = new Flame();
     Layer layer = flame.getFirstLayer();
     flame.setCentreX(0.0);
@@ -131,7 +131,6 @@ public class Bubbles3DRandomFlameGenerator extends RandomFlameGenerator {
       XFormTransformService.scale(xForm, 0.8 + Math.random() * 0.4, true, true);
     }
 
-    flame.setPreserveZ(Math.random() > 0.5);
     flame.getLayers().get(0).randomizeColors();
     return flame;
   }

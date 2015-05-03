@@ -88,7 +88,6 @@ public class AbstractFlameReader {
   public static final String ATTR_CAM_DOF_PARAM5 = "cam_dof_param5";
   public static final String ATTR_CAM_DOF_PARAM6 = "cam_dof_param6";
   public static final String ATTR_CAM_ZOOM = "cam_zoom";
-  public static final String ATTR_NEW_LINEAR = "new_linear";
   public static final String ATTR_SHADING_SHADING = "shading_shading";
   public static final String ATTR_SHADING_AMBIENT = "shading_ambient";
   public static final String ATTR_SHADING_DIFFUSE = "shading_diffuse";
@@ -136,6 +135,7 @@ public class AbstractFlameReader {
   public static final String ATTR_STEREO3D_SWAP_SIDES = "stereo3d_swap_sides";
   public static final String ATTR_FRAME_COUNT = "frame_count";
   public static final String ATTR_FRAME = "frame";
+  public static final String ATTR_FPS = "fps";
 
   public static final String CURVE_ATTR_ENABLED = "enabled";
   public static final String CURVE_ATTR_VIEW_XMIN = "view_xmin";
@@ -348,10 +348,6 @@ public class AbstractFlameReader {
     if ((hs = atts.get(ATTR_NEW_DOF)) != null) {
       pFlame.setNewCamDOF("1".equals(hs));
     }
-    // preserve-z
-    if ((hs = atts.get(ATTR_PRESERVE_Z)) != null) {
-      pFlame.setPreserveZ("1".equals(hs));
-    }
     // profiles
     if ((hs = atts.get(ATTR_RESOLUTION_PROFILE)) != null) {
       pFlame.setResolutionProfile(hs);
@@ -416,9 +412,6 @@ public class AbstractFlameReader {
     }
     if ((hs = atts.get(ATTR_SHADING_BLUR_FALLOFF)) != null) {
       pFlame.getShadingInfo().setBlurFallOff(Double.parseDouble(hs));
-    }
-    if ((hs = atts.get(ATTR_NEW_LINEAR)) != null) {
-      pFlame.setPreserveZ(hs.length() > 0 && Integer.parseInt(hs) == 1);
     }
 
     if ((hs = atts.get(ATTR_ANTIALIAS_AMOUNT)) != null) {
@@ -551,6 +544,11 @@ public class AbstractFlameReader {
     }
     if ((hs = atts.get(ATTR_FRAME_COUNT)) != null) {
       pFlame.setFrameCount(Integer.parseInt(hs));
+    }
+    if ((hs = atts.get(ATTR_FPS)) != null) {
+      int fps = Integer.parseInt(hs);
+      if (fps >= 1)
+        pFlame.setFps(fps);
     }
     readMotionCurves(pFlame, atts, null);
 
@@ -758,6 +756,18 @@ public class AbstractFlameReader {
         if (hasVariation) {
           VariationFunc varFunc = VariationFuncList.getVariationFuncInstance(varName);
           Variation variation = pXForm.addVariation(Double.parseDouble(atts.get(rawName)), varFunc);
+          // ressources 
+          {
+            String ressNames[] = variation.getFunc().getRessourceNames();
+            if (ressNames != null) {
+              for (String pName : ressNames) {
+                String pHs;
+                if ((pHs = atts.get(name + "_" + pName)) != null) {
+                  variation.getFunc().setRessource(pName, Tools.hexStringToByteArray(pHs));
+                }
+              }
+            }
+          }
           // params
           {
             String paramNames[] = variation.getFunc().getParameterNames();
@@ -792,18 +802,6 @@ public class AbstractFlameReader {
           }
           // curves
           readMotionCurves(variation, atts, rawName + "_");
-          // ressources 
-          {
-            String ressNames[] = variation.getFunc().getRessourceNames();
-            if (ressNames != null) {
-              for (String pName : ressNames) {
-                String pHs;
-                if ((pHs = atts.get(name + "_" + pName)) != null) {
-                  variation.getFunc().setRessource(pName, Tools.hexStringToByteArray(pHs));
-                }
-              }
-            }
-          }
           //
         }
       }

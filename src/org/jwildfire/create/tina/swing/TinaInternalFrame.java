@@ -1301,7 +1301,7 @@ public class TinaInternalFrame extends JInternalFrame {
 
       tinaSouthTabbedPane.addTab("Stereo3d rendering ", new ImageIcon(TinaInternalFrame.class.getResource("/org/jwildfire/swing/icons/new/layer-novisible.png")), getPanel_82(), null);
       tinaSouthTabbedPane.addTab("Post symmetry", null, getPanel_34(), null);
-      tinaSouthTabbedPane.addTab("Motion blur", null, getMotionBlurPanel(), null);
+      tinaSouthTabbedPane.addTab("FPS / Motion blur", null, getMotionBlurPanel(), null);
       tinaSouthTabbedPane.addTab("Layerz ", new ImageIcon(TinaInternalFrame.class.getResource("/org/jwildfire/swing/icons/new/emblem-photos.png")), getPanel_74(), null);
       tinaSouthTabbedPane.addTab("Channel mixer ", new ImageIcon(TinaInternalFrame.class.getResource("/org/jwildfire/swing/icons/new/color-fill.png")), getChannelMixerPanel(), null);
 
@@ -3477,21 +3477,6 @@ public class TinaInternalFrame extends JInternalFrame {
       tinaAffineTransformationPanel.add(getAffineScaleXButton(), null);
       tinaAffineTransformationPanel.add(getAffineScaleYButton(), null);
 
-      affinePreserveZButton = new JToggleButton();
-      affinePreserveZButton.addActionListener(new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-          tinaController.affinePreserveZButton_clicked();
-        }
-      });
-      affinePreserveZButton.setToolTipText("Preserve the Z-coordinate (applies only if 2D- and 3D-variations are mixed)");
-      affinePreserveZButton.setText("Preserve Z");
-      affinePreserveZButton.setSize(new Dimension(138, 24));
-      affinePreserveZButton.setPreferredSize(new Dimension(136, 24));
-      affinePreserveZButton.setLocation(new Point(4, 181));
-      affinePreserveZButton.setFont(new Font("Dialog", Font.BOLD, 10));
-      affinePreserveZButton.setBounds(218, 155, 104, 24);
-      tinaAffineTransformationPanel.add(affinePreserveZButton);
-
       affineRotateEditMotionCurveBtn = new JButton();
       affineRotateEditMotionCurveBtn.addActionListener(new ActionListener() {
         public void actionPerformed(ActionEvent e) {
@@ -4644,7 +4629,7 @@ public class TinaInternalFrame extends JInternalFrame {
         getRootTabbedPane(), getAffineFlipHorizontalButton(), getAffineFlipVerticalButton(), getShadingBlurRadiusREd(), getShadingBlurRadiusSlider(), getShadingBlurFadeREd(),
         getShadingBlurFadeSlider(), getShadingBlurFallOffREd(), getShadingBlurFallOffSlider(),
         getAffineScaleXButton(), getAffineScaleYButton(), gradientLibraryThumbnailPnl, getHelpPane(),
-        getToggleVariationsButton(), getToggleTransparencyButton(), getAffinePreserveZButton(), getQualityProfileCmb(), getResolutionProfileCmb(),
+        getToggleVariationsButton(), getToggleTransparencyButton(), getQualityProfileCmb(), getResolutionProfileCmb(),
         getBatchQualityProfileCmb(), getBatchResolutionProfileCmb(), getInteractiveResolutionProfileCmb(),
         getSwfAnimatorResolutionProfileCmb(), getTinaRenderFlameButton(), getRenderMainButton(), getTinaAppendToMovieButton(),
         getTransformationWeightREd(), getUndoButton(), getRedoButton(),
@@ -4730,9 +4715,13 @@ public class TinaInternalFrame extends JInternalFrame {
         getGradientColorMapHorizScaleSlider(), getGradientColorMapVertOffsetREd(), getGradientColorMapVertOffsetSlider(),
         getGradientColorMapVertScaleREd(), getGradientColorMapVertScaleSlider(), getGradientColorMapLocalColorAddREd(),
         getGradientColorMapLocalColorAddSlider(), getGradientColorMapLocalColorScaleREd(), getGradientColorMapLocalColorScaleSlider(),
-        getSwfAnimatorQualityProfileCmb());
+        getSwfAnimatorQualityProfileCmb(), getFlameFPSField());
 
     tinaController = new TinaController(params);
+    if (Prefs.getPrefs().isTinaIntegrationChaoticaDisabled()) {
+      getChaoticaButtonSeparator().setVisible(false);
+      getExportToChaoticaBtn().setVisible(false);
+    }
 
     VariationControlsDelegate[] variationControlsDelegates = new VariationControlsDelegate[12];
     for (int i = 0; i < variationControlsDelegates.length; i++) {
@@ -7262,11 +7251,12 @@ public class TinaInternalFrame extends JInternalFrame {
       previewEastDefaultPanel.add(editorFractalBrightnessSlider);
       editorFractalBrightnessSlider.setOrientation(SwingConstants.VERTICAL);
       editorFractalBrightnessSlider.setValue(100);
-      editorFractalBrightnessSlider.setPreferredSize(new Dimension(19, 66));
+      editorFractalBrightnessSlider.setPreferredSize(new Dimension(19, 48));
       editorFractalBrightnessSlider.setName("tinaCameraCentreXSlider");
+      previewEastDefaultPanel.add(getExportToChaoticaBtn());
+      previewEastDefaultPanel.add(getChaoticaButtonSeparator());
       previewEastDefaultPanel.add(getToggleDetachedPreviewButton());
       previewEastDefaultPanel.add(getTinaRenderFlameButton());
-      previewEastDefaultPanel.add(getExportToChaosBtn());
       previewEastMainPanel.add(getMacroButtonRootPanel(), BorderLayout.CENTER);
       editorFractalBrightnessSlider.addChangeListener(new ChangeListener() {
         public void stateChanged(ChangeEvent e) {
@@ -10185,7 +10175,6 @@ public class TinaInternalFrame extends JInternalFrame {
   private JTextArea interactiveStatsTextArea;
   private JComboBox interactiveRandomStyleCmb;
   private JToggleButton interactiveHalfSizeButton;
-  private JToggleButton affinePreserveZButton;
   private JButton qualityProfileBtn;
   private JButton resolutionProfileBtn;
   private JComboBox interactiveResolutionProfileCmb;
@@ -10861,6 +10850,8 @@ public class TinaInternalFrame extends JInternalFrame {
   private JComboBox swfAnimatorQualityProfileCmb;
   private JComboBox swfAnimatorOutputTypeCmb;
   private JButton exportToChaosBtn;
+  private JPanel panel_104;
+  private JWFNumberField flameFPSField;
 
   /**
    * This method initializes renderBatchJobsScrollPane	
@@ -12392,10 +12383,6 @@ public class TinaInternalFrame extends JInternalFrame {
 
   public JToggleButton getInteractiveHalveSizeButton() {
     return interactiveHalfSizeButton;
-  }
-
-  public JToggleButton getAffinePreserveZButton() {
-    return affinePreserveZButton;
   }
 
   private JButton getQualityProfileBtn() {
@@ -17228,6 +17215,42 @@ public class TinaInternalFrame extends JInternalFrame {
       motionBlurDecaySlider.setBounds(204, 54, 220, 19);
       motionBlurPanel.add(motionBlurDecaySlider);
       motionBlurPanel.add(getResetMotionBlurSettingsBtn());
+
+      flameFPSField = new JWFNumberField();
+      flameFPSField.setHasMinValue(true);
+      flameFPSField.setHasMaxValue(true);
+      flameFPSField.setMaxValue(500.0);
+      flameFPSField.setMinValue(1.0);
+      flameFPSField.setOnlyIntegers(true);
+      flameFPSField.setValueStep(1.0);
+      flameFPSField.setText("");
+      flameFPSField.setSize(new Dimension(100, 24));
+      flameFPSField.setPreferredSize(new Dimension(100, 24));
+      flameFPSField.setLocation(new Point(100, 52));
+      flameFPSField.setLinkedMotionControlName("motionBlurDecaySlider");
+      flameFPSField.setFont(new Font("Dialog", Font.PLAIN, 10));
+      flameFPSField.setBounds(625, 6, 100, 24);
+      flameFPSField.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null) {
+            if (!flameFPSField.isMouseAdjusting() || flameFPSField.getMouseChangeCount() == 0) {
+              tinaController.saveUndoPoint();
+            }
+            tinaController.getFlameControls().flameFPSField_changed();
+          }
+        }
+      });
+      motionBlurPanel.add(flameFPSField);
+
+      JLabel lblFps = new JLabel();
+      lblFps.setText("FPS");
+      lblFps.setSize(new Dimension(94, 22));
+      lblFps.setPreferredSize(new Dimension(94, 22));
+      lblFps.setName("");
+      lblFps.setLocation(new Point(4, 52));
+      lblFps.setFont(new Font("Dialog", Font.BOLD, 10));
+      lblFps.setBounds(529, 6, 94, 22);
+      motionBlurPanel.add(lblFps);
     }
     return motionBlurPanel;
   }
@@ -17312,7 +17335,7 @@ public class TinaInternalFrame extends JInternalFrame {
       keyframesFrameCountLbl.setPreferredSize(new Dimension(94, 22));
       keyframesFrameCountLbl.setHorizontalAlignment(SwingConstants.RIGHT);
       keyframesFrameCountLbl.setFont(new Font("Dialog", Font.BOLD, 10));
-      keyframesFrameCountLbl.setBounds(58, 0, 82, 22);
+      keyframesFrameCountLbl.setBounds(70, 0, 70, 22);
       panel_80.add(keyframesFrameCountLbl);
 
       motionCurvePlayPreviewButton = new JButton();
@@ -22374,7 +22397,7 @@ public class TinaInternalFrame extends JInternalFrame {
       resetMotionBlurSettingsBtn.setMaximumSize(new Dimension(32000, 24));
       resetMotionBlurSettingsBtn.setIconTextGap(2);
       resetMotionBlurSettingsBtn.setFont(new Font("Dialog", Font.BOLD, 10));
-      resetMotionBlurSettingsBtn.setBounds(102, 77, 100, 24);
+      resetMotionBlurSettingsBtn.setBounds(102, 99, 100, 24);
       resetMotionBlurSettingsBtn.setIcon(new ImageIcon(getClass().getResource("/org/jwildfire/swing/icons/new/edit-undo-6.png")));
     }
     return resetMotionBlurSettingsBtn;
@@ -23174,7 +23197,7 @@ public class TinaInternalFrame extends JInternalFrame {
     return swfAnimatorOutputTypeCmb;
   }
 
-  private JButton getExportToChaosBtn() {
+  private JButton getExportToChaoticaBtn() {
     if (exportToChaosBtn == null) {
       exportToChaosBtn = new JButton();
       exportToChaosBtn.addActionListener(new ActionListener() {
@@ -23182,12 +23205,23 @@ public class TinaInternalFrame extends JInternalFrame {
           tinaController.exportToChaotica();
         }
       });
-      exportToChaosBtn.setToolTipText("Convert the current parameters (including motion-curves) into the Chaotica-format and put it into Clipboard");
+      exportToChaosBtn.setToolTipText("Convert the current parameters (including motion-curves) into the Chaotica-format and launch Chaotica to render it");
       exportToChaosBtn.setIcon(new ImageIcon(getClass().getResource("/org/jwildfire/swing/icons/new/chaotica_jw.png")));
       exportToChaosBtn.setPreferredSize(new Dimension(42, 24));
       exportToChaosBtn.setFont(new Font("Dialog", Font.BOLD, 10));
     }
     return exportToChaosBtn;
+  }
+
+  private JPanel getChaoticaButtonSeparator() {
+    if (panel_104 == null) {
+      panel_104 = new JPanel();
+    }
+    return panel_104;
+  }
+
+  public JWFNumberField getFlameFPSField() {
+    return flameFPSField;
   }
 } //  @jve:decl-index=0:visual-constraint="10,10"
 

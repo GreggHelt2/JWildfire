@@ -26,7 +26,7 @@ import org.jwildfire.create.tina.variation.VariationFuncList;
 public class CrossRandomFlameGenerator extends RandomFlameGenerator {
 
   @Override
-  protected Flame prepareFlame(RandomFlameGeneratorState pState) {
+  public Flame prepareFlame(RandomFlameGeneratorState pState) {
     // Bases loosely on the W2R Batch Script by parrotdolphin.deviantart.com */ 
     Flame flame = new Flame();
     Layer layer = flame.getFirstLayer();
@@ -40,7 +40,6 @@ public class CrossRandomFlameGenerator extends RandomFlameGenerator {
       flame.setNewCamDOF(false);
       flame.setCamDOF(Math.random() * 0.2);
     }
-    flame.setPreserveZ(Math.random() > 0.33);
     flame.setCamPitch(10 + Math.random() * 50);
     flame.setCamPerspective(0.10 + Math.random() * 0.5);
     flame.setPixelsPerUnit(200);

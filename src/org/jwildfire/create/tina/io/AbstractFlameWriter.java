@@ -276,9 +276,6 @@ public class AbstractFlameWriter {
       }
     }
 
-    if (pFlame.isPreserveZ()) {
-      attrList.add(xb.createAttr("preserve_z", "1"));
-    }
     if (pFlame.getResolutionProfile() != null && pFlame.getResolutionProfile().length() > 0)
       attrList.add(xb.createAttr("resolution_profile", pFlame.getResolutionProfile()));
     if (pFlame.getQualityProfile() != null && pFlame.getQualityProfile().length() > 0)
@@ -350,6 +347,7 @@ public class AbstractFlameWriter {
 
     attrList.add(xb.createAttr(AbstractFlameReader.ATTR_FRAME, pFlame.getFrame()));
     attrList.add(xb.createAttr(AbstractFlameReader.ATTR_FRAME_COUNT, pFlame.getFrameCount()));
+    attrList.add(xb.createAttr(AbstractFlameReader.ATTR_FPS, pFlame.getFps()));
 
     writeMotionCurves(pFlame, xb, attrList, null, flameAttrMotionCurveBlackList);
 
