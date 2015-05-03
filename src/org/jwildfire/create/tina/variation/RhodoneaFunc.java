@@ -252,18 +252,23 @@ public class RhodoneaFunc extends VariationFunc {
     double rin = spread_split * sqrt((pAffineTP.x * pAffineTP.x) + (pAffineTP.y * pAffineTP.y));
     // atan2 range is [-PI, PI], so tin covers 2PI, or 1 cycle (from -0.5 to 0.5 cycle)
     double tin = atan2(pAffineTP.y, pAffineTP.x); // polar coordinate angle (theta in radians) of incoming point
-    double t = cycles * (tin + (cycle_offset * 2 * M_PI)); // angle of rose curve
-    double r = cos(k * t) + radial_offset; // radius of rose curve 
+
+    double theta = cycles * (tin + (cycle_offset * 2 * M_PI));  // angle of rose curve
+    double r = cos(k * theta) + radial_offset;  // radius of rose curve 
     // double r = sin(k * t) + radial_offset;  // can use sin instead of cos to rotate by PI/(2*k) radians
     if (fill != 0) {
       r = r + (fill * (pContext.random() - 0.5));
     }
-    double x = r * cos(t);
-    double y = r * sin(t);
-    double expansion = floor((cycles * (tin + M_PI)) / (cycles_to_close * 2 * M_PI));
+    double x = r * cos(theta);
+    double y = r * sin(theta);
+    // double r = sqrt(x*x + y*y);
+    double t = atan2(y, x);
+    double expansion = floor((cycles * (tin + M_PI))/(cycles_to_close * 2 * M_PI));
+
     double adjustedAmount = pAmount + (expansion * metacycle_expansion);
     double xin, yin;
     double rinx, riny;
+    double rout;
 
     if (abs(rin) > abs(r)) { // incoming point lies outside of current petal of rose curve
       switch (outer_mode) {
@@ -311,13 +316,47 @@ public class RhodoneaFunc extends VariationFunc {
           pVarTP.x += adjustedAmount * rinx * x;
           pVarTP.y += adjustedAmount * riny * y;
           break;
-        case 5: // mask "inside" the curve
+        case 5:  // mask, show if "outside" the curve
           pVarTP.x += pAffineTP.x;
           pVarTP.y += pAffineTP.y;
           break;
-        case 6: // mask "outside" the curve
+        case 6:  // mask, hide if "outside" the curve and don't touch x/y
           pVarTP.doHide = true;
           break;
+        case 7:  // mask, show if "outside" the curve
+          pVarTP.x += pAffineTP.x;
+          pVarTP.y += pAffineTP.y;
+          break;
+        case 8:  // mask, hide if "outside" the curve but still modify
+          pVarTP.x += pAffineTP.x;
+          pVarTP.y += pAffineTP.y;
+          pVarTP.doHide = true;
+          break;
+        case 9: 
+          // rout = (rin * outer_spread) + (r * (1 - outer_spread));
+          // rout = r + ((rin - r) * outer_spread);
+          rout = abs(r) + ((rin - abs(r)) * outer_spread);
+          pVarTP.x += pAmount * rout * cos(t);
+          pVarTP.y += pAmount * rout * sin(t);
+          break;     
+        /* experimental modes
+        case 10:
+          pVarTP.x += pAmount * rin * cos(t) * (outer_spread * outer_spread_ratio);
+          pVarTP.y += pAmount * rin * sin(t) * outer_spread;
+          break;
+        case 11: 
+          // double rout = (rin * outer_spread) + (r * (1 - outer_spread));
+          rout = r + ((rin - r) * outer_spread);
+          pVarTP.x += pAmount * rout * cos(t);
+          pVarTP.y += pAmount * rout * sin(t);
+          break;         
+        case 12: 
+          // double rout = (rin * outer_spread) + (r * (1 - outer_spread));
+          rout = r + ((rin - r) * outer_spread);
+          pVarTP.x += pAmount * rout * cos(theta);
+          pVarTP.y += pAmount * rout * sin(theta);
+          break;
+          */ 
         default:
           pVarTP.x += adjustedAmount * x;
           pVarTP.y += adjustedAmount * y;
@@ -371,14 +410,48 @@ public class RhodoneaFunc extends VariationFunc {
           pVarTP.x += adjustedAmount * rinx * x;
           pVarTP.y += adjustedAmount * riny * y;
           break;
-        case 5: // mask "inside" the curve
+        case 5:  // mask, hide if "inside" the curve and don't touch x/y
           pVarTP.doHide = true;
           break;
-        case 6: // mask "outside" the curve
+        case 6:  // mask, show if  "inside" the curve
           pVarTP.x += pAffineTP.x;
           pVarTP.y += pAffineTP.y;
           break;
-        default: // shouldn't reach here (inner_mode is constrained to be 0-6), but just in case...
+        case 7:  // mask, hide if "inside" the curve but still modify
+          pVarTP.x += pAffineTP.x;
+          pVarTP.y += pAffineTP.y;
+          pVarTP.doHide = true;
+          break;
+        case 8:  // mask, show if "inside" the curve
+          pVarTP.x += pAffineTP.x;
+          pVarTP.y += pAffineTP.y;
+          break;
+        case 9: 
+          // rout = (rin * inner_spread) + (r * (1 - inner_spread));
+          // rout = r + ((rin - r) * inner_spread);
+          rout = abs(r) + ((rin - abs(r)) * inner_spread);
+          pVarTP.x += pAmount * rout * cos(t);
+          pVarTP.y += pAmount * rout * sin(t);
+          break;    
+        /* experimental modes
+        case 10:
+          pVarTP.x += pAmount * rin * cos(t) * (inner_spread * inner_spread_ratio);
+          pVarTP.y += pAmount * rin * sin(t) * inner_spread;
+          break;
+        case 11: 
+          // double rout = (rin * inner_spread) + (r * (1 - inner_spread));
+          rout = r + ((rin - r) * inner_spread);
+          pVarTP.x += pAmount * rout * cos(t);
+          pVarTP.y += pAmount * rout * sin(t);
+          break;         
+        case 12: 
+          // double rout = (rin * inner_spread) + (r * (1 - inner_spread));
+          rout = r + ((rin - r) * inner_spread);
+          pVarTP.x += pAmount * rout * cos(theta);
+          pVarTP.y += pAmount * rout * sin(theta);
+          break;
+          */
+        default:  // shouldn't reach here (inner_mode is constrained to be 0-6), but just in case...
           pVarTP.x += adjustedAmount * x;
           pVarTP.y += adjustedAmount * y;
           break;
@@ -449,16 +522,12 @@ public class RhodoneaFunc extends VariationFunc {
     else if (PARAM_RADIAL_OFFSET.equalsIgnoreCase(pName))
       radial_offset = pValue;
     else if (PARAM_INNER_MODE.equalsIgnoreCase(pName)) {
-      inner_mode = (int) floor(pValue);
-      if (inner_mode > 6 || inner_mode < 0) {
-        inner_mode = 0;
-      }
+      inner_mode = (int)floor(pValue);
+      if (inner_mode > 12 || inner_mode < 0) { inner_mode = 0; }
     }
     else if (PARAM_OUTER_MODE.equalsIgnoreCase(pName)) {
-      outer_mode = (int) floor(pValue);
-      if (outer_mode > 6 || outer_mode < 0) {
-        outer_mode = 0;
-      }
+      outer_mode = (int)floor(pValue);
+      if (outer_mode > 12 || outer_mode < 0) { outer_mode = 0; }
     }
     else if (PARAM_INNER_SPREAD.equalsIgnoreCase(pName))
       inner_spread = pValue;
