@@ -17,6 +17,8 @@
 package org.jwildfire.create.tina.variation;
 
 import static java.lang.Math.abs;
+import java.util.ArrayList;
+import static org.jwildfire.base.mathlib.MathLib.M_2PI;
 import static org.jwildfire.base.mathlib.MathLib.cos;
 import static org.jwildfire.base.mathlib.MathLib.sin;
 import static org.jwildfire.base.mathlib.MathLib.atan2;
@@ -106,6 +108,12 @@ public class EpitrochoidFunc extends VariationFunc {
   private double radians_to_close = 2 * M_PI;  
   private double cycles_to_close = radians_to_close / cycle_length;  // = PI^2
 
+  // vars for determining inner/outer via even-odd rule
+  int sampleCount = 36000;
+  int binCount = 720;
+  ArrayList<ArrayList<Double>> theta_intersects = null;
+
+
   @Override
   public void init(FlameTransformationContext pContext, Layer pLayer, XForm pXForm, double pAmount) {
     // setting cyclesParam to 0 is meant to indicate the function should determine how many cycles 
@@ -118,13 +126,53 @@ public class EpitrochoidFunc extends VariationFunc {
     else {
       cycles = cyclesParam;
     }
+
+    if (inner_mode == 10 || outer_mode == 10) {
+      recalcCurveIntersects();
+    }
+    else {
+      theta_intersects = null;
+    }
   }
+
+  public void recalcCurveIntersects() {
+    theta_intersects = new ArrayList<ArrayList<Double>>(binCount);
+    for (int i=0; i<binCount; i++) { 
+      theta_intersects.add(new ArrayList<Double>());
+    }
+    ArrayList<Double> prev_tsects = null;
+    for (int i=0; i<sampleCount; i++) {
+      // double theta = map(i, 0,sampleCount, 0, 2 * M_PI);
+      double theta = ((double)i/(double)sampleCount) * M_2PI;
+
+      double x = ((a_radius + b_radius) * cos(theta)) - (c_radius * cos(((a_radius + b_radius)/b_radius) * theta));
+      double y = ((a_radius + b_radius) * sin(theta)) - (c_radius * sin(((a_radius + b_radius)/b_radius) * theta));
+      //      x = pAmount * x;
+      //      y = pAmount * y;
+      double r = sqrt(x*x + y*y);
+      double angle = atan2(y, x);
+      int anglebin =  (int)Math.floor(((angle + M_PI)/M_2PI) * (binCount-1));
+      ArrayList<Double> tsects = theta_intersects.get(anglebin);
+
+      // still rotating through same bin, merge results
+      if (prev_tsects == tsects) {  
+        // try ignoring for now -- should try averaging later?
+      }
+      else {
+        tsects.add(r);  // autoboxing float r to Float object      
+      }
+      prev_tsects = tsects;
+    }
+  }
+
+
 
   @Override
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
     double tin = atan2(pAffineTP.y, pAffineTP.x);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
     double theta = cycles * tin;
-    double rin = spread_split * sqrt((pAffineTP.x  * pAffineTP.x) + (pAffineTP.y * pAffineTP.y));
+    double raw_rin = sqrt((pAffineTP.x  * pAffineTP.x) + (pAffineTP.y * pAffineTP.y));
+    double rin = spread_split * raw_rin;
         
     double x = ((a_radius + b_radius) * cos(theta)) - (c_radius * cos(((a_radius + b_radius)/b_radius) * theta));
     double y = ((a_radius + b_radius) * sin(theta)) - (c_radius * sin(((a_radius + b_radius)/b_radius) * theta));
@@ -137,6 +185,47 @@ public class EpitrochoidFunc extends VariationFunc {
 
     double xin, yin;
     double rinx, riny;
+    boolean outer_handled = false;
+    boolean inner_handled = false;
+    if (inner_mode == 10 || outer_mode == 10) {
+      int anglebin =  (int)Math.floor(((tin + M_PI)/M_2PI) * (binCount-1));
+      ArrayList<Double> tsects = theta_intersects.get(anglebin);
+      int shorter = 0;
+      int longer = 0;
+      for (double ir : tsects) {
+        if (ir <= raw_rin) { shorter++; }
+        else { longer++; }
+      }
+//        System.out.println("angle: " + ain + ", anglebin: " + anglebin);
+//        System.out.println("intersects: " + tsects.size() + ", shorter: " + shorter + ", longer: " + longer);
+      // modified Even-Odd rule: 
+      //    cast ray from origin through incoming point to infinity
+      //    count how many times curve intersects ray further out than incoming point (longer)
+      //    if number is odd then point is inside, if number is even then point is outside
+      if (longer % 2 == 0) {
+        // point is outside
+        // place on curve
+        pVarTP.x += pAmount * x;
+        pVarTP.y += pAmount * y;
+      }
+      else {
+        // point is inside
+        pVarTP.x += pAmount * pAffineTP.x;
+        pVarTP.y += pAmount * pAffineTP.y;
+      }
+      
+      /* more heavily modified Even-Odd rule, 
+      if (longer % 2 == 0) {
+        if (longer == 0) {  } // point is outside 
+        else if (longer == 2 && tsects.size() == 2) {  } // point is inside (assumes curve is closed and encloses 0?) 
+        else if (longer == 2 && tsects.size() == 3) {  } // point is outside (assumes curve is closed and encloses 0?) 
+        else { } // point is weird? but usually outside
+      }
+      else {   } // point is inside
+      */
+
+    }
+    else {
 
     if ((abs(rin) > abs(r)) || (unified_inner_outer == 1))  { // incoming point lies "outside" of curve OR ignoring inner_outer distinction
       switch(outer_mode) {
@@ -188,6 +277,8 @@ public class EpitrochoidFunc extends VariationFunc {
           double rout = r + ((rin-r) * outer_spread);
           pVarTP.x += pAmount * rout * cos(t);
           pVarTP.y += pAmount * rout * sin(t);
+          break;
+        case 10:   // already handled before rin<->r comparison, and outer_mode conditional
           break;
         default:
           pVarTP.x += pAmount * x;
@@ -247,11 +338,14 @@ public class EpitrochoidFunc extends VariationFunc {
           pVarTP.x += pAmount * rout * cos(t);
           pVarTP.y += pAmount * rout * sin(t);
           break;
+        case 10:   // already handled before rin<->r comparison, and outer_mode conditional
+          break;
         default:
           pVarTP.x += pAmount * x;
           pVarTP.y += pAmount * y;
           break;
       }
+    }
     }
     pVarTP.z += pAmount * pAffineTP.z;
   }
@@ -282,11 +376,11 @@ public class EpitrochoidFunc extends VariationFunc {
     }
     else if (PARAM_OUTER_MODE.equalsIgnoreCase(pName)) {
       outer_mode = (int)floor(pValue);
-      if (outer_mode > 10 || outer_mode < 0) { outer_mode = 0; }
+      if (outer_mode > 15 || outer_mode < 0) { outer_mode = 0; }
     }
     else if (PARAM_INNER_MODE.equalsIgnoreCase(pName)) {
       inner_mode = (int)floor(pValue);
-      if (inner_mode > 10 || inner_mode < 0) { inner_mode = 0; }
+      if (inner_mode > 15 || inner_mode < 0) { inner_mode = 0; }
     }
     else if (PARAM_OUTER_SPREAD.equalsIgnoreCase(pName))
       outer_spread = pValue;
