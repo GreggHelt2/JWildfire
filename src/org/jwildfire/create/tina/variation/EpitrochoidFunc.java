@@ -288,9 +288,18 @@ public class EpitrochoidFunc extends VariationFunc {
       ArrayList<Double> tsects = theta_intersects.get(anglebin);
       int shorter = 0;
       int longer = 0;
+      double longest = Double.NEGATIVE_INFINITY;
+      double shortest = Double.POSITIVE_INFINITY;
+             
       for (double ir : tsects) {
-        if (ir <= raw_rin) { shorter++; }
-        else { longer++; }
+        if (ir <= raw_rin) { 
+          shortest = Math.min(shortest, ir);
+          shorter++;
+        }
+        else { 
+          longest = Math.max(longest, ir);
+          longer++; 
+        }
       }
       boolean inside;
       if (modified_even_odd) {
@@ -324,14 +333,79 @@ public class EpitrochoidFunc extends VariationFunc {
         else { inside = true; } // point is inside
       }
       
-      if (inside) {  // point is inside curve, leave in place
+      if (inside) {  // point is inside curve
+        if (inner_mode == 10) { // leave in place
+          // point is inside curve, leave in place
           pVarTP.x += pAmount * pAffineTP.x;
           pVarTP.y += pAmount * pAffineTP.y;
         }
-      else {  // point is outside curve, place on curve
+        else if (inner_mode == 11) { // place on curve
+          // point is inside curve, place on curve
           pVarTP.x += pAmount * x;
           pVarTP.y += pAmount * y;
         }
+        else if (inner_mode == 12) {  // swap around origin
+          pVarTP.x += pAmount * pAffineTP.x * -1;
+          pVarTP.y += pAmount * pAffineTP.y * -1;
+        }
+        else if (inner_mode == 13) { // 10/11 combo
+          pVarTP.x += pAmount * (pAffineTP.x + x);
+          pVarTP.y += pAmount * (pAffineTP.y + y);
+        }
+        else if (inner_mode == 14) { // swap around intersect with longest radius
+          if (longer > 0) { // true by definition for inside points?), but just going for consistency across inner/outer modes
+            double rx = longest * cos(tin);
+            double ry = longest * sin(tin);
+            pVarTP.x += pAmount * (pAffineTP.x + rx);
+            pVarTP.y += pAmount * (pAffineTP.y + ry);
+          }
+          else { // place on curve 
+            pVarTP.x += pAmount * x;
+            pVarTP.y += pAmount * y;
+          }
+        }
+        else {  // default, place on curve
+          pVarTP.x += pAmount * x;
+          pVarTP.y += pAmount * y;
+        }
+      }
+      else {    // point is outside curve
+        if (outer_mode == 10) { // leave in place
+          pVarTP.x += pAmount * pAffineTP.x;
+          pVarTP.y += pAmount * pAffineTP.y;
+        }
+        else if (outer_mode == 11) { // place on curve
+          pVarTP.x += pAmount * x;
+          pVarTP.y += pAmount * y;
+        }
+        else if (outer_mode == 12) { // swap around origin
+          // point is outside curve, leave in place
+          pVarTP.x += pAmount * pAffineTP.x * -1;
+          pVarTP.y += pAmount * pAffineTP.y * -1;
+        }
+        else if (outer_mode == 13) {  // 10/11 combo
+          pVarTP.x += pAmount * (pAffineTP.x + x);
+          pVarTP.y += pAmount * (pAffineTP.y + y);
+        }
+        else if (outer_mode == 14) { // swap around intersect with longest radius
+          if (longer > 0) {  // only swap "outside" points that are internal to overall curve
+            double rx = longest * cos(tin);
+            double ry = longest * sin(tin);
+            pVarTP.x += pAmount * (pAffineTP.x + rx);
+            pVarTP.y += pAmount * (pAffineTP.y + ry);
+          }
+          else { // place on curve
+            pVarTP.x += pAmount * x;
+            pVarTP.y += pAmount * y;
+          }
+          // may want to add a radius clamp -- beyond clamp, don't swap?
+          //   if (rin > clamp) { leave in place }
+        }
+        else { // default, place on curve
+          pVarTP.x += pAmount * x;
+          pVarTP.y += pAmount * y;
+        }
+      }
 
     }
     else {
