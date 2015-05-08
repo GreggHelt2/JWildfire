@@ -38,6 +38,9 @@ import org.jwildfire.create.tina.base.XYZPoint;
   For reference see http://en.wikipedia.org/wiki/Epitrochoid
 
   Interesting relationships:
+  If c_radius = b_radius, curve is an epicycloid (no retrograde cycles, just point cusps)
+  If a_radius = b_radius, curve is a limacon
+  If a_radius = b_radius = c_radius, curve is a cardioid
 
   Loops always cross origin (center of circle A?) at c_scale = cusps + 1; 
        so when c_radius = a_radius + (1/b_radius)
@@ -46,21 +49,47 @@ import org.jwildfire.create.tina.base.XYZPoint;
           I think there's probably a way to figure this out into an equation, some factor that weights each succeeding cusp less?
           (c_radius = 4.5 * b_radius)
 
-    a_radius = b_radius * cusps;
-    c_radius = b_radius * c_scale;
+ Figuring out better parameters that map to obvious features:
+  if a = radius of stationary circle
+     b = radius of rolling circle
+     c = radius of point attached to circle b
 
-  c_scale = c_radius / b_radius
-  cusps = a_radius / b_radius
-  c_radius / b_radius = (a_radius / b_radius) + 1
-  c_radius = a_radius + (1/b_radius)
+  then max radius of the epitrochoid will be a+b+c
+       min radius of the epitrochoid will be a+b-c
+       "average" radius of the epitrochoid will be a+b
+  
+  cusps = k = a/b is the number of retrograde cycles in the closed curve
+  cscale = s = c/b is the radius of point C (relative to origin of circle B)
+  cusp_size = cscale-1 is cscale adjusted, so that at cusp_size == 0 the cusps terminate in a point instead of having a retrograde cycle
+
+  so make ajustable values be:
+       radius = r = a+b+c
+       cusps  = k = a/b
+       cscale = s = c/b
+  
+   so 
+   given r, k, and c:
+       r = a + b + c  ==> b = r - a - c
+       k = a/b        ==> a = bk
+       s = c/b        ==> c = bs
+       substituting:
+           b = r - bk - bs
+           b = r -b(k+s)
+           b + b(k+s) = r
+           b(1 + k + s) = r
+           b = r/(k + s + 1)  
+           solve for b, then a = bk, c = bs
 */
 public class EpitrochoidFunc extends VariationFunc {
   private static final long serialVersionUID = 1L;
 
-  //  private static final String PARAM_A_RADIUS = "a_radius";
-  private static final String PARAM_CUSPS = "cusps";  // a_radius/b_radius (so cusps and b_radius determines a_radius
-  private static final String PARAM_B_RADIUS = "b_radius";
-  private static final String PARAM_C_SCALE = "c_scale";   // c_radius (distance from point to center of circle B) is determined by b_radius and c_scale
+  // cusps, radius, and cusp_size are used to determine:
+  //    a_radius: radius of stationary circle
+  //    b_radius: radius of rolling circle
+  //    c_radius: radius of rolling point attached to center of rolling circle
+  private static final String PARAM_CUSPS = "cusps";  //  = a_radius/b_radius 
+  private static final String PARAM_CUSP_SIZE = "cusp_size";  //  = (c_radius/b_radius) - 1
+  private static final String PARAM_RADIUS = "radius";  // = a_radius + b_radius + c_radius
   private static final String PARAM_UNIFIED_INNER_OUTER = "unified_inner_outer";
   private static final String PARAM_INNER_MODE = "inner_mode";
   private static final String PARAM_OUTER_MODE = "outer_mode";
@@ -78,21 +107,22 @@ public class EpitrochoidFunc extends VariationFunc {
   private static final String PARAM_CYCLES = "cycles";
 
 
-  private static final String[] paramNames = { PARAM_CUSPS, PARAM_B_RADIUS, PARAM_C_SCALE,
+  private static final String[] paramNames = { PARAM_CUSPS, PARAM_CUSP_SIZE, PARAM_RADIUS, 
                                                PARAM_UNIFIED_INNER_OUTER, PARAM_INNER_MODE, PARAM_OUTER_MODE, 
                                                PARAM_INNER_SPREAD, PARAM_OUTER_SPREAD, 
                                                PARAM_INNER_SPREAD_RATIO, PARAM_OUTER_SPREAD_RATIO, PARAM_SPREAD_SPLIT,
                                                PARAM_CYCLES, PARAM_FILL }; 
 
   private double cyclesParam = 0;  // number of cycles (2*PI radians, circle circumference), if set to 0 then number of cycles is calculated automatically
-  // private double a_radius = 1;   // radius of circle "A" (the stationary circle)
-
-  private double b_radius = 0.2;   // radius of circle "B" (circle that is rolling around outside of circle "A")
-  private double a_radius; // radius of circle "A", dermined by b_radius and cusps params
-  private double c_radius; // "radius" of point "C" (fixed distnace from center of circle "B" to point "C")
   private double cusps = 5;
+  private double cusp_size = 0.5;
+  private double radius = 1.2;
 
-  private double c_scale = 1.5; 
+  private double a_radius; // radius of circle "A" (stationary circle);
+  private double b_radius; // radius of circle "B" (rolling circles, rolling around circumference of A)
+  private double c_radius; // "radius" of point "C" (fixed distance from center of circle "B" to point "C")
+  private double c_scale;  // c_radius/b_radius, = cusp_size + 1
+  
   private int unified_inner_outer = 1;
   private int inner_mode = 1;
   private int outer_mode = 1;
@@ -113,13 +143,14 @@ public class EpitrochoidFunc extends VariationFunc {
   int binCount = 720;
   ArrayList<ArrayList<Double>> theta_intersects = null;
 
-
   @Override
   public void init(FlameTransformationContext pContext, Layer pLayer, XForm pXForm, double pAmount) {
-    // setting cyclesParam to 0 is meant to indicate the function should determine how many cycles 
-    //     (actually setting cycles = 0 will just yield a single point)
+    // see class comments for derivation of a, b, c radius from radius, cusp, cusp_size parameters
+    c_scale = cusp_size + 1;
+    b_radius = radius/(cusps + c_scale + 1)  ;
     a_radius = b_radius * cusps;
     c_radius = b_radius * c_scale;
+    
     if (cyclesParam == 0) {  
       cycles = cycles_to_close;
     }
@@ -136,6 +167,7 @@ public class EpitrochoidFunc extends VariationFunc {
   }
 
   public void recalcCurveIntersects() {
+    // System.out.println("recalcing curves: " + this);
     theta_intersects = new ArrayList<ArrayList<Double>>(binCount);
     for (int i=0; i<binCount; i++) { 
       theta_intersects.add(new ArrayList<Double>());
@@ -164,8 +196,6 @@ public class EpitrochoidFunc extends VariationFunc {
       prev_tsects = tsects;
     }
   }
-
-
 
   @Override
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
@@ -196,8 +226,7 @@ public class EpitrochoidFunc extends VariationFunc {
         if (ir <= raw_rin) { shorter++; }
         else { longer++; }
       }
-//        System.out.println("angle: " + ain + ", anglebin: " + anglebin);
-//        System.out.println("intersects: " + tsects.size() + ", shorter: " + shorter + ", longer: " + longer);
+
       // modified Even-Odd rule: 
       //    cast ray from origin through incoming point to infinity
       //    count how many times curve intersects ray further out than incoming point (longer)
@@ -357,7 +386,7 @@ public class EpitrochoidFunc extends VariationFunc {
 
   @Override
   public Object[] getParameterValues() {
-    return new Object[] { cusps, b_radius, c_scale,
+    return new Object[] { cusps, cusp_size, radius, 
                           unified_inner_outer, inner_mode, outer_mode, inner_spread, outer_spread,
                           inner_spread_ratio, outer_spread_ratio, spread_split,
                           cyclesParam, fill };
@@ -367,10 +396,10 @@ public class EpitrochoidFunc extends VariationFunc {
   public void setParameter(String pName, double pValue) {
     if (PARAM_CUSPS.equalsIgnoreCase(pName))
       cusps = pValue;
-    else if (PARAM_B_RADIUS.equalsIgnoreCase(pName))
-      b_radius = pValue;
-    else if (PARAM_C_SCALE.equalsIgnoreCase(pName))
-      c_scale = pValue;
+    else if (PARAM_CUSP_SIZE.equalsIgnoreCase(pName))
+      cusp_size = pValue;
+    else if (PARAM_RADIUS.equalsIgnoreCase(pName))
+      radius = pValue;
     else if (PARAM_UNIFIED_INNER_OUTER.equalsIgnoreCase(pName)) {
       unified_inner_outer = (pValue == 0 ? 0 : 1);
     }
