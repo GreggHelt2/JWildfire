@@ -142,6 +142,7 @@ public class EpitrochoidFunc extends VariationFunc {
   int sampleCount = 36000;
   int binCount = 720;
   ArrayList<ArrayList<Double>> theta_intersects = null;
+  boolean modified_even_odd = true;
 
   @Override
   public void init(FlameTransformationContext pContext, Layer pLayer, XForm pXForm, double pAmount) {
@@ -164,6 +165,7 @@ public class EpitrochoidFunc extends VariationFunc {
     else {
       theta_intersects = null;
     }
+
   }
 
   public void recalcCurveIntersects() {
@@ -172,7 +174,10 @@ public class EpitrochoidFunc extends VariationFunc {
     for (int i=0; i<binCount; i++) { 
       theta_intersects.add(new ArrayList<Double>());
     }
+    ArrayList<Double> tsects;
     ArrayList<Double> prev_tsects = null;
+    int firstbin = -1;
+    int lastbin = -1;
     for (int i=0; i<sampleCount; i++) {
       // double theta = map(i, 0,sampleCount, 0, 2 * M_PI);
       double theta = ((double)i/(double)sampleCount) * M_2PI;
@@ -183,8 +188,17 @@ public class EpitrochoidFunc extends VariationFunc {
       //      y = pAmount * y;
       double r = sqrt(x*x + y*y);
       double angle = atan2(y, x);
-      int anglebin =  (int)Math.floor(((angle + M_PI)/M_2PI) * (binCount-1));
-      ArrayList<Double> tsects = theta_intersects.get(anglebin);
+      int anglebin =  (int)Math.floor(((angle + M_PI)/M_2PI) * binCount);
+      if (i == 0) { 
+        firstbin = anglebin;
+        // System.out.println("anglebin at sample " + i + ": " + anglebin); 
+      }
+      if (i == (sampleCount-1)) { 
+        lastbin = anglebin;
+        // System.out.println("anglebin at sample " + i + ": " + anglebin); 
+      }
+      if (anglebin == binCount) { anglebin--; } // catching any possible cases where angle actually reaches max atan2
+      tsects = theta_intersects.get(anglebin);
 
       // still rotating through same bin, merge results
       if (prev_tsects == tsects) {  
@@ -195,7 +209,17 @@ public class EpitrochoidFunc extends VariationFunc {
       }
       prev_tsects = tsects;
     }
+    
+    // special-casing of first and last anglebin if they are the same bin:
+    ///   want to simulate rotating through same bin to merge "duplicate" intersections
+    //    if first and last bin are same, would have merged results, so remove last one 
+    if (firstbin > 0 && lastbin > 0 && firstbin == lastbin) {
+      tsects = theta_intersects.get(firstbin);
+      // remove last result (if start doing averaging, should remove but add to average for first result)
+      tsects.remove(tsects.size()-1);
+    }
   }
+  
 
   @Override
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
@@ -218,7 +242,10 @@ public class EpitrochoidFunc extends VariationFunc {
     boolean outer_handled = false;
     boolean inner_handled = false;
     if (inner_mode == 10 || outer_mode == 10) {
-      int anglebin =  (int)Math.floor(((tin + M_PI)/M_2PI) * (binCount-1));
+      int anglebin =  (int)Math.floor(((tin + M_PI)/M_2PI) * binCount);
+      if (anglebin == binCount) {  // catching any possible cases where tin actually reaches max atan2
+        anglebin--; 
+      } 
       ArrayList<Double> tsects = theta_intersects.get(anglebin);
       int shorter = 0;
       int longer = 0;
@@ -226,32 +253,46 @@ public class EpitrochoidFunc extends VariationFunc {
         if (ir <= raw_rin) { shorter++; }
         else { longer++; }
       }
-
-      // modified Even-Odd rule: 
-      //    cast ray from origin through incoming point to infinity
-      //    count how many times curve intersects ray further out than incoming point (longer)
-      //    if number is odd then point is inside, if number is even then point is outside
-      if (longer % 2 == 0) {
-        // point is outside
-        // place on curve
-        pVarTP.x += pAmount * x;
-        pVarTP.y += pAmount * y;
+      boolean inside;
+      if (modified_even_odd) {
+        /* 
+        *  use modified Even-Odd rule for inside/outside determination 
+        *  asssumes that curve is closed and encloses origin (0, 0)
+        *  trying to handle cases where ray touches point on curve but does not actually cross 
+        *      (because of binning approximations, get this more often than would otherwise expect)
+        */
+        if (longer % 2 == 0) { // ray overlaps even number of intersections further away from origin than point
+          if (longer == 0) { inside = false; } // point is outside
+          // else if (longer == 2 && tsects.size() == 2) {
+          else if (longer == tsects.size()) {
+            inside = true; // point is inside (assumes curve is closed and encloses 0?)
+          }
+          else if (longer == 2 && tsects.size() == 3) {
+            inside = false; // point is outside (assumes curve is closed and encloses 0?)
+          }
+          else { inside = false;  } // point is weird? but usually outside
+        }
+        else {  // ray overlaps odd number of intersection further away from origin than point
+          inside = true;
+        }
       }
       else {
-        // point is inside
+        // use standard Even-Odd rule (well, more standard than the modified one above...):
+        //    cast ray from origin through incoming point to infinity
+        //    count how many times curve intersects ray further out than incoming point (longer)
+        //    if number is odd then point is inside, if number is even then point is outside
+        if (longer % 2 == 0) { inside = false; } // point is outside
+        else { inside = true; } // point is inside
+      }
+      
+      if (inside) {  // point is inside curve, leave in place
         pVarTP.x += pAmount * pAffineTP.x;
         pVarTP.y += pAmount * pAffineTP.y;
       }
-      
-      /* more heavily modified Even-Odd rule, 
-      if (longer % 2 == 0) {
-        if (longer == 0) {  } // point is outside 
-        else if (longer == 2 && tsects.size() == 2) {  } // point is inside (assumes curve is closed and encloses 0?) 
-        else if (longer == 2 && tsects.size() == 3) {  } // point is outside (assumes curve is closed and encloses 0?) 
-        else { } // point is weird? but usually outside
+      else {  // point is outside curve, place on curve
+        pVarTP.x += pAmount * x;
+        pVarTP.y += pAmount * y;
       }
-      else {   } // point is inside
-      */
 
     }
     else {
