@@ -17,6 +17,7 @@
 package org.jwildfire.create.tina.variation;
 
 import static java.lang.Math.abs;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import static org.jwildfire.base.mathlib.MathLib.M_2PI;
 import static org.jwildfire.base.mathlib.MathLib.cos;
@@ -87,9 +88,10 @@ public class EpitrochoidFunc extends VariationFunc {
   //    a_radius: radius of stationary circle
   //    b_radius: radius of rolling circle
   //    c_radius: radius of rolling point attached to center of rolling circle
+  private static final String PARAM_RADIUS = "radius";  // = a_radius + b_radius + c_radius
   private static final String PARAM_CUSPS = "cusps";  //  = a_radius/b_radius 
   private static final String PARAM_CUSP_SIZE = "cusp_size";  //  = (c_radius/b_radius) - 1
-  private static final String PARAM_RADIUS = "radius";  // = a_radius + b_radius + c_radius
+  private static final String PARAM_CUSP_DIVISOR = "cusp_divisor"; 
   private static final String PARAM_UNIFIED_INNER_OUTER = "unified_inner_outer";
   private static final String PARAM_INNER_MODE = "inner_mode";
   private static final String PARAM_OUTER_MODE = "outer_mode";
@@ -107,7 +109,7 @@ public class EpitrochoidFunc extends VariationFunc {
   private static final String PARAM_CYCLES = "cycles";
 
 
-  private static final String[] paramNames = { PARAM_CUSPS, PARAM_CUSP_SIZE, PARAM_RADIUS, 
+  private static final String[] paramNames = { PARAM_RADIUS, PARAM_CUSPS, PARAM_CUSP_SIZE, PARAM_CUSP_DIVISOR, 
                                                PARAM_UNIFIED_INNER_OUTER, PARAM_INNER_MODE, PARAM_OUTER_MODE, 
                                                PARAM_INNER_SPREAD, PARAM_OUTER_SPREAD, 
                                                PARAM_INNER_SPREAD_RATIO, PARAM_OUTER_SPREAD_RATIO, PARAM_SPREAD_SPLIT,
@@ -117,11 +119,13 @@ public class EpitrochoidFunc extends VariationFunc {
   private double cusps = 5;
   private double cusp_size = 0.5;
   private double radius = 1.2;
+  private double cusp_divisor = 1.0;
 
   private double a_radius; // radius of circle "A" (stationary circle);
   private double b_radius; // radius of circle "B" (rolling circles, rolling around circumference of A)
   private double c_radius; // "radius" of point "C" (fixed distance from center of circle "B" to point "C")
   private double c_scale;  // c_radius/b_radius, = cusp_size + 1
+  private double k;  // cusps/cusp_divisor
   
   private int unified_inner_outer = 1;
   private int inner_mode = 1;
@@ -133,10 +137,14 @@ public class EpitrochoidFunc extends VariationFunc {
   private double spread_split = 1;
   private double fill = 0;
   private double cycles;  // 1 cycle = 2*PI
+  private double radians; // = 2*PI*cycles
 
   private double cycle_length = 2 * M_PI; // 2(PI)
-  private double radians_to_close = 2 * M_PI;  
-  private double cycles_to_close = radians_to_close / cycle_length;  // = PI^2
+  // private double radians_to_close = 2 * M_PI;  
+  // private double cycles_to_close = radians_to_close / cycle_length;  // = 1
+  private double cycles_to_close = 0; // 0 indicates unknown, -1 indicates curve will never close
+
+  private boolean DEBUG = false;
 
   // vars for determining inner/outer via even-odd rule
   int sampleCount = 36000;
@@ -146,20 +154,51 @@ public class EpitrochoidFunc extends VariationFunc {
 
   @Override
   public void init(FlameTransformationContext pContext, Layer pLayer, XForm pXForm, double pAmount) {
-    // see class comments for derivation of a, b, c radius from radius, cusp, cusp_size parameters
+
+    // see class comments for derivation of a, b, c radius from radius, cusp, cusp_size, cusp_divisor, k parameters
+    k = cusps/cusp_divisor;
     c_scale = cusp_size + 1;
-    b_radius = radius/(cusps + c_scale + 1)  ;
-    a_radius = b_radius * cusps;
+    b_radius = radius/(k + c_scale + 1)  ;
+    a_radius = b_radius * k;
     c_radius = b_radius * c_scale;
     
     if (cyclesParam == 0) {  
-      cycles = cycles_to_close;
+      if (k % 1 == 0) { // k is an integer
+        cycles_to_close = 1;
+        cycles = cycles_to_close;
+      }
+      else if ((cusps % 1 == 0) && (cusp_divisor % 1 == 0)) {
+        // if cusp and cusp_divisor are integers, then k is rational
+        // reduce cusps and cups_divisor to simplest terms using greatest common denominator
+        //   using builtin gcd() function for BigIntegers in Java
+        BigInteger cusp_big = BigInteger.valueOf((long)cusps);
+        BigInteger cusp_divisor_big = BigInteger.valueOf((long)cusp_divisor);
+        int gcd = cusp_big.gcd(cusp_divisor_big).intValue();
+        // simplify terms using gcd
+        //     (and if no common denominator then gcd = 1, so values wills be unchanged)
+        double cusps_normalized = cusps/gcd;
+        double cusp_divisor_normalized = cusp_divisor/gcd;
+        cycles_to_close = cusp_divisor_normalized;
+        cycles = cycles_to_close;
+      }
+      else {
+        // cannot figure out if k is rational (could be irrational or just not easily determined)
+        // pick a high number relative to cusps and cusps_divisor
+        cycles_to_close = 0;
+        cycles = cusps * cusp_divisor;
+      }
     }
     else {
       cycles = cyclesParam;
     }
+    radians = cycles * 2 * M_PI;
 
-    if (inner_mode == 10 || outer_mode == 10) {
+    if (DEBUG) {
+      System.out.println("a: " + a_radius + ", b: " + b_radius + ", c: " + c_radius + 
+              ", a/b: " + (a_radius/b_radius) + ", c/b: " + (c_radius/b_radius) + ", cycles: " + cycles) ;
+    }
+
+    if (inner_mode >= 10 || outer_mode >= 10) {
       recalcCurveIntersects();
     }
     else {
@@ -180,7 +219,7 @@ public class EpitrochoidFunc extends VariationFunc {
     int lastbin = -1;
     for (int i=0; i<sampleCount; i++) {
       // double theta = map(i, 0,sampleCount, 0, 2 * M_PI);
-      double theta = ((double)i/(double)sampleCount) * M_2PI;
+      double theta = ((double)i/(double)sampleCount) * cycles * M_2PI;
 
       double x = ((a_radius + b_radius) * cos(theta)) - (c_radius * cos(((a_radius + b_radius)/b_radius) * theta));
       double y = ((a_radius + b_radius) * sin(theta)) - (c_radius * sin(((a_radius + b_radius)/b_radius) * theta));
@@ -241,7 +280,7 @@ public class EpitrochoidFunc extends VariationFunc {
     double rinx, riny;
     boolean outer_handled = false;
     boolean inner_handled = false;
-    if (inner_mode == 10 || outer_mode == 10) {
+    if (inner_mode >= 10) {
       int anglebin =  (int)Math.floor(((tin + M_PI)/M_2PI) * binCount);
       if (anglebin == binCount) {  // catching any possible cases where tin actually reaches max atan2
         anglebin--; 
@@ -286,13 +325,13 @@ public class EpitrochoidFunc extends VariationFunc {
       }
       
       if (inside) {  // point is inside curve, leave in place
-        pVarTP.x += pAmount * pAffineTP.x;
-        pVarTP.y += pAmount * pAffineTP.y;
-      }
+          pVarTP.x += pAmount * pAffineTP.x;
+          pVarTP.y += pAmount * pAffineTP.y;
+        }
       else {  // point is outside curve, place on curve
-        pVarTP.x += pAmount * x;
-        pVarTP.y += pAmount * y;
-      }
+          pVarTP.x += pAmount * x;
+          pVarTP.y += pAmount * y;
+        }
 
     }
     else {
@@ -427,7 +466,7 @@ public class EpitrochoidFunc extends VariationFunc {
 
   @Override
   public Object[] getParameterValues() {
-    return new Object[] { cusps, cusp_size, radius, 
+    return new Object[] { radius, cusps, cusp_size, cusp_divisor, 
                           unified_inner_outer, inner_mode, outer_mode, inner_spread, outer_spread,
                           inner_spread_ratio, outer_spread_ratio, spread_split,
                           cyclesParam, fill };
@@ -435,12 +474,14 @@ public class EpitrochoidFunc extends VariationFunc {
 
   @Override
   public void setParameter(String pName, double pValue) {
-    if (PARAM_CUSPS.equalsIgnoreCase(pName))
+    if (PARAM_RADIUS.equalsIgnoreCase(pName))
+      radius = pValue;
+    else if (PARAM_CUSPS.equalsIgnoreCase(pName))
       cusps = pValue;
     else if (PARAM_CUSP_SIZE.equalsIgnoreCase(pName))
       cusp_size = pValue;
-    else if (PARAM_RADIUS.equalsIgnoreCase(pName))
-      radius = pValue;
+    else if (PARAM_CUSP_DIVISOR.equalsIgnoreCase(pName))
+      cusp_divisor = pValue;
     else if (PARAM_UNIFIED_INNER_OUTER.equalsIgnoreCase(pName)) {
       unified_inner_outer = (pValue == 0 ? 0 : 1);
     }
