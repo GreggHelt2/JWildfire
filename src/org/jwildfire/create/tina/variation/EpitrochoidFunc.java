@@ -292,7 +292,8 @@ public class EpitrochoidFunc extends VariationFunc {
       double shortest = Double.POSITIVE_INFINITY;
              
       for (double ir : tsects) {
-        if (ir <= raw_rin) { 
+  //      if (ir <= raw_rin) { 
+        if (ir <= rin) { 
           shortest = Math.min(shortest, ir);
           shorter++;
         }
@@ -352,7 +353,7 @@ public class EpitrochoidFunc extends VariationFunc {
           pVarTP.x += pAmount * (pAffineTP.x + x);
           pVarTP.y += pAmount * (pAffineTP.y + y);
         }
-        else if (inner_mode == 14) { // swap around intersect with longest radius
+        else if (inner_mode == 14) { // swap around intersect with longest radius, with: P' = C + P
           if (longer > 0) { // true by definition for inside points?), but just going for consistency across inner/outer modes
             double rx = longest * cos(tin);
             double ry = longest * sin(tin);
@@ -364,11 +365,44 @@ public class EpitrochoidFunc extends VariationFunc {
             pVarTP.y += pAmount * y;
           }
         }
+        else if (inner_mode == 15) { // swap around intersect with longest radius, with P' = C + (C-P)
+          if (longer > 0) { // true by definition for inside points?), but just going for consistency across inner/outer modes
+             double rdiff = longest - raw_rin;
+            double rout = longest + rdiff;
+            double rx= rout * cos(tin);
+            double ry = rout * sin(tin);
+            // or equivalently, (rx + rx - x, ry + ry - y) ??? (P' = I + (I-P))
+            pVarTP.x += pAmount * rx;
+            pVarTP.y += pAmount * ry;
+          }
+          else { // place on curve 
+            pVarTP.x += pAmount * x;
+            pVarTP.y += pAmount * y;
+          }
+        }         
+        else if (inner_mode == 16) { // swap around intersect with longest radius, with P' = C + (C-P)
+          // only differs from mode 15 by using rin instead of raw_rin
+          if (longer > 0) { // true by definition for inside points?), but just going for consistency across inner/outer modes
+            double rdiff = longest - rin;
+            double rout = longest + rdiff;
+            double rx= rout * cos(tin);
+            double ry = rout * sin(tin);
+            // or equivalently, (rx + rx - x, ry + ry - y) ??? (P' = I + (I-P))
+            pVarTP.x += pAmount * rx;
+            pVarTP.y += pAmount * ry;
+          }
+          else { // place on curve 
+            pVarTP.x += pAmount * x;
+            pVarTP.y += pAmount * y;
+          }
+        }        
+        
         else {  // default, place on curve
           pVarTP.x += pAmount * x;
           pVarTP.y += pAmount * y;
         }
       }
+      
       else {    // point is outside curve
         if (outer_mode == 10) { // leave in place
           pVarTP.x += pAmount * pAffineTP.x;
@@ -388,7 +422,7 @@ public class EpitrochoidFunc extends VariationFunc {
           pVarTP.y += pAmount * (pAffineTP.y + y);
         }
         else if (outer_mode == 14) { // swap around intersect with longest radius
-          if (longer > 0) {  // only swap "outside" points that are internal to overall curve
+          if (longer > 0) {  // only swap "outside" points that are still internal to overall curve
             double rx = longest * cos(tin);
             double ry = longest * sin(tin);
             pVarTP.x += pAmount * (pAffineTP.x + rx);
@@ -401,6 +435,41 @@ public class EpitrochoidFunc extends VariationFunc {
           // may want to add a radius clamp -- beyond clamp, don't swap?
           //   if (rin > clamp) { leave in place }
         }
+       else if (outer_mode == 15) { // swap around intersect with longest radius, with P' = C + (C-P)
+          if (longer > 0) { // only swap "outside" points that are still internal to overall curve
+            double rdiff = longest - raw_rin;
+            double rout = longest + rdiff;
+            double rx = rout * cos(tin);
+            double ry = rout * sin(tin);
+            // or equivalently, (rx + rx - x, ry + ry - y) ??? (P' = I + (I-P))
+            pVarTP.x += pAmount * rx;
+            pVarTP.y += pAmount * ry;
+          }
+          else { // place on curve 
+            pVarTP.x += pAmount * x;
+            pVarTP.y += pAmount * y;
+            // pVarTP.x += pAffineTP.x;
+            // pVarTP.y += pAffineTP.y;
+          }
+        }   
+       else if (outer_mode == 16) { // swap around intersect with longest radius, with P' = C + (C-P)
+          if (longer > 0) { // only swap "outside" points that are still internal to overall curve
+            // only differs from mode 15 by using rin instead of raw_rin
+            double rdiff = longest - rin;
+            double rout = longest + rdiff;
+            double rx = rout * cos(tin);
+            double ry = rout * sin(tin);
+            // or equivalently, (rx + rx - x, ry + ry - y) ??? (P' = I + (I-P))
+            pVarTP.x += pAmount * rx;
+            pVarTP.y += pAmount * ry;
+          }
+          else { // place on curve 
+            pVarTP.x += pAmount * x;
+            pVarTP.y += pAmount * y;
+            // pVarTP.x += pAffineTP.x;
+            // pVarTP.y += pAffineTP.y;
+          }
+        }             
         else { // default, place on curve
           pVarTP.x += pAmount * x;
           pVarTP.y += pAmount * y;
@@ -561,11 +630,11 @@ public class EpitrochoidFunc extends VariationFunc {
     }
     else if (PARAM_OUTER_MODE.equalsIgnoreCase(pName)) {
       outer_mode = (int)floor(pValue);
-      if (outer_mode > 15 || outer_mode < 0) { outer_mode = 0; }
+      // if (outer_mode > 15 || outer_mode < 0) { outer_mode = 0; }
     }
     else if (PARAM_INNER_MODE.equalsIgnoreCase(pName)) {
       inner_mode = (int)floor(pValue);
-      if (inner_mode > 15 || inner_mode < 0) { inner_mode = 0; }
+      // if (inner_mode > 15 || inner_mode < 0) { inner_mode = 0; }
     }
     else if (PARAM_OUTER_SPREAD.equalsIgnoreCase(pName))
       outer_spread = pValue;
