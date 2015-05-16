@@ -439,8 +439,6 @@ public class VariationFuncList {
     registerVariationFunc(Glynnia3Func.class);
     registerVariationFunc(MaskFunc.class);
     registerVariationFunc(FDiscFunc.class);
-    registerVariationFunc(RhodoneaFunc.class);
-    registerVariationFunc(ButterflyFayFunc.class);
 
     registerVariationFunc(BlurCircleFunc.class);
     registerVariationFunc(BlurPixelizeFunc.class);
@@ -457,6 +455,11 @@ public class VariationFuncList {
     registerVariationFunc(YFunc.class);
     registerVariationFunc(ZFunc.class);
     registerVariationFunc(CustomFullVariationWrapperFunc.class);
+
+    registerVariationFunc(RhodoneaCurveFunc.class);
+    registerVariationFunc(ButterflyFayCurveFunc.class);
+    registerVariationFunc(EpitrochoidCurveFunc.class);
+    registerVariationFunc(HypotrochoidCurveFunc.class);
 
   }
 
