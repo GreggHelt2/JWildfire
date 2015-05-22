@@ -259,15 +259,15 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     // pResult.clear();  NO, don't clear point! need incoming point from subclass
     if (cycles_param == 0 && cycles_to_close > 0 && metacycles != 1) {
       // double metacycle_count = floor((cycles * (tin + M_PI)) / (cycles_to_close * 2 * M_PI));
+      // double metacycle_count = floor((theta + (cycles * M_PI)) / (cycles_to_close * 2 * M_PI));
       // metacycle_count does not include first cycles, so goes from 0 to metacycles - 1 (since metacycles includes first cycle)
-      double metacycle_count = floor((theta + (cycles * M_PI)) / (cycles_to_close * 2 * M_PI));
-      if (DEBUG && metacycle_count < 0) {
-        System.out.println("uhoh: theta = " + theta + ", cycles = " + cycles + ", cycles_to_close = " + cycles_to_close);
+      double metacycle_count = ceil((theta + (cycles * M_PI)) / (cycles_to_close * 2 * M_PI)) - 1;
+      if (metacycle_count > 0) { 
+        double metacycle_delta = (metacycle_count * metacycle_offset) + (pow(metacycle_scale, metacycle_count)-1);
+        pResult.x = pResult.x * (1 + metacycle_delta);
+        pResult.y = pResult.y * (1 + metacycle_delta);
+        // z unchanged?
       }
-      double metacycle_delta = (metacycle_count * metacycle_offset) + (pow(metacycle_scale, metacycle_count)-1);
-      pResult.x = pResult.x * (1 + metacycle_delta);
-      pResult.y = pResult.y * (1 + metacycle_delta);
-      // z unchanged?
     }
   }
   
