@@ -82,11 +82,77 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                           INNER_OUTERISH, // outer* controls both outer and outish
                           INNERISH_OUTER,  // inner* controls both inner and outish, 
   }
-
-  protected static Map<Integer, RenderMode> render_modes;
-  static {
-
+  
+  protected class PolarPoint {
+    protected double radius;
+    protected double angle;
+    protected boolean inflection = false;
+    protected PolarPoint prev;
+    protected PolarPoint next;
+    protected int bin;
+    protected PolarPoint(double r, double t) {
+      radius = r;
+      angle = t;
+    }
+    protected double interpolate(double ain) {
+      double rout;
+      if (next == null || prev == null) {
+        rout = radius;
+      }
+      else {
+        PolarPoint pother = null;
+        // double nexta = next.angle;
+        // double preva = prev.angle;
+        if (ain >= angle) {
+          if (next.angle >= ain) {      // order is angle < ain < nexta
+            pother = next;
+          }
+          else if (prev.angle >= ain) { // order is angle < ain < preva
+            pother = prev;
+          }
+        }
+        else {  // ain < angle
+          if (next.angle <= ain) {      // order is nexta < ain < angle
+            pother = next;
+          }
+          else if (prev.angle <= ain) { // order is preva < ain < angle
+            pother = prev;
+          }
+        }
+        if (pother == null) {
+          rout = radius;
+        }
+        else {
+          rout = this.radius + ((pother.radius - this.radius) * (ain - this.angle) / (pother.angle - this.angle));
+        }
+      }
+      return rout;
+    }
+ /*       if (abs((ain - prev.angle)) < (abs(ain - next.angle))) {
+          // use prev
+          rout = this.radius + ((prev.radius - this.radius) * (ain - this.angle) / (prev.angle - this.angle));
+        }
+        else {
+          // use next
+          rout = this.radius + ((next.radius - this.radius) * (ain - this.angle) / (next.angle - this.angle)); 
+        }
+      }
+        */
+/*      if (ain > angle && next != null) { 
+        // if (next.inflection) { rout = radius; }
+        // else { rout = this.radius + ((next.radius - this.radius) * (ain - this.angle) / (next.angle - this.angle)); }
+        rout = this.radius + ((next.radius - this.radius) * (ain - this.angle) / (next.angle - this.angle)); 
+      }
+      else if (ain < angle && prev != null) {
+        // if (prev.inflection) { rout = radius; }
+        // else { rout = this.radius + ((prev.radius - this.radius) * (ain - this.angle) / (prev.angle - this.angle)); }
+        rout = this.radius + ((prev.radius - this.radius) * (ain - this.angle) / (prev.angle - this.angle));
+      }
+      else { rout = radius; }
+      */
+      // return rout;
   }
+
 
   protected static final String PARAM_CURVE_SCALE = "curve_scale";
   protected static final String PARAM_MODE_MERGING = "mode_merging";
@@ -173,13 +239,16 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   // vars for determining inner/outer via even-odd rule
   int default_sample_count = 36000;
   int binCount = 720;
-  ArrayList<ArrayList<Double>> theta_intersects = null;
-  ArrayList<Double> unisects = new ArrayList<Double>(1);  // temp wrapper when needed for single curve radius
+  ArrayList<ArrayList<PolarPoint>> theta_intersects = null;
+  // ArrayList<PolarPoint> unisects = new ArrayList<PolarPoint>(1);  // temp wrapper when needed for single curve radius
+  ArrayList<PolarPoint> unisects;
+  PolarPoint unipolar;
   XYZPoint pCurve = new XYZPoint();
   
   CurveRadiusMode curve_rmode = CurveRadiusMode.THETA;
   PointRadiusMode point_rmode = PointRadiusMode.MODIFIED;
-  InsideOutsideRule inout_rule = InsideOutsideRule.MODIFIED_EVEN_ODD_INISH_OUTISH;
+  // InsideOutsideRule inout_rule = InsideOutsideRule.MODIFIED_EVEN_ODD_INISH_OUTISH;
+  InsideOutsideRule inout_rule = InsideOutsideRule.EVEN_ODD;
   MergeMode merger = MergeMode.INNER_OUTERISH;
 
   @Override
@@ -201,8 +270,9 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     else {
       // auto calling
     }
-    unisects = new ArrayList<Double>(1);
-    unisects.add(0, 0.0);
+    unipolar = new PolarPoint(0, 0);
+    unisects = new ArrayList<PolarPoint>(1);
+    unisects.add(0, unipolar);
     recalcCycles();
 
     recalcCurveIntersects();
@@ -271,14 +341,19 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     }
   }
   
+  boolean DEBUG_INTERSECTS = false;
    public void recalcCurveIntersects() {
     // System.out.println("recalcing curves: " + this);
-    theta_intersects = new ArrayList<ArrayList<Double>>(binCount);
+    theta_intersects = new ArrayList<ArrayList<PolarPoint>>(binCount);
     for (int i=0; i<binCount; i++) { 
-      theta_intersects.add(new ArrayList<Double>());
+      theta_intersects.add(new ArrayList<PolarPoint>());
     }
-    ArrayList<Double> tsects;
-    ArrayList<Double> prev_tsects = null;
+    PolarPoint prev_point = null;
+    PolarPoint first_point;
+    PolarPoint last_point;
+    // PolarPoint next_point;
+    ArrayList<PolarPoint> tsects;
+    ArrayList<PolarPoint> prev_tsects = null;
     int firstbin = -1;
     int lastbin = -1;
     int sampleCount = default_sample_count;
@@ -302,15 +377,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
       double angle = atan2(pCurve.y, pCurve.x);
       
       int anglebin =  (int)Math.floor(((angle + M_PI)/M_2PI) * binCount);
-     //  int anglebin =  (int)Math.floor(((tin + M_PI)/M_2PI) * binCount);
-      if (i == 0) { 
-        firstbin = anglebin;
-        // System.out.println("anglebin at sample " + i + ": " + anglebin); 
-      }
-      if (i == (sampleCount-1)) { 
-        lastbin = anglebin;
-        // System.out.println("anglebin at sample " + i + ": " + anglebin); 
-      }
+
       if (anglebin == binCount) { anglebin--; } // catching any possible cases where angle actually reaches max atan2
       tsects = theta_intersects.get(anglebin);
 
@@ -319,10 +386,30 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
         // try ignoring for now -- should try averaging later?
       }
       else {
-        tsects.add(r);  // autoboxing float r to Double object      
+        // tsects.add(r);
+        PolarPoint point = new PolarPoint(r, angle);
+        point.bin = anglebin;
+        point.prev = prev_point;
+        if (prev_point != null) { prev_point.next = point; }
+        tsects.add(point);  // autoboxing float r to Double object      
+        prev_point = point;
+      }
+      if (i == 0) { 
+        firstbin = anglebin;
+        first_point = prev_point;
+      }
+      if (i == (sampleCount-1)) { 
+        lastbin = anglebin;
+        last_point = prev_point;
       }
       prev_tsects = tsects;
     }
+    
+    // cleanup of PolarPoint prev/next pointers -- 
+    //     cyclic, but also need to factor in metacylces
+    //     if first of metacycle, keep (meta_first)
+    //     if last of metacycle (meta_last), set metal_last.next = meta_first, meta_first.prev = meta_last
+        
     
     // special-casing of first and last anglebin if they are the same bin:
     ///   want to simulate rotating through same bin to merge "duplicate" intersections
@@ -335,14 +422,54 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     }
     */
     
+    // WARNING: still need to factor in metacycle
+    //    for (ArrayList<PolarPoint> bin : theta_intersects) {
     for (int k=0; k<theta_intersects.size(); k++) {
-      if (theta_intersects.get(k).size() == 0) {
-        System.out.println("empty bin at index: " + k);
+      ArrayList<PolarPoint> bin = theta_intersects.get(k);
+            
+      for (PolarPoint p : bin) {
+        if (p.prev == null || p.next == null) { 
+          p.inflection = false;
+        }
+        else {
+          double aprev = p.prev.angle;
+          double anext = p.next.angle;
+          if (p.angle <= aprev && p.angle <= anext) {
+            p.inflection = true;
+            if (DEBUG_INTERSECTS) { System.out.println("- inflection at bin: " + k + ", " + p.angle); }
+          }
+          else if (p.angle >= aprev && p.angle >= anext) {
+            p.inflection= true;
+            if (DEBUG_INTERSECTS) { System.out.println("+ inflection at bin: " + k + ", " + p.angle); }
+          }
+          else { p.inflection = false; }
+        }
       }
+    }
+
+    if (DEBUG_INTERSECTS) {
+      printBin(382);
+      printBin(383);
+      printBin(384);
+      /*
+      for (int k=0; k<theta_intersects.size(); k++) {
+        if (theta_intersects.get(k).size() == 0) {
+          System.out.println("empty bin at index: " + k);
+        }
+      }
+      */
     }
   }
   
+public void printBin(int index) {
+  ArrayList<PolarPoint> bin = theta_intersects.get(index);
+  System.out.println("bin: " + index + ", points: " + bin.size());
+  for (int i=0; i< bin.size(); i++) {
+    PolarPoint p = bin.get(i);
+    System.out.println("    point " + i + ", prev = " + p.prev.bin + ", next = " + p.next.bin + ", a = " + p.angle + ", r = " + p.radius);
+  }
 
+}
   //  public Point 
 
       /*
@@ -405,10 +532,10 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     double t = atan2(y, x);
     // double r = curvePoint.getPrecalcSqrt();
     double r = sqrt(x*x + y*y);
-    ArrayList<Double> tsects;
+    ArrayList<PolarPoint> tsects;
 
-    if (curve_rmode == CurveRadiusMode.RAW_SAMPLING_BIN) {
-      int anglebin =  (int)Math.floor(((tin + M_PI)/M_2PI) * binCount);
+    int anglebin =  (int)Math.floor(((tin + M_PI)/M_2PI) * binCount);
+    if (curve_rmode == CurveRadiusMode.RAW_SAMPLING_BIN || curve_rmode == CurveRadiusMode.INTERPOLATED_SAMPLING_BIN) {
       if (anglebin == binCount) {  // catching any possible cases where tin actually reaches max atan2
         anglebin--; 
       } 
@@ -416,14 +543,16 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     }
     else if (curve_rmode == CurveRadiusMode.THETA)  {
       tsects = unisects;
-      tsects.set(0, r);
+      unipolar.radius = r;
+      unipolar.angle = t;
     }
     // else if (curve_rmode == CurveRadiusMode.INTERPOLATED_SAMPLING_BIN) {
       // same as RAW_SAMPLING_BIN, plus interpolation
     // }
     else {  // default to CurveRadiusMode.THETA ??
       tsects = unisects;
-      tsects.set(0, r);
+      unipolar.radius = r;
+      unipolar.angle = t;
     }
 
     double rpoint;
@@ -445,8 +574,16 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     double nearest_longer  = Double.POSITIVE_INFINITY;
     double nearest_shorter = Double.NEGATIVE_INFINITY;
 
-    for (double rcurve : tsects) {
-        //      if (ir <= raw_rin) { 
+    for (PolarPoint curve : tsects) {
+      if (curve.inflection) { continue; } // if inflection, don't count an intersection
+      double rcurve; 
+      if (curve_rmode == CurveRadiusMode.INTERPOLATED_SAMPLING_BIN) {
+        if (anglebin == 382 && curve.prev.inflection && rin > 1.5) {
+          int placeholder = 0;
+        }
+        rcurve = curve.interpolate(tin);
+      }
+      else { rcurve = curve.radius; }
       if (rcurve <= rpoint) { 
         shorter++;
         shortest = Math.min(shortest, rcurve);
@@ -596,6 +733,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
           // point is inside curve, leave in place
           pVarTP.x += adjustedAmount * pAffineTP.x;
           pVarTP.y += adjustedAmount * pAffineTP.y;
+          // if (anglebin == 382) { pVarTP.doHide = true; }
           break;
         case MIRROR_SWAP:  // MIRROR_SWAP (swap around origin [0,0], inspired by RosoniFunc)
           pVarTP.x += adjustedAmount * pAffineTP.x * -1;
