@@ -46,7 +46,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                            STRETCH7(17), 
                            STRETCH8(18),
                            STRETCH9(19),
-                           STRETCH10(20), 
+                           // STRETCH10(20), 
                            STRETCH1B(23);
        
      private static final Map<Integer,RenderMode> lookup = new HashMap<Integer,RenderMode>();
@@ -83,14 +83,14 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                           INNERISH_OUTER,  // inner* controls both inner and outish, 
   }
   
-  protected class PolarPoint {
+  protected class LinkedPolarCurvePoint {
     protected double radius;
     protected double angle;
     protected boolean inflection = false;
-    protected PolarPoint prev;
-    protected PolarPoint next;
+    protected LinkedPolarCurvePoint prev;
+    protected LinkedPolarCurvePoint next;
     protected int bin;
-    protected PolarPoint(double r, double t) {
+    protected LinkedPolarCurvePoint(double r, double t) {
       radius = r;
       angle = t;
     }
@@ -100,9 +100,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
         rout = radius;
       }
       else {
-        PolarPoint pother = null;
-        // double nexta = next.angle;
-        // double preva = prev.angle;
+        LinkedPolarCurvePoint pother = null;
         if (ain >= angle) {
           if (next.angle >= ain) {      // order is angle < ain < nexta
             pother = next;
@@ -128,29 +126,6 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
       }
       return rout;
     }
- /*       if (abs((ain - prev.angle)) < (abs(ain - next.angle))) {
-          // use prev
-          rout = this.radius + ((prev.radius - this.radius) * (ain - this.angle) / (prev.angle - this.angle));
-        }
-        else {
-          // use next
-          rout = this.radius + ((next.radius - this.radius) * (ain - this.angle) / (next.angle - this.angle)); 
-        }
-      }
-        */
-/*      if (ain > angle && next != null) { 
-        // if (next.inflection) { rout = radius; }
-        // else { rout = this.radius + ((next.radius - this.radius) * (ain - this.angle) / (next.angle - this.angle)); }
-        rout = this.radius + ((next.radius - this.radius) * (ain - this.angle) / (next.angle - this.angle)); 
-      }
-      else if (ain < angle && prev != null) {
-        // if (prev.inflection) { rout = radius; }
-        // else { rout = this.radius + ((prev.radius - this.radius) * (ain - this.angle) / (prev.angle - this.angle)); }
-        rout = this.radius + ((prev.radius - this.radius) * (ain - this.angle) / (prev.angle - this.angle));
-      }
-      else { rout = radius; }
-      */
-      // return rout;
   }
 
 
@@ -239,10 +214,10 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   // vars for determining inner/outer via even-odd rule
   int default_sample_count = 36000;
   int binCount = 720;
-  ArrayList<ArrayList<PolarPoint>> theta_intersects = null;
+  ArrayList<ArrayList<LinkedPolarCurvePoint>> theta_intersects = null;
   // ArrayList<PolarPoint> unisects = new ArrayList<PolarPoint>(1);  // temp wrapper when needed for single curve radius
-  ArrayList<PolarPoint> unisects;
-  PolarPoint unipolar;
+  ArrayList<LinkedPolarCurvePoint> unisects;
+  LinkedPolarCurvePoint unipolar;
   XYZPoint pCurve = new XYZPoint();
   
   CurveRadiusMode curve_rmode = CurveRadiusMode.THETA;
@@ -270,8 +245,8 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     else {
       // auto calling
     }
-    unipolar = new PolarPoint(0, 0);
-    unisects = new ArrayList<PolarPoint>(1);
+    unipolar = new LinkedPolarCurvePoint(0, 0);
+    unisects = new ArrayList<LinkedPolarCurvePoint>(1);
     unisects.add(0, unipolar);
     recalcCycles();
 
@@ -344,32 +319,44 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   boolean DEBUG_INTERSECTS = false;
    public void recalcCurveIntersects() {
     // System.out.println("recalcing curves: " + this);
-    theta_intersects = new ArrayList<ArrayList<PolarPoint>>(binCount);
+    theta_intersects = new ArrayList<ArrayList<LinkedPolarCurvePoint>>(binCount);
     for (int i=0; i<binCount; i++) { 
-      theta_intersects.add(new ArrayList<PolarPoint>());
+      theta_intersects.add(new ArrayList<LinkedPolarCurvePoint>());
     }
-    PolarPoint prev_point = null;
-    PolarPoint first_point;
-    PolarPoint last_point;
+    LinkedPolarCurvePoint prev_point = null;
+    // PolarPoint first_point = null;
+    LinkedPolarCurvePoint last_point = null;
     // PolarPoint next_point;
-    ArrayList<PolarPoint> tsects;
-    ArrayList<PolarPoint> prev_tsects = null;
+    ArrayList<LinkedPolarCurvePoint> tsects;
+    ArrayList<LinkedPolarCurvePoint> prev_tsects = null;
     int firstbin = -1;
     int lastbin = -1;
     int sampleCount = default_sample_count;
     //if (cycles_param == 0 && cycles_to_close > 0 && metacycles > 1) {
     //  sampleCount = (int)(sampleCount * metacycles);
     //}
+    // int prev_metacycle = (int)(this.metacycles - 1);
+    int prev_metacycle = -1000;
+    ArrayList<LinkedPolarCurvePoint> metacycle_first_points = new ArrayList<LinkedPolarCurvePoint>((int)ceil(metacycles));  // for each metacycle, keep track of first point (for looping)
+    ArrayList<LinkedPolarCurvePoint> metacycle_last_points = new ArrayList<LinkedPolarCurvePoint>((int)ceil(metacycles)); // for each metacycle, keep track of last point (for looping)
+    for (int m=0; m<(int)ceil(metacycles); m++) {
+      metacycle_first_points.add(null);
+      metacycle_last_points.add(null);
+    }
 
     for (int i=0; i<sampleCount; i++) {
 //      double theta = ((double)i/(double)sampleCount) * cycles * M_2PI;
       double theta = (((double)i/(double)sampleCount) * cycles * M_2PI);
 
-      // need to compensate to for theta adjusment in calcCurvePoint() ??
       // theta = theta - (cycles * M_PI);
+      // theta = theta - M_PI;
       theta = (cycles * M_PI) - theta;
-      
-      // SimplePoint pcurve = calcFromTheta(theta);
+      // need to compensate to for theta adjusment in calcCurvePoint() ??      
+      // so as i increases, theta actually decreases?       
+      //   which means for example if metacycles, starts with max metacycle at i = 0 and steadily decrements metacycle
+      //   should really fix this so theta is increasing, this is making it confusing to follow what's happening
+      //      but to fix it, would also need to adjust calcCurvePoint()...
+
       pCurve.clear();
       calcCurvePoint(null, theta, pCurve);
       
@@ -378,7 +365,10 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
       
       int anglebin =  (int)Math.floor(((angle + M_PI)/M_2PI) * binCount);
 
-      if (anglebin == binCount) { anglebin--; } // catching any possible cases where angle actually reaches max atan2
+      // catching any possible cases where angle actually reaches max atan2
+      //   (actually, maybe should loop around instead to bin 0?
+      if (anglebin == binCount) { anglebin--; } 
+      
       tsects = theta_intersects.get(anglebin);
 
       // still rotating through same bin, merge results
@@ -387,17 +377,31 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
       }
       else {
         // tsects.add(r);
-        PolarPoint point = new PolarPoint(r, angle);
+        LinkedPolarCurvePoint point = new LinkedPolarCurvePoint(r, angle);
         point.bin = anglebin;
-        point.prev = prev_point;
-        if (prev_point != null) { prev_point.next = point; }
+        
+        int metacycle = (int)(ceil((theta + (cycles * M_PI)) / (cycles_to_close * 2 * M_PI)) - 1);
+        if (metacycle == prev_metacycle) { // still in same metacycle
+          point.prev = prev_point;
+          if (prev_point != null) { prev_point.next = point; }
+        }
+        else {
+          // if (DEBUG_INTERSECTS) { System.out.println("new metacycle: " + metacycle + ", bin: " + anglebin + ", radius: " + r + ", angle: " + angle); }
+          // initialize new metacycle, close previous metacycle
+          metacycle_first_points.set(metacycle, point);
+          if (prev_point != null && prev_metacycle >= 0) {
+            metacycle_last_points.set(prev_metacycle, prev_point);
+          }
+        }
         tsects.add(point);  // autoboxing float r to Double object      
+        if (i == 0) { 
+          firstbin = anglebin;
+          // first_point = point;
+        }
         prev_point = point;
+        prev_metacycle = metacycle;
       }
-      if (i == 0) { 
-        firstbin = anglebin;
-        first_point = prev_point;
-      }
+
       if (i == (sampleCount-1)) { 
         lastbin = anglebin;
         last_point = prev_point;
@@ -405,11 +409,91 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
       prev_tsects = tsects;
     }
     
+    metacycle_last_points.set(prev_metacycle, prev_point);
+    for (int m=0; m<metacycle_last_points.size(); m++) {
+      LinkedPolarCurvePoint fp = metacycle_first_points.get(m);
+      LinkedPolarCurvePoint lp = metacycle_last_points.get(m);
+      if (DEBUG_INTERSECTS && (fp.bin == 0 || lp.bin == 0)) {
+        System.out.println("metacycle boundary falls on zero bin: ");
+        printBin(0);
+        printBin(binCount-1);
+      }
+      // PolarPoint prev = new PolarPoint(lp.radius, lp.angle + (cycles_to_close * M_2PI));
+      // PolarPoint next = new PolarPoint(fp.radius, fp.angle - (cycles_to_close * M_2PI));
+      LinkedPolarCurvePoint prev = new LinkedPolarCurvePoint(lp.radius, lp.angle);
+      LinkedPolarCurvePoint next = new LinkedPolarCurvePoint(fp.radius, fp.angle);
+      prev.bin = lp.bin;
+      next.bin = fp.bin;
+      // PolarPoint prev = new PolarPoint(lp.radius, lp.angle + (cycles_to_close * M_2PI));
+      //double fp_bincycle = ((fp.bin+1) / binCount) * cycles_to_close;
+      // PolarPoint next = new PolarPoint(fp.radius, fp.angle - (fp_bincycle * M_2PI));
+      fp.prev = prev;
+      lp.next = next;
+    }
+
+    if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN PRE:"); printBin(0); System.out.println("MAXBIN PRE:");     printBin(binCount-1); }
+    //    if (last_point != null)  {  // connect to first point of current metacycle?? }
+
+    // bin angles rotate through single circle, [-PI ==> PI] (actual point angles in min/max bin  will be near bin min/max val]
+    //       (regardless of theta, metacycles, etc.)
+    //    so need to fix prev/next point angles in both min and max bin, 
+    //           since one of prev/next will be 2PI off when it crosses line
+    //    which of prev/next needs to be fixed will depend on curveCalc
+    //        (and _should_ be determinable by bin number comparison, 
+    //             but appears to be bug where at least for bin 0, prev/next can point back to point in same bin?)
+    //        but don't need to know this, can test simply by closeness to point.angle, since if cross line 
+    //             then prev/next angle should be ~2PI away. 
+    //    using PI to check instead of 2PI, could use somethiing much closer to 2PI but PI allows should catch everything
+    //        without worrying about exact size of bin (except for _really_ extreme circumstances)
+    //    UPDATE: fixed bug mentioned above, possibly switch to only changing prev/next that is crosses bin count loop boundary?
+    //        for now, still checking both prev/next and changing based on andle delta to point angle
+    ArrayList<LinkedPolarCurvePoint> minBin = theta_intersects.get(0);
+    ArrayList<LinkedPolarCurvePoint> maxBin = theta_intersects.get(binCount-1);
+    ArrayList<LinkedPolarCurvePoint> minmax[] = new ArrayList[]{minBin, maxBin};
+
+    for (ArrayList<LinkedPolarCurvePoint> bin : minmax) {
+      for (LinkedPolarCurvePoint point : bin) {
+        // prev and null should already be cloned in metacycle step above 
+        //    (since metacycle boundary will always fall on bin loop boundary? -- hmm, not sure about this)
+        // but cloning again just in case, don't want to mess up others
+        //      (after calcIntersects(), prev/next are only used for interpolation, 
+        //      and past this point in calcIntersects() they are not recursively crawled, so don't need deep clone, 
+        //      just radius and corrected angle (also setting bin just for consistency))
+        if (point.prev != null) {
+          if (abs(point.angle-point.prev.angle) > M_PI) {
+            double nangle; 
+            if (point.prev.angle < point.angle) { nangle = point.prev.angle + M_2PI; }
+            else { nangle = point.prev.angle - M_2PI; }
+            LinkedPolarCurvePoint new_prev = new LinkedPolarCurvePoint(point.prev.radius, nangle);
+            new_prev.bin = point.prev.bin;
+            point.prev = new_prev;
+          }
+        }
+        if (point.next != null) {
+          if (abs(point.angle-point.next.angle) > M_PI) {
+            double nangle;
+            if (point.next.angle < point.angle) { nangle = point.next.angle + M_2PI; }
+            else { nangle = point.next.angle - M_2PI; }
+            LinkedPolarCurvePoint new_next = new LinkedPolarCurvePoint(point.next.radius, nangle);
+            new_next.bin = point.next.bin;
+            point.next = new_next;
+          }
+        }
+      }
+    }
+    
+    if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN MID:"); printBin(0); System.out.println("MAXBIN MID:");     printBin(binCount-1); }
+    
     // cleanup of PolarPoint prev/next pointers -- 
     //     cyclic, but also need to factor in metacylces
     //     if first of metacycle, keep (meta_first)
     //     if last of metacycle (meta_last), set metal_last.next = meta_first, meta_first.prev = meta_last
-        
+/*    int metacycle = metacycles / cycles;
+    if (cycles_param == 0 && cycles_to_close > 0 && metacycles != 1) {
+      // metacycle_count does not include first cycles, so goes from 0 to metacycles - 1 (since metacycles includes first cycle)
+      double metacycle_count = ceil((theta + (cycles * M_PI)) / (cycles_to_close * 2 * M_PI)) - 1;
+    }  
+    */
     
     // special-casing of first and last anglebin if they are the same bin:
     ///   want to simulate rotating through same bin to merge "duplicate" intersections
@@ -423,11 +507,10 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     */
     
     // WARNING: still need to factor in metacycle
-    //    for (ArrayList<PolarPoint> bin : theta_intersects) {
     for (int k=0; k<theta_intersects.size(); k++) {
-      ArrayList<PolarPoint> bin = theta_intersects.get(k);
+      ArrayList<LinkedPolarCurvePoint> bin = theta_intersects.get(k);
             
-      for (PolarPoint p : bin) {
+      for (LinkedPolarCurvePoint p : bin) {
         if (p.prev == null || p.next == null) { 
           p.inflection = false;
         }
@@ -447,30 +530,33 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
       }
     }
 
-    if (DEBUG_INTERSECTS) {
-      printBin(382);
-      printBin(383);
-      printBin(384);
-      /*
-      for (int k=0; k<theta_intersects.size(); k++) {
+    if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN POST:"); printBin(0); System.out.println("MAXBIN POST:");     printBin(binCount-1); }
+
+/*
+    for (int k=0; k<theta_intersects.size(); k++) {
         if (theta_intersects.get(k).size() == 0) {
           System.out.println("empty bin at index: " + k);
         }
       }
-      */
+
     }
+    */
   }
   
 public void printBin(int index) {
-  ArrayList<PolarPoint> bin = theta_intersects.get(index);
+  ArrayList<LinkedPolarCurvePoint> bin = theta_intersects.get(index);
   System.out.println("bin: " + index + ", points: " + bin.size());
   for (int i=0; i< bin.size(); i++) {
-    PolarPoint p = bin.get(i);
-    System.out.println("    point " + i + ", prev = " + p.prev.bin + ", next = " + p.next.bin + ", a = " + p.angle + ", r = " + p.radius);
+    LinkedPolarCurvePoint p = bin.get(i);
+    System.out.println("    point: " + i + ", inflect: " + p.inflection + ", a = " + p.angle + ", r = " + p.radius + ", prev = " + (p.prev!=null) + ", next = " + (p.next!=null));
+    if (p.prev != null) { 
+      System.out.println("         prev: " + p.prev.bin + ", i: " + p.prev.inflection + ", a: " + p.prev.angle + ", r: " + p.prev.radius);
+    }      
+    if (p.next != null) { 
+      System.out.println("         next: " + p.next.bin + ", i: " + p.next.inflection + ", a: " + p.next.angle + ", r: " + p.next.radius);
+    }      
   }
-
 }
-  //  public Point 
 
       /*
     // 1. Determine which inner/outer/outish calling method to use
@@ -506,11 +592,7 @@ public void printBin(int index) {
     // 
     // 5. 
     // 
-
-    // assume 1.a is always rin for now
-    //
    */
-   
   public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount, XYZPoint curvePoint) {
     PointState pstate = PointState.INSIDE;  
     // input point
@@ -532,9 +614,10 @@ public void printBin(int index) {
     double t = atan2(y, x);
     // double r = curvePoint.getPrecalcSqrt();
     double r = sqrt(x*x + y*y);
-    ArrayList<PolarPoint> tsects;
+    ArrayList<LinkedPolarCurvePoint> tsects;
 
     int anglebin =  (int)Math.floor(((tin + M_PI)/M_2PI) * binCount);
+ 
     if (curve_rmode == CurveRadiusMode.RAW_SAMPLING_BIN || curve_rmode == CurveRadiusMode.INTERPOLATED_SAMPLING_BIN) {
       if (anglebin == binCount) {  // catching any possible cases where tin actually reaches max atan2
         anglebin--; 
@@ -546,9 +629,6 @@ public void printBin(int index) {
       unipolar.radius = r;
       unipolar.angle = t;
     }
-    // else if (curve_rmode == CurveRadiusMode.INTERPOLATED_SAMPLING_BIN) {
-      // same as RAW_SAMPLING_BIN, plus interpolation
-    // }
     else {  // default to CurveRadiusMode.THETA ??
       tsects = unisects;
       unipolar.radius = r;
@@ -574,13 +654,10 @@ public void printBin(int index) {
     double nearest_longer  = Double.POSITIVE_INFINITY;
     double nearest_shorter = Double.NEGATIVE_INFINITY;
 
-    for (PolarPoint curve : tsects) {
-      if (curve.inflection) { continue; } // if inflection, don't count an intersection
+    for (LinkedPolarCurvePoint curve : tsects) {
+      if (curve.inflection) { continue; } // if inflection, don't count as an intersection
       double rcurve; 
       if (curve_rmode == CurveRadiusMode.INTERPOLATED_SAMPLING_BIN) {
-        if (anglebin == 382 && curve.prev.inflection && rin > 1.5) {
-          int placeholder = 0;
-        }
         rcurve = curve.interpolate(tin);
       }
       else { rcurve = curve.radius; }
@@ -733,7 +810,6 @@ public void printBin(int index) {
           // point is inside curve, leave in place
           pVarTP.x += adjustedAmount * pAffineTP.x;
           pVarTP.y += adjustedAmount * pAffineTP.y;
-          // if (anglebin == 382) { pVarTP.doHide = true; }
           break;
         case MIRROR_SWAP:  // MIRROR_SWAP (swap around origin [0,0], inspired by RosoniFunc)
           pVarTP.x += adjustedAmount * pAffineTP.x * -1;
