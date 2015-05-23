@@ -19,12 +19,10 @@ import org.jwildfire.create.tina.base.Layer;
 import org.jwildfire.create.tina.base.XForm;
 import org.jwildfire.create.tina.base.XYZPoint;
 
-// private enum PointState {INSIDE, OUTSIDE, INISH, OUTISH, ON }  // "state" of point relative to curve
-
 public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected boolean DEBUG = false;
 
-  public enum RenderMode { AUTO(0), 
+  public enum RenderMode { DEFAULT(0), 
                            ONCURVE(1),
                            STRETCH1(2),
                            STRETCH2(3),
@@ -68,19 +66,39 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
      }
      private int getIntegerMode() { return modeInt; }
      
-     public static RenderMode get(int i) { return lookup.get(i); }
+     // will return null if no RenderMode with that modeInt 
+     public static RenderMode get(int i) {  return lookup.get(i);   }
+     
      public  static int getMaxIntegerMode() { return maxInt; }
   }
   
-  public enum PointState { INSIDE, OUTSIDE, INISH, OUTISH, ON }  // "state" of point relative to curve
-  public enum CurveRadiusMode { THETA, RAW_SAMPLING_BIN, INTERPOLATED_SAMPLING_BIN }
-  public enum PointRadiusMode { MODIFIED, RAW }
-  public enum InsideOutsideRule { EVEN_ODD, MODIFIED_EVEN_ODD, MODIFIED_EVEN_ODD_INISH_OUTISH }
+  // "state" of point relative to curve
+  //     currently only using INSIDE, OUTSIDE, OUTISH (and outish is only used with 
+  //     CurveRadiusMode *_SAMPLING_BINs, and InsideOutsideRule MODIFIED_*s
+  public enum PointState { INSIDE, OUTSIDE, INISH, OUTISH, ON }  
+  public enum CurveRadiusMode {  AUTO, TRANSFORMED_INPUT, INTERPOLATED_SAMPLING_BIN, RAW_SAMPLING_BIN;
+    // WARNING -- DO NOT CHANGE ORDER OF ENUMS, ADD NEW ONES TO END OF LIST
+    public static CurveRadiusMode get(int oindex) {
+      if (oindex < 0 || oindex >= values().length) { return null; }
+      else  { return values()[oindex]; }
+    }
+    public int getIntegerMode() { return this.ordinal(); }
+  }
+  
+  public enum PointRadiusMode { AUTO, MODIFIED, RAW }
+  public enum InsideOutsideRule { AUTO, EVEN_ODD, EVEN_ODD_OUTISH, MODIFIED_EVEN_ODD, MODIFIED_EVEN_ODD_INISH_OUTISH }
   public enum MergeMode { AUTO,  // depends on mode?
                           NONE,  // no merging of modes
                           ALL, // inner* controls all (inner/outer/inish/outish) 
                           INNER_OUTERISH, // outer* controls both outer and outish
-                          INNERISH_OUTER,  // inner* controls both inner and outish, 
+                          INNERISH_OUTER,   // inner* controls both inner and outish, 
+                          INOUTER_OUTISH;   // inner* controls both inner and outer
+    // WARNING -- DO NOT CHANGE ORDER OF ENUMS, ADD NEW ONES TO END OF LIST
+    public static MergeMode get(int oindex) {
+      if (oindex < 0 || oindex >= values().length) { return null; }
+      else  { return values()[oindex]; }
+    }
+    public int getIntegerMode() { return this.ordinal(); }
   }
   
   protected class LinkedPolarCurvePoint {
@@ -168,18 +186,23 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
 //                                               PARAM_METACYCLE_ROTATION }; 
 
   protected double curve_scale = 1;
-  // mode merging:
-  //    0 is auto, code attempts to merge based on chosen inner/outer modes
-  //    1 => inner/inish merged, outer/outish merged
-  //    2 => inner/inish merged
-  protected int mode_merging = 0;
-  protected RenderMode inner_mode = RenderMode.AUTO;
-  protected RenderMode outer_mode = RenderMode.AUTO;
-  protected RenderMode outish_mode = RenderMode.AUTO;
-  protected int inner_param = inner_mode.getIntegerMode();
-  protected int outer_param = outer_mode.getIntegerMode();
-  protected int outish_param = outish_mode.getIntegerMode();
 
+  protected MergeMode mode_merge = MergeMode.AUTO;
+  protected RenderMode inner_mode = RenderMode.DEFAULT;
+  protected RenderMode outer_mode = RenderMode.DEFAULT;
+  protected RenderMode outish_mode = RenderMode.DEFAULT;
+  protected CurveRadiusMode curve_rmode = CurveRadiusMode.AUTO;
+
+  protected MergeMode mode_merge_param = mode_merge;
+  protected RenderMode inner_param = inner_mode;
+  protected RenderMode outer_param = outer_mode;
+  protected RenderMode outish_param = outish_mode;
+  protected CurveRadiusMode curve_rmode_param = curve_rmode;
+  
+  // point_rmode is currently hardwired, not available as a user param
+  PointRadiusMode point_rmode = PointRadiusMode.MODIFIED;
+  // inout_rule is currently hardwired, not available as a user param
+  InsideOutsideRule inout_rule = InsideOutsideRule.EVEN_ODD_OUTISH;
 
   protected double inner_spread = 0; // deform based on original x/y
   protected double outer_spread = 0; // deform based on original x/y
@@ -189,20 +212,14 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected double outer_spread_ratio = 1; // how much outer_spread applies to x relative to y
   protected double outish_spread_ratio = 1;
   
-  // protected int inish_mode = 1;
-  // protected double inish_spread = 0;
-  // protected double inish_spread_ratio = 1;
-
-  
   protected double spread_split = 1;
   protected double fill = 0;
   protected double cycles_param;
-  protected double curve_radius_mode = 2;
+  
   protected double point_radius_mode;
   protected double in_out_mode;
   
   protected double cycles;  // 1 cycle = 2*PI
-  // protected double radians; // = 2*PI*cycles
   protected double cycle_length = M_2PI; // 2(PI)
   protected double cycles_to_close = 0; // 0 indicates unknown, -1 indicates curve will never close
   protected double cycle_offset = 0; // cycle offset (in cycles) for incoming points (rotate the cycle)
@@ -215,42 +232,70 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   int default_sample_count = 36000;
   int binCount = 720;
   ArrayList<ArrayList<LinkedPolarCurvePoint>> theta_intersects = null;
-  // ArrayList<PolarPoint> unisects = new ArrayList<PolarPoint>(1);  // temp wrapper when needed for single curve radius
   ArrayList<LinkedPolarCurvePoint> unisects;
   LinkedPolarCurvePoint unipolar;
   XYZPoint pCurve = new XYZPoint();
-  
-  CurveRadiusMode curve_rmode = CurveRadiusMode.THETA;
-  PointRadiusMode point_rmode = PointRadiusMode.MODIFIED;
-  // InsideOutsideRule inout_rule = InsideOutsideRule.MODIFIED_EVEN_ODD_INISH_OUTISH;
-  InsideOutsideRule inout_rule = InsideOutsideRule.EVEN_ODD;
-  MergeMode merger = MergeMode.INNER_OUTERISH;
 
   @Override
   public void init(FlameTransformationContext pContext, Layer pLayer, XForm pXForm, double pAmount) {
     // System.out.println("calling init for VariationFunc: " + this);
-    if (curve_radius_mode == 0) {
+    
+    if (inner_param == RenderMode.DEFAULT) { inner_mode = RenderMode.ONCURVE; }
+    else { inner_mode = inner_param; }
+    if (outer_param == RenderMode.DEFAULT) { outer_mode = RenderMode.ONCURVE; }
+    else { outer_mode = outer_param; }
+    if (outish_param == RenderMode.DEFAULT) { outish_mode = RenderMode.ONCURVE; }
+    else { outish_mode = outish_param; }
+    
+    // if MergeMode.AUTO, for now just set to combine OUTER and OUTISH
+    if (mode_merge_param == MergeMode.AUTO) { mode_merge = MergeMode.INNER_OUTERISH; }
+    else { mode_merge = mode_merge_param; }
+    
+    if (mode_merge == MergeMode.ALL) { // combine inner/outer/inish, use inner for all
+      outer_mode = inner_mode;
+      outish_mode = inner_mode;
+    }
+    else if (mode_merge == MergeMode.INNERISH_OUTER) {  // combine inner and outish, use inner for outish
+      outish_mode = inner_mode;
+    }
+    else if (mode_merge == MergeMode.INNER_OUTERISH) { // combine outer and outish, use outer for outish
+      outish_mode = outer_mode;
+    }
+    else if (mode_merge == MergeMode.INOUTER_OUTISH) { // combin inner and outer, ouse inner for outer
+      outer_mode = inner_mode;
+    }
+    else if (mode_merge == MergeMode.NONE) {  } // do nothing, already separate by default
+    
+    boolean uses_sampling_modes = 
+            (inner_mode == RenderMode.UNCHANGED || inner_mode == RenderMode.MIRROR_SWAP ||  inner_mode == RenderMode.SCALE ||
+              outer_mode == RenderMode.UNCHANGED || outer_mode == RenderMode.MIRROR_SWAP || outer_mode == RenderMode.SCALE ||
+              outish_mode == RenderMode.UNCHANGED || outish_mode == RenderMode.MIRROR_SWAP || outish_mode == RenderMode.SCALE);
+    
+    if (curve_rmode_param == CurveRadiusMode.AUTO) {
       // auto calling of curve radius mode?
       // possibly mixed?
-    }
-    if (curve_radius_mode == 1) {
-      curve_rmode = CurveRadiusMode.RAW_SAMPLING_BIN;
-    }
-    else if (curve_radius_mode == 2) {
-      curve_rmode = CurveRadiusMode.THETA;
-    }
-    else if (curve_radius_mode == 3) {
-      curve_rmode =  CurveRadiusMode.INTERPOLATED_SAMPLING_BIN;
+      // if any OUTER/INNER/OUTISH are UNCHANGED or MIRROR_SWAP or SCAle, use linear interpolation
+      // otherwise, use input point transformed to curve
+      if (uses_sampling_modes) {
+        curve_rmode = CurveRadiusMode.INTERPOLATED_SAMPLING_BIN;
+      }
+      else {
+        curve_rmode = CurveRadiusMode.TRANSFORMED_INPUT;
+      }
     }
     else {
-      // auto calling
+      curve_rmode = curve_rmode_param;
     }
+
     unipolar = new LinkedPolarCurvePoint(0, 0);
     unisects = new ArrayList<LinkedPolarCurvePoint>(1);
     unisects.add(0, unipolar);
     recalcCycles();
 
-    recalcCurveIntersects();
+    // System.out.println("curve_rmode: " + curve_rmode.name());
+    if (curve_rmode == CurveRadiusMode.RAW_SAMPLING_BIN || curve_rmode == CurveRadiusMode.INTERPOLATED_SAMPLING_BIN) {
+      recalcCurveIntersects();
+    }
   }
   
   @Override
@@ -315,10 +360,12 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
       }
     }
   }
-  
+
+
+  int recalcCount = 0; 
   boolean DEBUG_INTERSECTS = false;
    public void recalcCurveIntersects() {
-    // System.out.println("recalcing curves: " + this);
+    // System.out.println("recalcing curves");
     theta_intersects = new ArrayList<ArrayList<LinkedPolarCurvePoint>>(binCount);
     for (int i=0; i<binCount; i++) { 
       theta_intersects.add(new ArrayList<LinkedPolarCurvePoint>());
@@ -531,16 +578,6 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     }
 
     if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN POST:"); printBin(0); System.out.println("MAXBIN POST:");     printBin(binCount-1); }
-
-/*
-    for (int k=0; k<theta_intersects.size(); k++) {
-        if (theta_intersects.get(k).size() == 0) {
-          System.out.println("empty bin at index: " + k);
-        }
-      }
-
-    }
-    */
   }
   
 public void printBin(int index) {
@@ -624,7 +661,7 @@ public void printBin(int index) {
       } 
       tsects = theta_intersects.get(anglebin);
     }
-    else if (curve_rmode == CurveRadiusMode.THETA)  {
+    else if (curve_rmode == CurveRadiusMode.TRANSFORMED_INPUT)  {
       tsects = unisects;
       unipolar.radius = r;
       unipolar.angle = t;
@@ -676,8 +713,31 @@ public void printBin(int index) {
     else if (shorter == 0) { nearest = nearest_longer; }
     else if ((rpoint - nearest_shorter) < (nearest_longer - rpoint)) { nearest = nearest_shorter; }
     else { nearest = nearest_longer; }
+    
+    if (inout_rule == InsideOutsideRule.EVEN_ODD) {
+      // use standard Even-Odd rule (well, more standard than the modified one above...):
+      //    cast ray from origin through incoming point to infinity
+      //    count how many times curve intersects ray further out than incoming point (longer)
+      //    if number is odd then point is inside, if number is even then point is outside
+      if (longer % 2 == 0) { pstate = PointState.OUTSIDE; } // point is outside
+      else { pstate = PointState.INSIDE; } // point is inside
+    }
+    else if (inout_rule == InsideOutsideRule.EVEN_ODD_OUTISH) {
+      // use standard Even-Odd rule as above (well, more standard than the modified ones below...), 
+      //    but distinguish between OUTER an OUTISH:
+      //    OUTISH if standard Even-Odd calls as OUTER, but still have at least one curve intersect on ray 
+      //      further out from origin than point is
+      if (longer % 2 == 0) { 
+        if (longer > 0) {
+          pstate = PointState.OUTISH;
+        }
+        else { 
+          pstate = PointState.OUTSIDE; } // point is outside
+      }
+      else { pstate = PointState.INSIDE; } // point is inside
+    }
 
-    if (inout_rule == InsideOutsideRule.MODIFIED_EVEN_ODD_INISH_OUTISH) {
+    else if (inout_rule == InsideOutsideRule.MODIFIED_EVEN_ODD_INISH_OUTISH) {
       if (longer == 0) { // definitely outside
         pstate = PointState.OUTSIDE;
       }
@@ -731,20 +791,13 @@ public void printBin(int index) {
         pstate = PointState.INSIDE;
       }
     }
-    else if (inout_rule == InsideOutsideRule.EVEN_ODD) {
-      // use standard Even-Odd rule (well, more standard than the modified one above...):
-      //    cast ray from origin through incoming point to infinity
-      //    count how many times curve intersects ray further out than incoming point (longer)
-      //    if number is odd then point is inside, if number is even then point is outside
-      if (longer % 2 == 0) { pstate = PointState.OUTSIDE; } // point is outside
-      else { pstate = PointState.INSIDE; } // point is inside
-    }
+
       // 3. Prep input for feeding to switch statement:
       //       using designated inner/outer/outish/(on?) for
       //       *_mode, *_spread, *_spread_ratio, etc.
       double spread;
       double spread_ratio;
-      RenderMode mode = RenderMode.AUTO;
+      RenderMode mode = RenderMode.DEFAULT;
       if (pstate == PointState.INSIDE)  {
         mode = inner_mode;
         spread = inner_spread;
@@ -773,18 +826,18 @@ public void printBin(int index) {
       }
       else if (pstate == PointState.ON) {
         // currently not using ON, so should never get here
-        mode = RenderMode.AUTO;
+        mode = RenderMode.DEFAULT;
         spread = 0;
         spread_ratio = 1;
       }
       else {
         // every point must be classified as being within one of the enum'd areas, so should never get here
-        mode = RenderMode.AUTO;
+        mode = RenderMode.DEFAULT;
         spread = 0;
         spread_ratio = 0;
       }
       
-      if (mode == RenderMode.AUTO) {
+      if (mode == RenderMode.DEFAULT) {
         mode = RenderMode.ONCURVE;
       }
       
@@ -972,13 +1025,13 @@ public void printBin(int index) {
   public Object[] getParameterValues() {
     return new Object[] { 
                           curve_scale, 
-                          mode_merging, 
-                          inner_param, outer_param, outish_param, 
+                          mode_merge_param.getIntegerMode(),  
+                          inner_param.getIntegerMode(), outer_param.getIntegerMode(), outish_param.getIntegerMode(), 
                           inner_spread, outer_spread, outish_spread, 
                           inner_spread_ratio, outer_spread_ratio, outish_spread_ratio, 
                           spread_split,
                           cycles_param, cycle_offset, 
-                          fill, curve_radius_mode, 
+                          fill, curve_rmode_param.getIntegerMode(), 
                           metacycles, metacycle_offset, metacycle_scale
     };
   }
@@ -989,22 +1042,20 @@ public void printBin(int index) {
       curve_scale = pValue;
     } 
     else if (PARAM_MODE_MERGING.equalsIgnoreCase(pName)) {
-      mode_merging = (pValue == 0 ? 0 : 1);
+      this.mode_merge_param = MergeMode.get((int)floor(pValue));
+      if (mode_merge_param == null) { mode_merge_param = MergeMode.AUTO; }
     }
     else if (PARAM_OUTER_MODE.equalsIgnoreCase(pName)) {
-      outer_param = (int)floor(pValue);
-      if (outer_param > RenderMode.getMaxIntegerMode()) { outer_param = 0; }
-      outer_mode = RenderMode.get(outer_param);
+      outer_param = RenderMode.get((int)floor(pValue));
+      if (outer_param == null) { outer_param = RenderMode.DEFAULT; }
     }
     else if (PARAM_INNER_MODE.equalsIgnoreCase(pName)) {
-      inner_param = (int)floor(pValue);
-      if (inner_param > RenderMode.getMaxIntegerMode()) { inner_param = 0; }
-      inner_mode = RenderMode.get(inner_param);
+      inner_param = RenderMode.get((int)floor(pValue));
+      if (inner_param == null) { inner_param = RenderMode.DEFAULT; }
     }
     else if (PARAM_OUTISH_MODE.equalsIgnoreCase(pName)) {
-      outish_param = (int)floor(pValue);
-      if (outish_param > RenderMode.getMaxIntegerMode()) { outish_param = 0; }
-      outish_mode = RenderMode.get(outish_param);
+      outish_param = RenderMode.get((int)floor(pValue));
+      if (outish_param == null)  { outish_param = RenderMode.DEFAULT; }
     }
     else if (PARAM_OUTER_SPREAD.equalsIgnoreCase(pName))
       outer_spread = pValue;
@@ -1026,8 +1077,10 @@ public void printBin(int index) {
       cycle_offset = pValue;    
     else if (PARAM_FILL.equalsIgnoreCase(pName))
       fill = pValue;
-    else if (PARAM_CURVE_RADIUS_MODE.equalsIgnoreCase(pName))
-      this.curve_radius_mode = pValue;
+    else if (PARAM_CURVE_RADIUS_MODE.equalsIgnoreCase(pName)) {
+      this.curve_rmode_param = CurveRadiusMode.get((int)floor(pValue));
+      if (curve_rmode_param == null) { curve_rmode_param = CurveRadiusMode.AUTO; }
+    }
     else if (PARAM_METACYCLES.equalsIgnoreCase(pName))
       metacycles = abs(pValue);
     else if (PARAM_METACYCLE_OFFSET.equalsIgnoreCase(pName))
