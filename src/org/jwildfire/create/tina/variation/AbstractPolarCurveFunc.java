@@ -31,21 +31,20 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                            SCALE(6),
                            MIRROR_SWAP(7), 
                            CURVE_SWAP(8),
-                           CURVE_SWAP_RAW(22), 
-                           CURVE_XY_OFFSET(9), 
-                           CURVE_RADIAL_OFFSET(21), 
-                           WHIRL(10), 
-                           POW(11),
-                           LOOPY(12), 
-                           STRETCH3(13), 
-                           STRETCH4(14),
-                           STRETCH5(15),
-                           STRETCH6(16),
-                           STRETCH7(17), 
-                           STRETCH8(18),
-                           STRETCH9(19),
-                           // STRETCH10(20), 
-                           STRETCH1B(23);
+                           CURVE_SWAP_RAW(9), 
+                           CURVE_XY_OFFSET(10), 
+                           CURVE_RADIAL_OFFSET(11), 
+                           WHIRL(12), 
+                           POW(13),
+                           LOOPY(14), 
+                           STRETCH3(15), 
+                           STRETCH4(16),
+                           STRETCH5(17),
+                           STRETCH6(18),
+                           STRETCH7(19), 
+                           STRETCH8(20),
+                           STRETCH9(21),
+                           STRETCH10(22);
        
      private static final Map<Integer,RenderMode> lookup = new HashMap<Integer,RenderMode>();
      private static int maxInt = 0;
@@ -188,9 +187,9 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected double curve_scale = 1;
 
   protected MergeMode mode_merge = MergeMode.AUTO;
-  protected RenderMode inner_mode = RenderMode.DEFAULT;
-  protected RenderMode outer_mode = RenderMode.DEFAULT;
-  protected RenderMode outish_mode = RenderMode.DEFAULT;
+  protected RenderMode inner_mode = RenderMode.ONCURVE;
+  protected RenderMode outer_mode = RenderMode.ONCURVE;
+  protected RenderMode outish_mode = RenderMode.ONCURVE;
   protected CurveRadiusMode curve_rmode = CurveRadiusMode.AUTO;
 
   protected MergeMode mode_merge_param = mode_merge;
@@ -204,9 +203,9 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   // inout_rule is currently hardwired, not available as a user param
   InsideOutsideRule inout_rule = InsideOutsideRule.EVEN_ODD_OUTISH;
 
-  protected double inner_spread = 0; // deform based on original x/y
-  protected double outer_spread = 0; // deform based on original x/y
-  protected double outish_spread = 0;
+  protected double inner_spread = 0.5; // deform based on original x/y
+  protected double outer_spread = 0.5; // deform based on original x/y
+  protected double outish_spread = 0.5;
   
   protected double inner_spread_ratio = 1; // how much inner_spread applies to x relative to y
   protected double outer_spread_ratio = 1; // how much outer_spread applies to x relative to y
@@ -427,7 +426,10 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
         LinkedPolarCurvePoint point = new LinkedPolarCurvePoint(r, angle);
         point.bin = anglebin;
         
-        int metacycle = (int)(ceil((theta + (cycles * M_PI)) / (cycles_to_close * 2 * M_PI)) - 1);
+        double cycles_for_calc;
+        if (cycles_to_close > 0)  { cycles_for_calc = cycles_to_close; }
+        else { cycles_for_calc = cycles; }
+        int metacycle = (int)(ceil((theta + (cycles * M_PI)) / (cycles_for_calc * 2 * M_PI)) - 1);
         if (metacycle == prev_metacycle) { // still in same metacycle
           point.prev = prev_point;
           if (prev_point != null) { prev_point.next = point; }
@@ -440,8 +442,8 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
             metacycle_last_points.set(prev_metacycle, prev_point);
           }
         }
-        tsects.add(point);  // autoboxing float r to Double object      
-        if (i == 0) { 
+        tsects.add(point);  // autoboxing float r to Double object
+        if (i == 0) {
           firstbin = anglebin;
           // first_point = point;
         }
@@ -465,15 +467,12 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
         printBin(0);
         printBin(binCount-1);
       }
-      // PolarPoint prev = new PolarPoint(lp.radius, lp.angle + (cycles_to_close * M_2PI));
-      // PolarPoint next = new PolarPoint(fp.radius, fp.angle - (cycles_to_close * M_2PI));
+      // PolarPoint prev = new PolarPoint(lp.radius, lp.angle + (cycles_for_calc * M_2PI));
+      // PolarPoint next = new PolarPoint(fp.radius, fp.angle - (cycles_for_calc * M_2PI));
       LinkedPolarCurvePoint prev = new LinkedPolarCurvePoint(lp.radius, lp.angle);
       LinkedPolarCurvePoint next = new LinkedPolarCurvePoint(fp.radius, fp.angle);
       prev.bin = lp.bin;
       next.bin = fp.bin;
-      // PolarPoint prev = new PolarPoint(lp.radius, lp.angle + (cycles_to_close * M_2PI));
-      //double fp_bincycle = ((fp.bin+1) / binCount) * cycles_to_close;
-      // PolarPoint next = new PolarPoint(fp.radius, fp.angle - (fp_bincycle * M_2PI));
       fp.prev = prev;
       lp.next = next;
     }
@@ -651,6 +650,11 @@ public void printBin(int index) {
     double t = atan2(y, x);
     // double r = curvePoint.getPrecalcSqrt();
     double r = sqrt(x*x + y*y);
+    if (fill != 0) {
+      r = r + (fill * (pContext.random() - 0.5));
+      x = r * cos(t);
+      y = r * sin(t);
+    }
     ArrayList<LinkedPolarCurvePoint> tsects;
 
     int anglebin =  (int)Math.floor(((tin + M_PI)/M_2PI) * binCount);
@@ -943,7 +947,7 @@ public void printBin(int index) {
           pVarTP.x += adjustedAmount * rin * ca;
           pVarTP.y += adjustedAmount * rin * sa;
           break;
-        case STRETCH1B:  // STRETCH1B (only differs from STRETCH1 when using binning)
+        case STRETCH10:  // STRETCH1B (only differs from STRETCH1 when using binning)
           // double rout = (rin * spread) + (r * (1 - spread));
           double rc = nearest;
           //if (longer > 0) { rc = longest; }
@@ -1081,8 +1085,10 @@ public void printBin(int index) {
       this.curve_rmode_param = CurveRadiusMode.get((int)floor(pValue));
       if (curve_rmode_param == null) { curve_rmode_param = CurveRadiusMode.AUTO; }
     }
-    else if (PARAM_METACYCLES.equalsIgnoreCase(pName))
+    else if (PARAM_METACYCLES.equalsIgnoreCase(pName)) {
       metacycles = abs(pValue);
+      if (abs(metacycles) < 0.01) { metacycles = 0.01; }
+    }
     else if (PARAM_METACYCLE_OFFSET.equalsIgnoreCase(pName))
       metacycle_offset = pValue;   
     else if (PARAM_METACYCLE_SCALE.equalsIgnoreCase(pName))
