@@ -85,19 +85,19 @@ public class EpitrochoidCurveFunc extends AbstractPolarCurveFunc {
   private static final long serialVersionUID = 1L;
   //  public enum IntersectMode { SIMPLE_RADIUS, MIN_RADIUS, MAX_RADIUS, EVEN_ODD, MODIFIED_EVEN_ODD }
   
-  // cusps, radius, and cusp_size are used to determine:
+  // cusps, radius (now curve_scale from superclass), and cusp_size are used to determine:
   //    a_radius: radius of stationary circle
   //    b_radius: radius of rolling circle
   //    c_radius: radius of rolling point attached to center of rolling circle
-  private static final String PARAM_RADIUS = "radius";  // = a_radius + b_radius + c_radius
+  // private static final String PARAM_RADIUS = "radius";  // = a_radius + b_radius + c_radius
   private static final String PARAM_CUSPS = "cusps";  //  = a_radius/b_radius 
   private static final String PARAM_CUSP_SIZE = "cusp_size";  //  = (c_radius/b_radius) - 1
   private static final String PARAM_CUSP_DIVISOR = "cusp_divisor"; 
-  private static final String[] additionalParamNames = { PARAM_CUSPS, PARAM_CUSP_SIZE, PARAM_CUSP_DIVISOR, PARAM_RADIUS }; 
+  private static final String[] additionalParamNames = { PARAM_CUSPS, PARAM_CUSP_SIZE, PARAM_CUSP_DIVISOR };
 
-  private double cusps = 5;
-  private double cusp_size = 0.5;
-  private double radius = 1.2;
+  private double cusps = 8;
+  private double cusp_size = 1;
+  private double radius = curve_scale;
   private double cusp_divisor = 1.0;
 
   private double a_radius; // radius of circle "A" (stationary circle);
@@ -106,9 +106,17 @@ public class EpitrochoidCurveFunc extends AbstractPolarCurveFunc {
   private double c_scale;  // c_radius/b_radius, = cusp_size + 1
   private double k;  // cusps/cusp_divisor
   
+  public EpitrochoidCurveFunc() {
+    // explicitly set defaults for params inherited from AbstractPolarCurveFunc, if want different than APCF defaults
+    // for example:
+    // inner_mode = RenderMode.STRETCH1;
+    // inner_param = inner_mode;
+  }
+  
   @Override
   public void init(FlameTransformationContext pContext, Layer pLayer, XForm pXForm, double pAmount) {
-
+    radius = curve_scale;
+    
     // see class comments for derivation of a, b, c radius from radius, cusp, cusp_size, cusp_divisor, k parameters
     k = cusps/cusp_divisor;
     c_scale = cusp_size + 1;
@@ -171,8 +179,6 @@ public class EpitrochoidCurveFunc extends AbstractPolarCurveFunc {
     pResult.clear();
     pResult.x = ((a_radius + b_radius) * cos(theta)) - (c_radius * cos(((a_radius + b_radius)/b_radius) * theta));
     pResult.y = ((a_radius + b_radius) * sin(theta)) - (c_radius * sin(((a_radius + b_radius)/b_radius) * theta));
-    pResult.x *= curve_scale;
-    pResult.y *= curve_scale;
     // z unchanged?
     super.calcCurvePoint(pContext, theta, pResult);
   }
@@ -184,7 +190,8 @@ public class EpitrochoidCurveFunc extends AbstractPolarCurveFunc {
 
   @Override
   public Object[] getParameterValues() {
-    return joinArrays(new Object[] { cusps, cusp_size, cusp_divisor, radius }, super.getParameterValues());
+    // return joinArrays(new Object[] { cusps, cusp_size, cusp_divisor, radius }, super.getParameterValues());
+    return joinArrays(new Object[] { cusps, cusp_size, cusp_divisor}, super.getParameterValues());
   }
 
   @Override
@@ -193,10 +200,10 @@ public class EpitrochoidCurveFunc extends AbstractPolarCurveFunc {
       cusps = pValue;
     else if (PARAM_CUSP_SIZE.equalsIgnoreCase(pName))
       cusp_size = pValue;
-    else if (PARAM_CUSP_DIVISOR.equalsIgnoreCase(pName))
+    else if (PARAM_CUSP_DIVISOR.equalsIgnoreCase(pName)) {
       cusp_divisor = pValue;
-    else if (PARAM_RADIUS.equalsIgnoreCase(pName))
-      radius = pValue;
+      if (abs(cusp_divisor) < 0.01) { cusp_divisor = 0.01; }
+    }
     else {
       super.setParameter(pName, pValue);
     }
