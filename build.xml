@@ -71,6 +71,7 @@
       <zipfileset src="lib/svgSalamander-tiny.jar"/>
       <zipfileset src="lib/colt-1.2.0.jar"/>
       <zipfileset src="lib/JOCL-0.1.9.jar"/>
+      <zipfileset src="lib/LeapJava.jar" includes="**/*.class"/>
       <manifest>
         <attribute name="Main-Class" value="org.jwildfire.swing.Desktop"/>
       </manifest>			
@@ -122,21 +123,32 @@
     <copy todir="${dist.dir}/">
        <fileset file="${applet.jar.name}"/>
      </copy>
-    <copy todir="${dist.dir}/plugins">
-      <fileset dir="${src.dir}/../plugins" includes="*.dll"/>
+    <copy todir="${dist.dir}/plugins32">
+      <fileset dir="${src.dir}/../plugins32" includes="*.dll"/>
+     </copy>
+    <copy todir="${dist.dir}/plugins64">
+      <fileset dir="${src.dir}/../plugins64" includes="*.dll"/>
      </copy>
     <copy todir="${dist.dir}/">
        <fileset dir="build/launcher" includes="start_linux.sh start_windows.bat start_mac.command"/>
      </copy>
   	<copy todir="${dist.dir}/">
        <fileset file="CHANGES.txt" />
-       <fileset file="README_LAUNCH.txt" />
+       <fileset file="README_LAUNCHING_JWILDFIRE.txt" />
        <fileset file="README!!!.txt" />
        <fileset file="README_SUPPORT.txt" />
        <fileset file="README_APPLET.txt" />
-      <fileset file="Delphi/JWildfire.exe" />
-     </copy>    
-    <zip destfile="${dist.name}">
+       <fileset file="README_CHAOTICA_SUPPORT.txt" />
+       <fileset file="README_LEAP_MOTION_SUPPORT.txt" />
+       <fileset file="Delphi/JWildfire.exe" />
+    </copy>    
+    <copy todir="${dist.dir}/lib/x64">
+       <fileset file="${src.dir}/../lib/x64/*.dll" />
+    </copy>    
+    <copy todir="${dist.dir}/lib/x86">
+       <fileset file="${src.dir}/../lib/x86/*.dll" />
+    </copy>    
+    	<zip destfile="${dist.name}">
       <zipfileset dir="${dist.dir}/" excludes="start_*" />
       <zipfileset filemode="755" dir="${dist.dir}/" includes="start_*" />
     </zip>

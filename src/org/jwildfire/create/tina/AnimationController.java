@@ -1,6 +1,6 @@
 /*
   JWildfire - an image and animation processor written in Java 
-  Copyright (C) 1995-2014 Andreas Maschke
+  Copyright (C) 1995-2015 Andreas Maschke
 
   This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser 
   General Public License as published by the Free Software Foundation; either version 2.1 of the 
@@ -49,11 +49,12 @@ public class AnimationController {
   private final JLabel keyframesFrameCountLbl;
   private final JPanel motionBlurPanel;
   private final JButton motionCurvePlayPreviewButton;
+  private final JWFNumberField flameFPSField;
 
   public AnimationController(TinaController pTinaController, ErrorHandler pErrorHandler, Prefs pPrefs, JPanel pRootPanel,
       JWFNumberField pKeyframesFrameField, JSlider pKeyframesFrameSlider, JWFNumberField pKeyframesFrameCountField,
-      JPanel pFrameSliderPanel, JLabel pKeyframesFrameLbl, JLabel pKeyframesFrameCountLbl, JToggleButton pMotionCurveEditModeButton, JPanel pMotionBlurPanel,
-      JButton pMotionCurvePlayPreviewButton) {
+      JPanel pFrameSliderPanel, JLabel pKeyframesFrameLbl, JLabel pKeyframesFrameCountLbl, JToggleButton pMotionCurveEditModeButton,
+      JPanel pMotionBlurPanel, JButton pMotionCurvePlayPreviewButton, JWFNumberField pFlameFPSField) {
     tinaController = pTinaController;
     errorHandler = pErrorHandler;
     prefs = pPrefs;
@@ -67,6 +68,7 @@ public class AnimationController {
     motionCurveEditModeButton = pMotionCurveEditModeButton;
     motionBlurPanel = pMotionBlurPanel;
     motionCurvePlayPreviewButton = pMotionCurvePlayPreviewButton;
+    flameFPSField = pFlameFPSField;
     enableControls();
   }
 
@@ -296,5 +298,4 @@ public class AnimationController {
       new Thread(playPreviewThread).start();
     }
   }
-
 }

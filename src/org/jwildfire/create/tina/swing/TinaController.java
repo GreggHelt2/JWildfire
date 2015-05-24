@@ -94,6 +94,7 @@ import org.jwildfire.create.tina.io.Flam3GradientReader;
 import org.jwildfire.create.tina.io.FlameReader;
 import org.jwildfire.create.tina.io.FlameWriter;
 import org.jwildfire.create.tina.io.RGBPaletteReader;
+import org.jwildfire.create.tina.leapmotion.LeapMotionMainEditorController;
 import org.jwildfire.create.tina.meshgen.MeshGenController;
 import org.jwildfire.create.tina.mutagen.BokehMutation;
 import org.jwildfire.create.tina.mutagen.MutaGenController;
@@ -142,6 +143,11 @@ import org.jwildfire.swing.ErrorHandler;
 import org.jwildfire.swing.ImageFileChooser;
 import org.jwildfire.swing.ImagePanel;
 import org.jwildfire.swing.MainController;
+import org.jwildfire.transform.TextTransformer;
+import org.jwildfire.transform.TextTransformer.FontStyle;
+import org.jwildfire.transform.TextTransformer.HAlignment;
+import org.jwildfire.transform.TextTransformer.Mode;
+import org.jwildfire.transform.TextTransformer.VAlignment;
 
 import com.l2fprod.common.beans.editor.FilePropertyEditor;
 import com.l2fprod.common.swing.JFontChooser;
@@ -178,6 +184,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
   private FlameBrowserController flameBrowserController;
   private GradientController gradientController;
   private AnimationController animationController;
+  private LeapMotionMainEditorController leapMotionMainEditorController;
 
   private FlameControlsDelegate flameControls;
   private GradientControlsDelegate gradientControls;
@@ -207,7 +214,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
   private Flame _currFlame, _currRandomizeFlame;
   private boolean noRefresh;
   private final ProgressUpdater mainProgressUpdater;
-  private TinaControllerData data = new TinaControllerData();
+  public TinaControllerData data = new TinaControllerData();
   private VariationControlsDelegate[] variationControlsDelegates;
   private RGBPalette _lastGradient;
 
@@ -315,7 +322,16 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     animationController = new AnimationController(this, parameterObject.pErrorHandler, prefs, parameterObject.pCenterPanel,
         parameterObject.keyframesFrameField, parameterObject.keyframesFrameSlider, parameterObject.keyframesFrameCountField,
         parameterObject.frameSliderPanel, parameterObject.keyframesFrameLbl, parameterObject.keyframesFrameCountLbl,
-        parameterObject.motionCurveEditModeButton, parameterObject.motionBlurPanel, parameterObject.motionCurvePlayPreviewButton);
+        parameterObject.motionCurveEditModeButton, parameterObject.motionBlurPanel, parameterObject.motionCurvePlayPreviewButton,
+        parameterObject.flameFPSField);
+
+    leapMotionMainEditorController = new LeapMotionMainEditorController(this, parameterObject.pErrorHandler, prefs,
+        parameterObject.pCenterPanel, parameterObject.flameFPSField, parameterObject.leapMotionToggleButton,
+        parameterObject.leapMotionConfigTable, parameterObject.leapMotionHandCmb, parameterObject.leapMotionInputChannelCmb,
+        parameterObject.leapMotionOutputChannelCmb, parameterObject.leapMotionIndex1Field, parameterObject.leapMotionIndex2Field,
+        parameterObject.leapMotionIndex3Field, parameterObject.leapMotionInvScaleField,
+        parameterObject.leapMotionOffsetField, parameterObject.leapMotionAddButton, parameterObject.leapMotionDuplicateButton,
+        parameterObject.leapMotionDeleteButton, parameterObject.leapMotionClearButton, parameterObject.leapMotionResetConfigButton);
 
     data.toggleDetachedPreviewButton = parameterObject.toggleDetachedPreviewButton;
     data.cameraRollREd = parameterObject.pCameraRollREd;
@@ -445,6 +461,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     data.affineRotateEditMotionCurveBtn = parameterObject.affineRotateEditMotionCurveBtn;
     data.affineScaleEditMotionCurveBtn = parameterObject.affineScaleEditMotionCurveBtn;
     data.affineEditPostTransformSmallButton = parameterObject.pAffineEditPostTransformSmallButton;
+    data.affinePreserveZButton = parameterObject.pAffinePreserveZButton;
     data.affineScaleXButton = parameterObject.pAffineScaleXButton;
     data.affineScaleYButton = parameterObject.pAffineScaleYButton;
 
@@ -1192,6 +1209,10 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     flamePreviewHelper.refreshFlameImage(pQuickRender, pMouseDown, pDownScale);
   }
 
+  public void fastRefreshFlameImage(boolean pQuickRender, boolean pMouseDown, int pDownScale) {
+    flamePreviewHelper.fastRefreshFlameImage(pQuickRender, pMouseDown, pDownScale);
+  }
+
   @Override
   public void refreshUI() {
     gridRefreshing = true;
@@ -1227,6 +1248,8 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
       flameControls.refreshFlameValues();
 
       refreshBGColorIndicator();
+
+      data.affinePreserveZButton.setSelected(getCurrFlame().isPreserveZ());
 
       gridRefreshing = true;
       try {
@@ -2245,6 +2268,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     enableUndoControls();
     getBatchRendererController().enableJobRenderControls();
     getAnimationController().enableControls();
+    getLeapMotionMainEditorController().enableControls();
     getJwfScriptController().enableControls();
     getGradientController().enableControls();
     getFlameBrowserController().enableControls();
@@ -3921,6 +3945,17 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     this.interactiveRendererCtrl = interactiveRendererCtrl;
   }
 
+  public void affinePreserveZButton_clicked() {
+    if (gridRefreshing || cmbRefreshing) {
+      return;
+    }
+    if (getCurrFlame() != null) {
+      saveUndoPoint();
+      getCurrFlame().setPreserveZ(data.affinePreserveZButton.isSelected());
+      refreshFlameImage(false);
+    }
+  }
+
   private void setupProfiles(Flame pFlame) {
     if (prefs.isTinaAssociateProfilesWithFlames()) {
       if (pFlame.getResolutionProfile() != null) {
@@ -4517,6 +4552,10 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
 
   public AnimationController getAnimationController() {
     return animationController;
+  }
+
+  public LeapMotionMainEditorController getLeapMotionMainEditorController() {
+    return leapMotionMainEditorController;
   }
 
   public void mouseTransformEditGradientButton_clicked() {
@@ -5631,12 +5670,39 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     try {
       if (getCurrFlame() != null) {
         closeDetachedPreview();
+        data.toggleDetachedPreviewButton.setSelected(false);
         new ChaoticaLauncher().launchChaotica(generateExportFlame(getCurrFlame()));
         messageHelper.showStatusMessage(getCurrFlame(), "flame sucessfully exported");
       }
     }
     catch (Throwable ex) {
       errorHandler.handleError(ex);
+    }
+  }
+
+  public void countDown(int pTime) {
+    for (int i = pTime; i >= 0; i--) {
+      Rectangle bounds = flamePreviewHelper.getPanelBounds();
+      SimpleImage img = new SimpleImage((int) bounds.getWidth(), (int) bounds.getHeight());
+      TextTransformer txt = new TextTransformer();
+      txt.setText1(i > 0 ? String.valueOf(i) : "go!");
+      txt.setAntialiasing(true);
+      txt.setColor(Color.RED);
+      txt.setMode(Mode.NORMAL);
+      txt.setFontStyle(FontStyle.BOLD);
+      txt.setFontName("Arial");
+      txt.setFontSize(64);
+      txt.setHAlign(HAlignment.CENTRE);
+      txt.setVAlign(VAlignment.CENTRE);
+      txt.transformImage(img);
+      flamePreviewHelper.setImage(img);
+      flamePreviewHelper.forceRepaint();
+      try {
+        Thread.sleep(i > 0 ? 500 : 50);
+      }
+      catch (InterruptedException e) {
+        e.printStackTrace();
+      }
     }
   }
 

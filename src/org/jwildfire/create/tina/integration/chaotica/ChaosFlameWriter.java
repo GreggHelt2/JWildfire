@@ -97,6 +97,9 @@ public class ChaosFlameWriter {
   private static final String PROPERTY_Y_AXIS_LENGTH = "y_axis_length";
 
   private static final int AA_LEVEL = 2;
+  private static final String PROPERTY_MITCHELL_NETRAVALI_BLUR = "mitchell_netravali_blur";
+  private static final String PROPERTY_MITCHELL_NETRAVALI_RING = "mitchell_netravali_ring";
+  private static final String PROPERTY_MITCHELL_NETRAVALI_WIDTH = "mitchell_netravali_width";
 
   private ChaoticaPluginTranslators translator = new ChaoticaPluginTranslators();
   private final Flame flame;
@@ -574,6 +577,10 @@ public class ChaosFlameWriter {
     addIntProperty(xb, PROPERTY_IMAGE_LAYERS, 1, null);
     addIntProperty(xb, PROPERTY_IMAGE_QUALITY, 0, null);
     addStringProperty(xb, PROPERTY_ANTIALIASING_MODE, "strong");
+    //    addStringProperty(xb, PROPERTY_ANTIALIASING_MODE, "mitchell-netravali");
+    //    addRealProperty(xb, PROPERTY_MITCHELL_NETRAVALI_BLUR, 0.33, null);
+    //    addRealProperty(xb, PROPERTY_MITCHELL_NETRAVALI_RING, 0.33, null);
+    //    addRealProperty(xb, PROPERTY_MITCHELL_NETRAVALI_WIDTH, 4, null);
     addRealProperty(xb, PROPERTY_BRIGHTNESS, pFlame.getBrightness(), null);
     addVec4Property(xb, PROPERTY_BACKGROUND_COLOR, convertColorValue(pFlame.getBGColorRed()), convertColorValue(pFlame.getBGColorGreen()), convertColorValue(pFlame.getBGColorBlue()), convertColorValue(255));
     addBoolProperty(xb, PROPERTY_APPLY_BG_BEFORE_CURVES, false);
@@ -628,14 +635,32 @@ public class ChaosFlameWriter {
     }
     addVec2Property(xb, PROPERTY_POS, pFlame.getCentreX(), -pFlame.getCentreY(), cxCurve, cyCurve);
     addRealProperty(xb, PROPERTY_ROTATE, pFlame.getCamRoll(), pFlame.getCamRollCurve());
-    double final_scale = pFlame.getPixelsPerUnit() * pFlame.getCamZoom() * 2.0;
-    double sensor_width = (double) (pFlame.getWidth() * AA_LEVEL) / final_scale;
-    addRealProperty(xb, PROPERTY_SENSOR_WIDTH, sensor_width, null);
+
+    double sensorWidth = calcSensorWidth(pFlame, pFlame.getPixelsPerUnit(), pFlame.getCamZoom());
+    List<Integer> camKeyFrames = collectKeyFrames(pFlame.getPixelsPerUnitCurve(), pFlame.getCamZoomCurve());
+    if (camKeyFrames.size() > 0) {
+      MotionCurve sensorWidthCurve = new MotionCurve();
+      sensorWidthCurve.setEnabled(true);
+      for (Integer keyFrame : camKeyFrames) {
+        double pixelsPerUnit = evalCurve(pFlame.getPixelsPerUnitCurve(), keyFrame, pFlame.getPixelsPerUnit());
+        double camZoom = evalCurve(pFlame.getCamZoomCurve(), keyFrame, pFlame.getCamZoom());
+        sensorWidthCurve.appendKeyFrame(keyFrame, calcSensorWidth(pFlame, pixelsPerUnit, camZoom));
+      }
+      addRealProperty(xb, PROPERTY_SENSOR_WIDTH, sensorWidth, sensorWidthCurve);
+    }
+    else {
+      addRealProperty(xb, PROPERTY_SENSOR_WIDTH, sensorWidth, null);
+    }
     Layer layer = pFlame.getFirstLayer();
     if (layer.getFinalXForms().size() > 0) {
       addTransform(xb, layer.getFinalXForms().get(0), variatonIdProvider, "Viewing transform");
     }
     xb.endElement(ELEM_CAMERA);
+  }
+
+  private double calcSensorWidth(Flame pFlame, double pPixelsPerUnit, double pCamZoom) {
+    double final_scale = pPixelsPerUnit * pCamZoom * 2.0;
+    return (double) (pFlame.getWidth() * AA_LEVEL) / final_scale;
   }
 
   private void addIntProperty(SimpleXMLBuilder xb, String property, int value, MotionCurve pCurve) {
