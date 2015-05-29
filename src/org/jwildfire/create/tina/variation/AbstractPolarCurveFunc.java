@@ -5,6 +5,7 @@ import static java.lang.Math.ceil;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import static org.jwildfire.base.mathlib.MathLib.EPSILON;
 import static org.jwildfire.base.mathlib.MathLib.M_PI;
 import static org.jwildfire.base.mathlib.MathLib.M_2PI;
 import static org.jwildfire.base.mathlib.MathLib.sqrt;
@@ -21,6 +22,8 @@ import org.jwildfire.create.tina.base.XYZPoint;
 
 public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected boolean DEBUG = false;
+  protected boolean DRAW_DIAGNOSTICS = false;
+  protected boolean DEBUG_MODES = false;
 
   public enum RenderMode { DEFAULT(0), 
                            ONCURVE(1),
@@ -85,7 +88,14 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   }
   
   public enum PointRadiusMode { AUTO, MODIFIED, RAW }
-  public enum InsideOutsideRule { AUTO, EVEN_ODD, EVEN_ODD_OUTISH, MODIFIED_EVEN_ODD, MODIFIED_EVEN_ODD_INISH_OUTISH }
+  public enum InsideOutsideRule { AUTO, EVEN_ODD, EVEN_ODD_OUTISH, MODIFIED_EVEN_ODD, MODIFIED_EVEN_ODD_INISH_OUTISH, MOD2;
+      public static InsideOutsideRule get(int oindex) {
+      if (oindex < 0 || oindex >= values().length) { return null; }
+      else  { return values()[oindex]; }
+    }
+    public int getIntegerMode() { return this.ordinal(); }
+  }
+  
   public enum MergeMode { AUTO,  // depends on mode?
                           NONE,  // no merging of modes
                           ALL, // inner* controls all (inner/outer/inish/outish) 
@@ -164,7 +174,8 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected static final String PARAM_FILL = "fill";
   protected static final String PARAM_CYCLES = "cycles";
   protected static final String PARAM_CURVE_RADIUS_MODE = "curve_radius_mode";
-  protected static final String PARAM_CYCLE_OFFSET = "cycle_offset";
+  protected static final String PARAM_LOCATION_CLASSIFIER = "location_classifier";
+  protected static final String PARAM_CYCLE_ROTATION = "cycle_rotation";
   // metacycles (and metacycle_expansion) are only in effect when cycles = 0 (automatic cycle calculations in effect), 
   //   and cycles to close can be determined (cycles_to_close > 0)
   protected static final String PARAM_METACYCLES = "metacycles";
@@ -179,8 +190,8 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                                                PARAM_INNER_SPREAD, PARAM_OUTER_SPREAD, PARAM_OUTISH_SPREAD, 
                                                PARAM_INNER_SPREAD_RATIO, PARAM_OUTER_SPREAD_RATIO, PARAM_OUTISH_SPREAD_RATIO, 
                                                PARAM_SPREAD_SPLIT,
-                                               PARAM_CYCLES, PARAM_CYCLE_OFFSET, 
-                                               PARAM_FILL, PARAM_CURVE_RADIUS_MODE, 
+                                               PARAM_CYCLES, PARAM_CYCLE_ROTATION, 
+                                               PARAM_FILL, PARAM_CURVE_RADIUS_MODE, PARAM_LOCATION_CLASSIFIER, 
                                                PARAM_METACYCLES, PARAM_METACYCLE_OFFSET, PARAM_METACYCLE_SCALE };
 //                                               PARAM_METACYCLE_ROTATION }; 
 
@@ -191,17 +202,17 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected RenderMode outer_mode = RenderMode.ONCURVE;
   protected RenderMode outish_mode = RenderMode.ONCURVE;
   protected CurveRadiusMode curve_rmode = CurveRadiusMode.AUTO;
+  protected InsideOutsideRule location_mode = InsideOutsideRule.AUTO;
 
   protected MergeMode mode_merge_param = mode_merge;
   protected RenderMode inner_param = inner_mode;
   protected RenderMode outer_param = outer_mode;
   protected RenderMode outish_param = outish_mode;
   protected CurveRadiusMode curve_rmode_param = curve_rmode;
+  protected InsideOutsideRule location_mode_param = location_mode;
   
   // point_rmode is currently hardwired, not available as a user param
   PointRadiusMode point_rmode = PointRadiusMode.MODIFIED;
-  // inout_rule is currently hardwired, not available as a user param
-  InsideOutsideRule inout_rule = InsideOutsideRule.EVEN_ODD_OUTISH;
 
   protected double inner_spread = 0.5; // deform based on original x/y
   protected double outer_spread = 0.5; // deform based on original x/y
@@ -215,13 +226,13 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected double fill = 0;
   protected double cycles_param;
   
-  protected double point_radius_mode;
-  protected double in_out_mode;
+  // protected double point_radius_mode;
+  // protected double in_out_mode;
   
   protected double cycles;  // 1 cycle = 2*PI
   protected double cycle_length = M_2PI; // 2(PI)
   protected double cycles_to_close = 0; // 0 indicates unknown, -1 indicates curve will never close
-  protected double cycle_offset = 0; // cycle offset (in cycles) for incoming points (rotate the cycle)
+  protected double cycle_rotation = 0; // cycle rotation (in cycles) for incoming points (rotate the cycle)
   protected double metacycles = 1; // if cycles is calculated automatically to close the curve, metacycles is number of times to loop over closed curve
   protected double metacycle_offset = 0.1; // P(m) = P * (1 + mOffset) * ((mScale)^m))  // cumulative offset for metacycles
   protected double metacycle_scale = 1.1;
@@ -285,6 +296,22 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     else {
       curve_rmode = curve_rmode_param;
     }
+    
+    if (location_mode_param == InsideOutsideRule.AUTO) {
+      location_mode = InsideOutsideRule.EVEN_ODD_OUTISH;
+    }
+    else { location_mode = location_mode_param; }
+    
+    if (DEBUG_MODES) {
+      System.out.println("mode_merge: " + this.mode_merge.name());
+      System.out.println("inner_mode: " + inner_mode.name());
+      System.out.println("outer_mode: " + outer_mode.name());
+      System.out.println("outish_mode: " + outish_mode.name());
+      System.out.println("curve_radius_mode: " + this.curve_rmode.name());
+      System.out.println("point_radius_mode: " + this.point_rmode.name());
+      System.out.println("location_mode: " + this.location_mode.name());
+      System.out.println("============================================");
+    }
 
     unipolar = new LinkedPolarCurvePoint(0, 0);
     unisects = new ArrayList<LinkedPolarCurvePoint>(1);
@@ -299,12 +326,20 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   
   @Override
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
-    // input
-    // output
-    double tin = atan2(pAffineTP.y, pAffineTP.x);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
-    double theta = cycles * tin;
+    // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
+    //    range of atan2 is from [0 --> PI] for  positive y as x:[+->0->-]  (at x=0, atan2 = PI/2)
+    //                 and  from [0 --> -PI] for negative y as x:[+->0->-]  (at y=0, atan2 = -PI/2)
+    double tin = atan2(pAffineTP.y, pAffineTP.x);  
     
-    //    SimplePoint curvePoint = new SimplePoint(0.0, 0.0, 0.0);
+    // then stretch theta over full number of cycles
+    // so range of theta is [0 --> cycles*PI] and [0 --> -cycles*PI], or overall [-cycles*PI --> cycles*PI]
+    //      with range delta of cycles*2PI
+    double theta = (cycles * tin);  
+
+    // and add cycle_rotation
+    theta += cycle_rotation * M_2PI;
+    
+    // use scratch XYZPoint pCurve to calc points on curve
     pCurve.clear();
     calcCurvePoint(pContext, theta, pCurve);
     renderByMode(pContext, pXForm, pAffineTP, pVarTP, pAmount, pCurve);
@@ -347,18 +382,31 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   public void calcCurvePoint(FlameTransformationContext pContext, double theta, XYZPoint pResult) {
     // pResult.clear();  NO, don't clear point! need incoming point from subclass
     if (cycles_param == 0 && cycles_to_close > 0 && metacycles != 1) {
-      // double metacycle_count = floor((cycles * (tin + M_PI)) / (cycles_to_close * 2 * M_PI));
-      // double metacycle_count = floor((theta + (cycles * M_PI)) / (cycles_to_close * 2 * M_PI));
-      // metacycle_count does not include first cycles, so goes from 0 to metacycles - 1 (since metacycles includes first cycle)
-      double metacycle_count = ceil((theta + (cycles * M_PI)) / (cycles_to_close * 2 * M_PI)) - 1;
-      if (metacycle_count > 0) { 
-        double metacycle_delta = (metacycle_count * metacycle_offset) + (pow(metacycle_scale, metacycle_count)-1);
-        pResult.x = pResult.x * (1 + metacycle_delta);
-        pResult.y = pResult.y * (1 + metacycle_delta);
-        // z unchanged?
-      }
+      // double metacycle_count = floor((theta + (cycles * M_PI)) / (cycles_to_close * M_2PI));
+      // metacycle_count = floor((theta + (cycles * M_PI) - (cycle_rotation * M_2PI)) / (cycles_to_close * M_2PI));
+        double metacycle_progress = (theta + (cycles * M_PI) - (cycle_rotation * M_2PI)) / (cycles_to_close * M_2PI);
+        // need to check if metacycles calcs are very slightly too low or too high
+        //    (I think due to double rounding errors?)
+        if (metacycle_progress < 0) {
+          System.out.println("in transform(), metacycle < 0: " + metacycle_progress + " theta: " + theta + " theta/PI: " + theta/M_PI);
+          // see if adding epsilon will raise
+          metacycle_progress += EPSILON;
+        }
+        else if (metacycle_progress >= metacycles) {
+          // see if subtracting epsilon will lower
+          System.out.println("metacycle >= metacycles: " + metacycle_progress + " theta: " + theta + " theta/PI: " + theta/M_PI);
+          metacycle_progress -= EPSILON;
+        }
+        double metacycle_count = (int)floor(metacycle_progress);
+
+        if (metacycle_count > 0) { 
+          double metacycle_delta = (metacycle_count * metacycle_offset) + (pow(metacycle_scale, metacycle_count)-1);
+          pResult.x = pResult.x * (1 + metacycle_delta);
+          pResult.y = pResult.y * (1 + metacycle_delta);
+          // z unchanged?
+        }
     }
-  }
+  }  
 
 
   int recalcCount = 0; 
@@ -378,9 +426,9 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     int firstbin = -1;
     int lastbin = -1;
     int sampleCount = default_sample_count;
-    //if (cycles_param == 0 && cycles_to_close > 0 && metacycles > 1) {
-    //  sampleCount = (int)(sampleCount * metacycles);
-    //}
+    if (cycles_param == 0 && cycles_to_close > 0 && metacycles > 1) {
+      sampleCount = (int)(sampleCount * metacycles);
+    }
     // int prev_metacycle = (int)(this.metacycles - 1);
     int prev_metacycle = -1000;
     ArrayList<LinkedPolarCurvePoint> metacycle_first_points = new ArrayList<LinkedPolarCurvePoint>((int)ceil(metacycles));  // for each metacycle, keep track of first point (for looping)
@@ -389,32 +437,28 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
       metacycle_first_points.add(null);
       metacycle_last_points.add(null);
     }
+    // System.out.println("metacycles: " + metacycles + ", meta_points.size(): " + metacycle_first_points.size());
 
     for (int i=0; i<sampleCount; i++) {
-//      double theta = ((double)i/(double)sampleCount) * cycles * M_2PI;
-      double theta = (((double)i/(double)sampleCount) * cycles * M_2PI);
-
-      // theta = theta - (cycles * M_PI);
-      // theta = theta - M_PI;
-      theta = (cycles * M_PI) - theta;
-      // need to compensate to for theta adjusment in calcCurvePoint() ??      
-      // so as i increases, theta actually decreases?       
-      //   which means for example if metacycles, starts with max metacycle at i = 0 and steadily decrements metacycle
-      //   should really fix this so theta is increasing, this is making it confusing to follow what's happening
-      //      but to fix it, would also need to adjust calcCurvePoint()...
+      // want theta to span expected thetas used as input to calcCurvePoint(), so range needs to be       
+      //    same as theta calculated in transform() (that is used as input to calcCurvePoint())
+      // double theta = ((((double)i/(double)sampleCount) - 0.5) * cycles * M_2PI) + (cycle_rotation * M_2PI);
+      double theta = (((double)i/(double)sampleCount) * cycles * M_2PI)  - (cycles * M_PI) + (cycle_rotation * M_2PI);
+      // or equivalently, 
+      // double theta = ((((double)i/(double)sampleCount) - 0.5) * cycles * M_2PI) + (cycle_rotation * M_2PI);
+      double cycles_for_calc;
+      if (cycles_to_close > 0)  { cycles_for_calc = cycles_to_close; }
+      else { cycles_for_calc = cycles; }
 
       pCurve.clear();
       calcCurvePoint(null, theta, pCurve);
       
       double r = sqrt(pCurve.x * pCurve.x + pCurve.y * pCurve.y);
       double angle = atan2(pCurve.y, pCurve.x);
-      
       int anglebin =  (int)Math.floor(((angle + M_PI)/M_2PI) * binCount);
-
       // catching any possible cases where angle actually reaches max atan2
       //   (actually, maybe should loop around instead to bin 0?
       if (anglebin == binCount) { anglebin--; } 
-      
       tsects = theta_intersects.get(anglebin);
 
       // still rotating through same bin, merge results
@@ -426,18 +470,33 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
         LinkedPolarCurvePoint point = new LinkedPolarCurvePoint(r, angle);
         point.bin = anglebin;
         
-        double cycles_for_calc;
-        if (cycles_to_close > 0)  { cycles_for_calc = cycles_to_close; }
-        else { cycles_for_calc = cycles; }
-        int metacycle = (int)(ceil((theta + (cycles * M_PI)) / (cycles_for_calc * 2 * M_PI)) - 1);
-        if (metacycle == prev_metacycle) { // still in same metacycle
+        double metacycle_progress = (theta + (cycles * M_PI) - (cycle_rotation * M_2PI)) / (cycles_for_calc * M_2PI);
+        // need to check if metacycles calcs are very slightly too low or too high
+        //    (I think due to double rounding errors?)
+        if (metacycle_progress < 0) {
+          if (DEBUG_INTERSECTS) { System.out.println("metacycle < 0: " + metacycle_progress + ", samplecount: " + i + ", theta: " + theta + " theta/PI: " + theta/M_PI); }
+          // see if adding epsilon will raise
+          metacycle_progress += EPSILON;
+        }
+        else if (metacycle_progress >= metacycles) {
+          if (DEBUG_INTERSECTS) { System.out.println("metacycle >= metacycles: " + metacycle_progress + ", samplecount: " + i + ", theta: " + theta + " theta/PI: " + theta/M_PI); }
+          // see if subtracting epsilon will lower
+          metacycle_progress -= EPSILON;
+        }
+        int metacycle_count = (int)floor(metacycle_progress);
+        
+        // int metacycle = (int)(ceil((theta + (cycles * M_PI) + (cycle_rotation * M_2PI))/ (cycles_for_calc * M_2PI)) - 1);
+        if (metacycle_count == prev_metacycle) { // still in same metacycle
           point.prev = prev_point;
           if (prev_point != null) { prev_point.next = point; }
         }
         else {
-          // if (DEBUG_INTERSECTS) { System.out.println("new metacycle: " + metacycle + ", bin: " + anglebin + ", radius: " + r + ", angle: " + angle); }
+          if (DEBUG_INTERSECTS) { System.out.println("new metacycle: " + metacycle_count + ", bin: " + anglebin + ", radius: " + r + ", angle: " + angle); }
           // initialize new metacycle, close previous metacycle
-          metacycle_first_points.set(metacycle, point);
+          if (metacycle_count < 0 || metacycle_count > metacycles) {
+            if (DEBUG_INTERSECTS) { System.out.println("error: " + ((theta + (cycles * M_PI) - (cycle_rotation * M_2PI)) / (cycles_to_close * M_2PI))); }
+          }
+          metacycle_first_points.set(metacycle_count, point);
           if (prev_point != null && prev_metacycle >= 0) {
             metacycle_last_points.set(prev_metacycle, prev_point);
           }
@@ -448,7 +507,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
           // first_point = point;
         }
         prev_point = point;
-        prev_metacycle = metacycle;
+        prev_metacycle = metacycle_count;
       }
 
       if (i == (sampleCount-1)) { 
@@ -467,8 +526,6 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
         printBin(0);
         printBin(binCount-1);
       }
-      // PolarPoint prev = new PolarPoint(lp.radius, lp.angle + (cycles_for_calc * M_2PI));
-      // PolarPoint next = new PolarPoint(fp.radius, fp.angle - (cycles_for_calc * M_2PI));
       LinkedPolarCurvePoint prev = new LinkedPolarCurvePoint(lp.radius, lp.angle);
       LinkedPolarCurvePoint next = new LinkedPolarCurvePoint(fp.radius, fp.angle);
       prev.bin = lp.bin;
@@ -718,7 +775,7 @@ public void printBin(int index) {
     else if ((rpoint - nearest_shorter) < (nearest_longer - rpoint)) { nearest = nearest_shorter; }
     else { nearest = nearest_longer; }
     
-    if (inout_rule == InsideOutsideRule.EVEN_ODD) {
+    if (location_mode == InsideOutsideRule.EVEN_ODD) {
       // use standard Even-Odd rule (well, more standard than the modified one above...):
       //    cast ray from origin through incoming point to infinity
       //    count how many times curve intersects ray further out than incoming point (longer)
@@ -726,7 +783,7 @@ public void printBin(int index) {
       if (longer % 2 == 0) { pstate = PointState.OUTSIDE; } // point is outside
       else { pstate = PointState.INSIDE; } // point is inside
     }
-    else if (inout_rule == InsideOutsideRule.EVEN_ODD_OUTISH) {
+    else if (location_mode == InsideOutsideRule.EVEN_ODD_OUTISH) {
       // use standard Even-Odd rule as above (well, more standard than the modified ones below...), 
       //    but distinguish between OUTER an OUTISH:
       //    OUTISH if standard Even-Odd calls as OUTER, but still have at least one curve intersect on ray 
@@ -740,8 +797,19 @@ public void printBin(int index) {
       }
       else { pstate = PointState.INSIDE; } // point is inside
     }
+    else if (location_mode == InsideOutsideRule.MOD2) {
+      if (longer == 0) { // definitely outside
+        pstate = PointState.OUTSIDE;
+      }
+      else if (shorter == 0) { // definitely inside
+        pstate = PointState.INSIDE;
+      }
+      else if (longer % 2 == 0) { 
+        pstate = PointState.OUTISH;
+      }
+    }
 
-    else if (inout_rule == InsideOutsideRule.MODIFIED_EVEN_ODD_INISH_OUTISH) {
+    else if (location_mode == InsideOutsideRule.MODIFIED_EVEN_ODD_INISH_OUTISH) {
       if (longer == 0) { // definitely outside
         pstate = PointState.OUTSIDE;
       }
@@ -773,7 +841,7 @@ public void printBin(int index) {
       }
     }
         
-    else if (inout_rule == InsideOutsideRule.MODIFIED_EVEN_ODD) {
+    else if (location_mode == InsideOutsideRule.MODIFIED_EVEN_ODD) {
       /*
       *  use modified Even-Odd rule for inside/outside determination
       *  asssumes that curve is closed and encloses origin (0, 0)
@@ -1017,7 +1085,59 @@ public void printBin(int index) {
       }
       //    pVarTP.z += adjustedAmount * pAffineTP.z;
       pVarTP.z += pAmount * pAffineTP.z;
-    
+
+      if (DRAW_DIAGNOSTICS) {
+        drawDiagnostics(pContext, pVarTP);
+      }
+  }
+  
+  protected void drawDiagnostics(FlameTransformationContext pContext, XYZPoint pVarTP) {
+        double diagnostic = pContext.random() * 200;
+      // draw diagnostic unit circles
+      if (diagnostic == 0) {
+        // ignore zero
+      }
+      if (diagnostic <= 4) { // diagnostic = (0-4]
+        double radius = ceil(diagnostic)/2; // radius = 0.5, 1, 1.5, 2
+        double angle = diagnostic * 2 * M_PI; // in radians, ensures coverage of unit circles
+        pVarTP.x = radius * cos(angle);
+        pVarTP.y = radius * sin(angle);
+      }
+      // draw diagnostic unit squares
+      else if (diagnostic <= 8) { // diagnostic = (4-8]
+        double unit = (ceil(diagnostic) - 4)/2; // unit = 0.5, 1, 1.5, 2
+        int side = (int) ceil(5 * (ceil(diagnostic) - diagnostic)); // side = 1, 2, 3, 4
+        double varpos = (pContext.random() * unit * 2) - unit;
+        double sx = 0, sy = 0;
+        if (side == 1) {
+          sx = unit;
+          sy = varpos;
+        }
+        else if (side == 2) {
+          sx = varpos;
+          sy = unit;
+        }
+        else if (side == 3) {
+          sx = -1 * unit;
+          sy = varpos;
+        }
+        else if (side == 4) {
+          sx = varpos;
+          sy = -1 * unit;
+        }
+        pVarTP.x = sx;
+        pVarTP.y = sy;
+      }
+      else if (diagnostic <= 9) {
+        // x = 0 gridline
+        pVarTP.x = 0;
+        pVarTP.y = (4 * (diagnostic - 8)) - 2; // line where y = [-2, 2]
+      }
+      else if (diagnostic <= 10) {
+        // y = 0 gridline
+        pVarTP.x = (4 * (diagnostic - 9)) - 2; // line where y = [-2, 2]
+        pVarTP.y = 0;
+      }
   }
   
   @Override
@@ -1034,8 +1154,8 @@ public void printBin(int index) {
                           inner_spread, outer_spread, outish_spread, 
                           inner_spread_ratio, outer_spread_ratio, outish_spread_ratio, 
                           spread_split,
-                          cycles_param, cycle_offset, 
-                          fill, curve_rmode_param.getIntegerMode(), 
+                          cycles_param, cycle_rotation, 
+                          fill, curve_rmode_param.getIntegerMode(), location_mode_param.getIntegerMode(), 
                           metacycles, metacycle_offset, metacycle_scale
     };
   }
@@ -1077,13 +1197,17 @@ public void printBin(int index) {
       spread_split = pValue;
     else if (PARAM_CYCLES.equalsIgnoreCase(pName))
       cycles_param = abs(pValue);
-    else if (PARAM_CYCLE_OFFSET.equalsIgnoreCase(pName))
-      cycle_offset = pValue;    
+    else if (PARAM_CYCLE_ROTATION.equalsIgnoreCase(pName))
+      cycle_rotation = pValue;    
     else if (PARAM_FILL.equalsIgnoreCase(pName))
       fill = pValue;
     else if (PARAM_CURVE_RADIUS_MODE.equalsIgnoreCase(pName)) {
       this.curve_rmode_param = CurveRadiusMode.get((int)floor(pValue));
       if (curve_rmode_param == null) { curve_rmode_param = CurveRadiusMode.AUTO; }
+    }
+    else if (PARAM_LOCATION_CLASSIFIER.equalsIgnoreCase(pName)) {
+      this.location_mode_param = InsideOutsideRule.get((int)floor(pValue));
+      if (location_mode_param == null) { location_mode_param = InsideOutsideRule.AUTO; }
     }
     else if (PARAM_METACYCLES.equalsIgnoreCase(pName)) {
       metacycles = abs(pValue);
