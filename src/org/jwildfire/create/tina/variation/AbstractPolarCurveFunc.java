@@ -24,6 +24,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected boolean DEBUG = false;
   protected boolean DRAW_DIAGNOSTICS = false;
   protected boolean DEBUG_MODES = false;
+  boolean DEBUG_INTERSECTS = false;
 
   public enum RenderMode { DEFAULT(0), 
                            ONCURVE(1),
@@ -181,7 +182,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected static final String PARAM_METACYCLES = "metacycles";
   protected static final String PARAM_METACYCLE_OFFSET = "metacycle_offset";
   protected static final String PARAM_METACYCLE_SCALE = "metacycle_scale";
- // protected static final String PARAM_METACYCLE_ROTATION = "metacycle_rotation";
+  protected static final String PARAM_METACYCLE_ROTATION = "metacycle_rotation";
   
   protected static final String[] paramNames = { 
                                                PARAM_CURVE_SCALE, 
@@ -192,8 +193,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                                                PARAM_SPREAD_SPLIT,
                                                PARAM_CYCLES, PARAM_CYCLE_ROTATION, 
                                                PARAM_FILL, PARAM_CURVE_RADIUS_MODE, PARAM_LOCATION_CLASSIFIER, 
-                                               PARAM_METACYCLES, PARAM_METACYCLE_OFFSET, PARAM_METACYCLE_SCALE };
-//                                               PARAM_METACYCLE_ROTATION }; 
+                                               PARAM_METACYCLES, PARAM_METACYCLE_OFFSET, PARAM_METACYCLE_SCALE, PARAM_METACYCLE_ROTATION }; 
 
   protected double curve_scale = 1;
 
@@ -236,7 +236,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected double metacycles = 1; // if cycles is calculated automatically to close the curve, metacycles is number of times to loop over closed curve
   protected double metacycle_offset = 0.1; // P(m) = P * (1 + mOffset) * ((mScale)^m))  // cumulative offset for metacycles
   protected double metacycle_scale = 1.1;
-  // protected double metacycle_rotation = 0; // additional (cumulative) theta offset (in cycles) for each metacycle (rotate the metacycle)
+  protected double metacycle_rotation = 0; // additional (cumulative) theta offset (in cycles) for each metacycle (rotate the metacycle)
 
   // vars for determining inner/outer via even-odd rule
   int default_sample_count = 36000;
@@ -336,14 +336,13 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     //      with range delta of cycles*2PI
     double theta = (cycles * tin);  
 
-    // and add cycle_rotation
+    // and add cycle_rotation (metacycle_rotation is added in calcCurvePoint())
     theta += cycle_rotation * M_2PI;
     
     // use scratch XYZPoint pCurve to calc points on curve
     pCurve.clear();
     calcCurvePoint(pContext, theta, pCurve);
     renderByMode(pContext, pXForm, pAffineTP, pVarTP, pAmount, pCurve);
-    
   }
   
   /*
@@ -380,37 +379,55 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
    *  should end subclass method by calling super.calcCurvePoint(), to allow handling of metacycles
   */
   public void calcCurvePoint(FlameTransformationContext pContext, double theta, XYZPoint pResult) {
-    // pResult.clear();  NO, don't clear point! need incoming point from subclass
-    if (cycles_param == 0 && cycles_to_close > 0 && metacycles != 1) {
-      // double metacycle_count = floor((theta + (cycles * M_PI)) / (cycles_to_close * M_2PI));
-      // metacycle_count = floor((theta + (cycles * M_PI) - (cycle_rotation * M_2PI)) / (cycles_to_close * M_2PI));
-        double metacycle_progress = (theta + (cycles * M_PI) - (cycle_rotation * M_2PI)) / (cycles_to_close * M_2PI);
-        // need to check if metacycles calcs are very slightly too low or too high
-        //    (I think due to double rounding errors?)
-        if (metacycle_progress < 0) {
-          System.out.println("in transform(), metacycle < 0: " + metacycle_progress + " theta: " + theta + " theta/PI: " + theta/M_PI);
-          // see if adding epsilon will raise
-          metacycle_progress += EPSILON;
+    // DO NOT clear point! need initial point from subclass.calcCurvePoint()
+    if (metacycles != 1 && cycles_param == 0 && cycles_to_close > 0) {
+      int metacycle_count = calcMetacycle(theta);
+      if (metacycle_count > 0) { 
+        double metacycle_delta = (metacycle_count * metacycle_offset) + (pow(metacycle_scale, metacycle_count)-1);
+        pResult.x = pResult.x * (1 + metacycle_delta);
+        pResult.y = pResult.y * (1 + metacycle_delta);
+        // z unchanged
+        
+        // add in metacycle_rotation (cycle_rotation is added in transform())
+        if (metacycle_rotation != 0) {
+          // rotation around origin: 
+          //    x = x*cos(t) - y*sin(t)
+          //    y = x*sin(t) + y*cos(t)
+          double tdelta = (metacycle_count * metacycle_rotation * M_2PI);
+          double cost = Math.cos(tdelta);
+          double sint = Math.sin(tdelta);
+          double x = pResult.x;
+          double y = pResult.y;
+          pResult.x = (x * cost) - (y * sint);
+          pResult.y = (x * sint) + (y * cost);
         }
-        else if (metacycle_progress >= metacycles) {
-          // see if subtracting epsilon will lower
-          System.out.println("metacycle >= metacycles: " + metacycle_progress + " theta: " + theta + " theta/PI: " + theta/M_PI);
-          metacycle_progress -= EPSILON;
-        }
-        double metacycle_count = (int)floor(metacycle_progress);
-
-        if (metacycle_count > 0) { 
-          double metacycle_delta = (metacycle_count * metacycle_offset) + (pow(metacycle_scale, metacycle_count)-1);
-          pResult.x = pResult.x * (1 + metacycle_delta);
-          pResult.y = pResult.y * (1 + metacycle_delta);
-          // z unchanged?
-        }
+      }
     }
   }  
+  
+  public int calcMetacycle(double theta) {
+    // double metacycle_count = floor((theta + (cycles * M_PI)) / (cycles_to_close * M_2PI));
+    // metacycle_count = floor((theta + (cycles * M_PI) - (cycle_rotation * M_2PI)) / (cycles_to_close * M_2PI));
+    double metacycle_progress = (theta + (cycles * M_PI) - (cycle_rotation * M_2PI)) / (cycles_to_close * M_2PI);
+    // need to check if metacycles calcs are very slightly too low or too high
+    //    (I think due to double rounding errors?)
+    if (metacycle_progress < 0) {
+      if (DEBUG_INTERSECTS) { System.out.println("in transform(), metacycle < 0: " + metacycle_progress + " theta: " + theta + " theta/PI: " + theta/M_PI); }
+      // see if adding epsilon will raise
+      metacycle_progress += EPSILON;
+    }
+    else if (metacycle_progress >= metacycles) {
+      // see if subtracting epsilon will lower
+      if (DEBUG_INTERSECTS) { System.out.println("metacycle >= metacycles: " + metacycle_progress + " theta: " + theta + " theta/PI: " + theta/M_PI); }
+      metacycle_progress -= EPSILON;
+    }
+    int metacycle_count = (int)floor(metacycle_progress);
+    return metacycle_count;
+  }
 
 
   int recalcCount = 0; 
-  boolean DEBUG_INTERSECTS = false;
+
    public void recalcCurveIntersects() {
     // System.out.println("recalcing curves");
     theta_intersects = new ArrayList<ArrayList<LinkedPolarCurvePoint>>(binCount);
@@ -426,9 +443,10 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     int firstbin = -1;
     int lastbin = -1;
     int sampleCount = default_sample_count;
-    if (cycles_param == 0 && cycles_to_close > 0 && metacycles > 1) {
+    /*if (cycles_param == 0 && cycles_to_close > 0 && metacycles > 1) {
       sampleCount = (int)(sampleCount * metacycles);
     }
+    */
     // int prev_metacycle = (int)(this.metacycles - 1);
     int prev_metacycle = -1000;
     ArrayList<LinkedPolarCurvePoint> metacycle_first_points = new ArrayList<LinkedPolarCurvePoint>((int)ceil(metacycles));  // for each metacycle, keep track of first point (for looping)
@@ -437,7 +455,6 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
       metacycle_first_points.add(null);
       metacycle_last_points.add(null);
     }
-    // System.out.println("metacycles: " + metacycles + ", meta_points.size(): " + metacycle_first_points.size());
 
     for (int i=0; i<sampleCount; i++) {
       // want theta to span expected thetas used as input to calcCurvePoint(), so range needs to be       
@@ -469,29 +486,14 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
         // tsects.add(r);
         LinkedPolarCurvePoint point = new LinkedPolarCurvePoint(r, angle);
         point.bin = anglebin;
-        
-        double metacycle_progress = (theta + (cycles * M_PI) - (cycle_rotation * M_2PI)) / (cycles_for_calc * M_2PI);
-        // need to check if metacycles calcs are very slightly too low or too high
-        //    (I think due to double rounding errors?)
-        if (metacycle_progress < 0) {
-          if (DEBUG_INTERSECTS) { System.out.println("metacycle < 0: " + metacycle_progress + ", samplecount: " + i + ", theta: " + theta + " theta/PI: " + theta/M_PI); }
-          // see if adding epsilon will raise
-          metacycle_progress += EPSILON;
-        }
-        else if (metacycle_progress >= metacycles) {
-          if (DEBUG_INTERSECTS) { System.out.println("metacycle >= metacycles: " + metacycle_progress + ", samplecount: " + i + ", theta: " + theta + " theta/PI: " + theta/M_PI); }
-          // see if subtracting epsilon will lower
-          metacycle_progress -= EPSILON;
-        }
-        int metacycle_count = (int)floor(metacycle_progress);
-        
-        // int metacycle = (int)(ceil((theta + (cycles * M_PI) + (cycle_rotation * M_2PI))/ (cycles_for_calc * M_2PI)) - 1);
+        int metacycle_count = calcMetacycle(theta);
         if (metacycle_count == prev_metacycle) { // still in same metacycle
           point.prev = prev_point;
           if (prev_point != null) { prev_point.next = point; }
         }
         else {
-          if (DEBUG_INTERSECTS) { System.out.println("new metacycle: " + metacycle_count + ", bin: " + anglebin + ", radius: " + r + ", angle: " + angle); }
+          if (DEBUG_INTERSECTS) { System.out.println("new metacycle: " + metacycle_count + ", bin: " + anglebin + ", radius: " + r + ", angle: " + angle);  }
+          
           // initialize new metacycle, close previous metacycle
           if (metacycle_count < 0 || metacycle_count > metacycles) {
             if (DEBUG_INTERSECTS) { System.out.println("error: " + ((theta + (cycles * M_PI) - (cycle_rotation * M_2PI)) / (cycles_to_close * M_2PI))); }
@@ -518,20 +520,34 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     }
     
     metacycle_last_points.set(prev_metacycle, prev_point);
+
+    if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN PRE-PRE:"); printBin(0); System.out.println("MAXBIN PRE-PRE:");     printBin(binCount-1); }
+
+    // for interpolation, want to close metacycle loop by redoing first_point.prev as last_point, and last_point.next as first_point
     for (int m=0; m<metacycle_last_points.size(); m++) {
-      LinkedPolarCurvePoint fp = metacycle_first_points.get(m);
-      LinkedPolarCurvePoint lp = metacycle_last_points.get(m);
-      if (DEBUG_INTERSECTS && (fp.bin == 0 || lp.bin == 0)) {
-        System.out.println("metacycle boundary falls on zero bin: ");
-        printBin(0);
-        printBin(binCount-1);
+      LinkedPolarCurvePoint first_meta_point = metacycle_first_points.get(m);
+      LinkedPolarCurvePoint last_meta_point = metacycle_last_points.get(m);
+
+      if (first_meta_point.bin == last_meta_point.bin) {
+        if (DEBUG_INTERSECTS) { System.out.println("got first/last metacycle points in same bin: " + first_meta_point.bin); }
+        // if first and last point are in same bin, replace last_meta_point with last_meta_point.prev
+        tsects = theta_intersects.get(first_meta_point.bin);
+        tsects.remove(last_meta_point);  
+        last_meta_point = last_meta_point.prev;
+        // metacycle_last_points.set(m, last_meta_point); // shouldn't be necessary, metacycle_last_points not used again
+        
       }
-      LinkedPolarCurvePoint prev = new LinkedPolarCurvePoint(lp.radius, lp.angle);
-      LinkedPolarCurvePoint next = new LinkedPolarCurvePoint(fp.radius, fp.angle);
-      prev.bin = lp.bin;
-      next.bin = fp.bin;
-      fp.prev = prev;
-      lp.next = next;
+      first_meta_point.prev = new LinkedPolarCurvePoint(last_meta_point.radius, last_meta_point.angle);
+      first_meta_point.prev.bin = last_meta_point.bin;
+      last_meta_point.next = new LinkedPolarCurvePoint(first_meta_point.radius, first_meta_point.angle);
+      last_meta_point.next.bin = first_meta_point.bin;
+      
+      if (first_meta_point.next.bin == first_meta_point.bin || first_meta_point.prev.bin == first_meta_point.bin) {
+        System.out.println("got first point prev/next in same bin: " + first_meta_point.bin);
+      }
+      else if (last_meta_point.next.bin == last_meta_point.bin || last_meta_point.prev.bin == last_meta_point.bin) {
+        System.out.println("got last point prev/next in same bin: " + last_meta_point.bin);
+      }
     }
 
     if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN PRE:"); printBin(0); System.out.println("MAXBIN PRE:");     printBin(binCount-1); }
@@ -553,7 +569,6 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     ArrayList<LinkedPolarCurvePoint> minBin = theta_intersects.get(0);
     ArrayList<LinkedPolarCurvePoint> maxBin = theta_intersects.get(binCount-1);
     ArrayList<LinkedPolarCurvePoint> minmax[] = new ArrayList[]{minBin, maxBin};
-
     for (ArrayList<LinkedPolarCurvePoint> bin : minmax) {
       for (LinkedPolarCurvePoint point : bin) {
         // prev and null should already be cloned in metacycle step above 
@@ -587,27 +602,15 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     
     if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN MID:"); printBin(0); System.out.println("MAXBIN MID:");     printBin(binCount-1); }
     
-    // cleanup of PolarPoint prev/next pointers -- 
-    //     cyclic, but also need to factor in metacylces
-    //     if first of metacycle, keep (meta_first)
-    //     if last of metacycle (meta_last), set metal_last.next = meta_first, meta_first.prev = meta_last
-/*    int metacycle = metacycles / cycles;
-    if (cycles_param == 0 && cycles_to_close > 0 && metacycles != 1) {
-      // metacycle_count does not include first cycles, so goes from 0 to metacycles - 1 (since metacycles includes first cycle)
-      double metacycle_count = ceil((theta + (cycles * M_PI)) / (cycles_to_close * 2 * M_PI)) - 1;
-    }  
-    */
-    
     // special-casing of first and last anglebin if they are the same bin:
     ///   want to simulate rotating through same bin to merge "duplicate" intersections
     //    if first and last bin are same, would have merged results, so remove last one 
-   /*
     if (firstbin > 0 && lastbin > 0 && firstbin == lastbin) {
-      tsects = theta_intersects.get(firstbin);
+      System.out.println("WARNING: firstbin and lastbin are same: " + firstbin);
+      // tsects = theta_intersects.get(firstbin);
       // remove last result (if start doing averaging, should remove but add to average for first result)
-      tsects.remove(tsects.size()-1);
+      // tsects.remove(tsects.size()-1);
     }
-    */
     
     // WARNING: still need to factor in metacycle
     for (int k=0; k<theta_intersects.size(); k++) {
@@ -686,7 +689,7 @@ public void printBin(int index) {
     // 5. 
     // 
    */
-  public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount, XYZPoint curvePoint) {
+public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount, XYZPoint curvePoint) {
     PointState pstate = PointState.INSIDE;  
     // input point
     double tin = atan2(pAffineTP.y, pAffineTP.x);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
@@ -1156,7 +1159,7 @@ public void printBin(int index) {
                           spread_split,
                           cycles_param, cycle_rotation, 
                           fill, curve_rmode_param.getIntegerMode(), location_mode_param.getIntegerMode(), 
-                          metacycles, metacycle_offset, metacycle_scale
+                          metacycles, metacycle_offset, metacycle_scale, metacycle_rotation
     };
   }
 
@@ -1216,7 +1219,9 @@ public void printBin(int index) {
     else if (PARAM_METACYCLE_OFFSET.equalsIgnoreCase(pName))
       metacycle_offset = pValue;   
     else if (PARAM_METACYCLE_SCALE.equalsIgnoreCase(pName))
-      metacycle_scale = pValue;     
+      metacycle_scale = pValue;   
+    else if (PARAM_METACYCLE_ROTATION.equalsIgnoreCase(pName))
+      metacycle_rotation = pValue; 
     else
       throw new IllegalArgumentException(pName);
   }
