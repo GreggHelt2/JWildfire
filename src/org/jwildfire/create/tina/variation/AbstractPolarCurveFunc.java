@@ -48,9 +48,10 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                            STRETCH7(19), 
                            STRETCH8(20),
                            STRETCH9(21), 
-                           TEST(30), 
+                           // TEST(30), 
                            TEST2(31),
                            XY_SWAP(18), 
+                           ROTATE_RADIAL(30), 
                            END(50);
        
      private static final Map<Integer,RenderMode> lookup = new HashMap<Integer,RenderMode>();
@@ -195,6 +196,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected static final String PARAM_METACYCLE_SCALE = "metacycle_scale";
   protected static final String PARAM_METACYCLE_ROTATION = "metacycle_rotation";
   protected static final String PARAM_PROXIMITY_MODE = "proximity_mode";
+  protected static final String PARAM_ANGLE_BINS = "angle_bins";
   
   protected static final String[] paramNames = { 
                                                PARAM_CURVE_SCALE, 
@@ -206,6 +208,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                                                PARAM_CYCLES, PARAM_CYCLE_ROTATION, 
                                                PARAM_FILL, 
                                                PARAM_PROXIMITY_MODE, PARAM_CURVE_RADIUS_MODE, PARAM_LOCATION_CLASSIFIER, 
+                                               PARAM_ANGLE_BINS, 
                                                PARAM_METACYCLES, PARAM_METACYCLE_OFFSET, PARAM_METACYCLE_SCALE, PARAM_METACYCLE_ROTATION }; 
 
   protected double curve_scale = 1;
@@ -255,7 +258,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
 
   // vars for determining inner/outer via even-odd rule
   int default_sample_count = 36000;
-  int binCount = 720;
+  int angle_bin_count = 720;
   ArrayList<ArrayList<LinkedPolarCurvePoint>> theta_intersects = null;
   ArrayList<LinkedPolarCurvePoint> unisects;
   LinkedPolarCurvePoint unipolar;
@@ -455,8 +458,8 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
 
    public void recalcCurveIntersects() {
     // System.out.println("recalcing curves");
-    theta_intersects = new ArrayList<ArrayList<LinkedPolarCurvePoint>>(binCount);
-    for (int i=0; i<binCount; i++) { 
+    theta_intersects = new ArrayList<ArrayList<LinkedPolarCurvePoint>>(angle_bin_count);
+    for (int i=0; i<angle_bin_count; i++) { 
       theta_intersects.add(new ArrayList<LinkedPolarCurvePoint>());
     }
     LinkedPolarCurvePoint prev_point = null;
@@ -497,10 +500,10 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
       
       double r = sqrt(pCurve.x * pCurve.x + pCurve.y * pCurve.y);
       double angle = atan2(pCurve.y, pCurve.x);
-      int anglebin =  (int)Math.floor(((angle + M_PI)/M_2PI) * binCount);
+      int anglebin =  (int)Math.floor(((angle + M_PI)/M_2PI) * angle_bin_count);
       // catching any possible cases where angle actually reaches max atan2
       //   (actually, maybe should loop around instead to bin 0?
-      if (anglebin == binCount) { anglebin--; } 
+      if (anglebin == angle_bin_count) { anglebin--; } 
       tsects = theta_intersects.get(anglebin);
 
       // still rotating through same bin, merge results
@@ -528,7 +531,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
             metacycle_last_points.set(prev_metacycle, prev_point);
           }
         }
-        tsects.add(point);  // autoboxing float r to Double object
+        tsects.add(point);  // autoboxing float r to Double object  
         if (i == 0) {
           firstbin = anglebin;
           // first_point = point;
@@ -546,7 +549,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     
     metacycle_last_points.set(prev_metacycle, prev_point);
 
-    if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN PRE-PRE:"); printBin(0); System.out.println("MAXBIN PRE-PRE:");     printBin(binCount-1); }
+    if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN PRE-PRE:"); printBin(0); System.out.println("MAXBIN PRE-PRE:");     printBin(angle_bin_count-1); }
 
     // for interpolation, want to close metacycle loop by redoing first_point.prev as last_point, and last_point.next as first_point
     for (int m=0; m<metacycle_last_points.size(); m++) {
@@ -575,7 +578,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
       }
     }
 
-    if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN PRE:"); printBin(0); System.out.println("MAXBIN PRE:");     printBin(binCount-1); }
+    if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN PRE:"); printBin(0); System.out.println("MAXBIN PRE:");     printBin(angle_bin_count-1); }
     //    if (last_point != null)  {  // connect to first point of current metacycle?? }
 
     // bin angles rotate through single circle, [-PI ==> PI] (actual point angles in min/max bin  will be near bin min/max val]
@@ -592,7 +595,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     //    UPDATE: fixed bug mentioned above, possibly switch to only changing prev/next that is crosses bin count loop boundary?
     //        for now, still checking both prev/next and changing based on andle delta to point angle
     ArrayList<LinkedPolarCurvePoint> minBin = theta_intersects.get(0);
-    ArrayList<LinkedPolarCurvePoint> maxBin = theta_intersects.get(binCount-1);
+    ArrayList<LinkedPolarCurvePoint> maxBin = theta_intersects.get(angle_bin_count-1);
     ArrayList<LinkedPolarCurvePoint> minmax[] = new ArrayList[]{minBin, maxBin};
     for (ArrayList<LinkedPolarCurvePoint> bin : minmax) {
       for (LinkedPolarCurvePoint point : bin) {
@@ -625,7 +628,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
       }
     }       
     
-    if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN MID:"); printBin(0); System.out.println("MAXBIN MID:");     printBin(binCount-1); }
+    if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN MID:"); printBin(0); System.out.println("MAXBIN MID:");     printBin(angle_bin_count-1); }
     
     // special-casing of first and last anglebin if they are the same bin:
     ///   want to simulate rotating through same bin to merge "duplicate" intersections
@@ -662,7 +665,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
       }
     }
 
-    if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN POST:"); printBin(0); System.out.println("MAXBIN POST:");     printBin(binCount-1); }
+    if (this.DEBUG_INTERSECTS) { System.out.println("MINBIN POST:"); printBin(0); System.out.println("MAXBIN POST:");     printBin(angle_bin_count-1); }
   }
   
 public void printBin(int index) {
@@ -746,10 +749,10 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
     }
     ArrayList<LinkedPolarCurvePoint> tsects;
 
-    int anglebin =  (int)Math.floor(((tin + M_PI)/M_2PI) * binCount);
+    int anglebin =  (int)Math.floor(((tin + M_PI)/M_2PI) * angle_bin_count);
  
     if (curve_rmode == CurveRadiusMode.RAW_SAMPLING_BIN || curve_rmode == CurveRadiusMode.INTERPOLATED_SAMPLING_BIN) {
-      if (anglebin == binCount) {  // catching any possible cases where tin actually reaches max atan2
+      if (anglebin == angle_bin_count) {  // catching any possible cases where tin actually reaches max atan2
         anglebin--; 
       } 
       tsects = theta_intersects.get(anglebin);
@@ -1006,11 +1009,31 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           //    x = x*cos(t) - y*sin(t)
           //    y = x*sin(t) + y*cos(t)
           // double tdelta = spread * M_2PI;
-          double cost = Math.cos(spread_ratio * M_2PI);
-          double sint = Math.sin(spread * M_2PI);
+          if (true) {
+          double cost = Math.cos(spreadx * M_2PI);
+          double sint = Math.sin(spready * M_2PI);
           pVarTP.x += (pAffineTP.x * cost) - (pAffineTP.y * sint);
           pVarTP.y += (pAffineTP.x * sint) + (pAffineTP.y * cost);
+          }
           break;
+        case ROTATE_RADIAL: // ROTATE_RADIAL: similar to ROTATE, but angle increases as extend 
+          // default to 
+          // rotation around origin: 
+          //    x = x*cos(t) - y*sin(t)
+          //    y = x*sin(t) + y*cos(t)
+          // double tdelta = spread * M_2PI;
+          if (true) {
+          double cost = Math.cos(spreadx * rcurve);
+          double sint = Math.sin(spready * rcurve);
+          // possibly better to normalize if can reliably get rmax?
+          //   (so if rcurve = rmax, will get spreadx * M_2PI), 
+          //    (otherwise rotation increases with curve_scale)
+          //   double cost = Math.cos(spreadx * (rcurve/rmax) * M_2PI);
+          //   double sint = Math.sin(spready * (rcurve/rmax) * M_2PI);
+          pVarTP.x += (pAffineTP.x * cost) - (pAffineTP.y * sint);
+          pVarTP.y += (pAffineTP.x * sint) + (pAffineTP.y * cost);
+          }
+          break;          
         case CURVE_XY_OFFSET: // CURVE_XY_OFFSET -- (UNCHANGED + ONCURVE) combo (with spread)
           // default to xcalc/ycalc (TRANSFORMED_RT)
           pVarTP.x += pAmount * (xcurve + (spreadx * pAffineTP.x));
@@ -1199,6 +1222,7 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
                           cycles_param, cycle_rotation, 
                           fill, 
                           proximity_param.getIntegerMode(), curve_rmode_param.getIntegerMode(), location_mode_param.getIntegerMode(), 
+                          angle_bin_count, 
                           metacycles, metacycle_offset, metacycle_scale, metacycle_rotation
     };
   }
@@ -1255,6 +1279,9 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
     else if (PARAM_LOCATION_CLASSIFIER.equalsIgnoreCase(pName)) {
       this.location_mode_param = InsideOutsideRule.get((int)floor(pValue));
       if (location_mode_param == null) { location_mode_param = InsideOutsideRule.AUTO; }
+    }
+    else if (PARAM_ANGLE_BINS.equalsIgnoreCase(pName)) {
+      this.angle_bin_count = (int)abs(ceil(pValue));
     }
     else if (PARAM_METACYCLES.equalsIgnoreCase(pName)) {
       metacycles = abs(pValue);
