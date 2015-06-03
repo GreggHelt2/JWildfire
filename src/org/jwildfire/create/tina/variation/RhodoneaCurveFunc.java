@@ -46,7 +46,7 @@ public class RhodoneaCurveFunc extends AbstractPolarCurveFunc {
     k = kn / kd;
     super.init(pContext, pLayer, pXForm, pAmount);  // calls recalcCycles() and recalcCurveIntersects()
   }
-
+  
   @Override
   public void recalcCycles() {
     // attempt to calculate minimum cycles manually, or reasonable upper bound if unsure
@@ -55,10 +55,10 @@ public class RhodoneaCurveFunc extends AbstractPolarCurveFunc {
         cycles_to_close = 1; // (2PI)
         petal_count = 2 * k;
       }
-      else { // k is odd integer, will have k petals (or sometimes 2k with offset)
-        if (radial_offset != 0 || inner_spread != 0 || outer_spread != 0 || fill != 0) {
+      else { // k is odd integer, will have k petals (or sometimes 2k with offset) and cycles closes in 1PI
+        if (radial_offset != 0) { // unless adding radial_offset, then will need 2PI cycles to close
           cycles_to_close = 1;
-        } // if adding an offset or spread, need a full cycle
+        } 
         else {
           cycles_to_close = 0.5;
         } // (1PI)
