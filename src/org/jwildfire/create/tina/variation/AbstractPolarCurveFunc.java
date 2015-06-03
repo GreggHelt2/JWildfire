@@ -28,8 +28,8 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
 
   public enum RenderMode { DEFAULT(0), 
                            ONCURVE(1),
-                           STRETCH1_TIN(2),
-                           STRETCH1_TCALC(18), 
+                           STRETCH1(2),
+
                            STRETCH2(3),
                            UNCHANGED(4), 
                            HIDE(5),
@@ -47,7 +47,11 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                            STRETCH5(17),
                            STRETCH7(19), 
                            STRETCH8(20),
-                           STRETCH9(21);
+                           STRETCH9(21), 
+                           TEST(30), 
+                           TEST2(31),
+                           XY_SWAP(18), 
+                           END(50);
        
      private static final Map<Integer,RenderMode> lookup = new HashMap<Integer,RenderMode>();
      private static int maxInt = 0;
@@ -87,7 +91,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     public int getIntegerMode() { return this.ordinal(); }
   }
 
-  public enum CurveProximityMode { AUTO, TRANSFORMED_INPUT, LONGEST, NEAREST_LONGER, NEAREST, NEAREST_SHORTER, SHORTEST, NEAREST_NONZERO, SHORTEST_NONZERO;
+  public enum CurveProximityMode { AUTO, TRANSFORMED_RT, TRANSFORMED_R, LONGEST, NEAREST_LONGER, NEAREST, NEAREST_SHORTER, SHORTEST, NEAREST_NONZERO, SHORTEST_NONZERO;
     public static CurveProximityMode get(int oindex) {
       if (oindex < 0 || oindex >= values().length) { return null; }
       else  { return values()[oindex]; }
@@ -316,7 +320,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     else { location_mode = location_mode_param; }
     
     if (proximity_param == CurveProximityMode.AUTO) { 
-      proximity_mode = CurveProximityMode.TRANSFORMED_INPUT;
+      proximity_mode = CurveProximityMode.TRANSFORMED_R;
     }
     else {
       proximity_mode = proximity_param;
@@ -927,9 +931,12 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
       
       tcurve = tin;
       switch (proximity_mode) {
-        case TRANSFORMED_INPUT:
+        case TRANSFORMED_R:
           rcurve = rcalc;
-          // tcurve = tcalc;
+          break;
+        case TRANSFORMED_RT:
+          rcurve = rcalc;
+          tcurve = tcalc;
           break;
         case LONGEST:
           rcurve = longest;
@@ -967,25 +974,21 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           pVarTP.x += pAmount * xcalc;
           pVarTP.y += pAmount * ycalc;
           break;
-        case STRETCH1_TIN: // stretch1 with modal curve radius, and using angle from input point
+        case STRETCH1: // stretch1 with modal curve radius, and using angle from input point
+          // default to TRANSFORMED_RT
           rinx = rcurve + ((rin - rcurve) * spreadx);
           riny = rcurve + ((rin - rcurve) * spready);
-          pVarTP.x += pAmount * rinx * cos(tin);
-          pVarTP.y += pAmount * riny * sin(tin);
-          break;
-        case STRETCH1_TCALC: // stretch1 with modal curve radius, and using angle from transformed point
-          rinx = rcurve + ((rin - rcurve) * spreadx);
-          riny = rcurve + ((rin - rcurve) * spready);
-          pVarTP.x += pAmount * rinx * cos(tcalc);
-          pVarTP.y += pAmount * riny * sin(tcalc);
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
           break;
         case STRETCH2: // STRETCH2
+          // default to xcalc/ycalc (TRANSFORMED_RT)
           rinx = (rin * spreadx) - spreadx + 1;
           riny = (rin * spready) - spready + 1;
-          pVarTP.x += pAmount * rinx * xcalc;
-          pVarTP.y += pAmount * riny * ycalc;
-          break;
-        case UNCHANGED:   // UNCHANGED -- leave in place
+          pVarTP.x += pAmount * rinx * xcurve;
+          pVarTP.y += pAmount * riny * ycurve;
+          break;       
+        case UNCHANGED:   // UNCHANGED -- leave in place (degenerate case of SCALE where SCALE where scale = 1
           // point is inside curve, leave in place
           pVarTP.x += pAmount * pAffineTP.x;
           pVarTP.y += pAmount * pAffineTP.y;
@@ -994,31 +997,35 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           pVarTP.x += pAmount * pAffineTP.x * -1;
           pVarTP.y += pAmount * pAffineTP.y * -1;
           break;
+        case XY_SWAP:
+          pVarTP.x += pAmount * pAffineTP.y * spreadx;
+          pVarTP.y += pAmount * pAffineTP.x * spready;
+          break;
         case ROTATE: // ROTATE 
           // rotation around origin: 
           //    x = x*cos(t) - y*sin(t)
           //    y = x*sin(t) + y*cos(t)
-          double tdelta = spread * M_2PI;
-          double cost = Math.cos(tdelta);
-          double sint = Math.sin(tdelta);
+          // double tdelta = spread * M_2PI;
+          double cost = Math.cos(spread_ratio * M_2PI);
+          double sint = Math.sin(spread * M_2PI);
           pVarTP.x += (pAffineTP.x * cost) - (pAffineTP.y * sint);
           pVarTP.y += (pAffineTP.x * sint) + (pAffineTP.y * cost);
           break;
         case CURVE_XY_OFFSET: // CURVE_XY_OFFSET -- (UNCHANGED + ONCURVE) combo (with spread)
-          pVarTP.x += pAmount * (xcalc + (spreadx * pAffineTP.x));
-          pVarTP.y += pAmount * (ycalc + (spready * pAffineTP.y));
+          // default to xcalc/ycalc (TRANSFORMED_RT)
+          pVarTP.x += pAmount * (xcurve + (spreadx * pAffineTP.x));
+          pVarTP.y += pAmount * (ycurve + (spready * pAffineTP.y));
           break;
-          
         case CURVE_RADIAL_OFFSET: // CURVE_RADIUS_OFFSET -- offset with curve intersect point at input angle, with: P' = C + P
-
+          // default to longest? / tin (LONGEST)
           if (rcurve == Double.POSITIVE_INFINITY || rcurve == Double.NEGATIVE_INFINITY) {
             pVarTP.x += pAmount * xcalc; 
             pVarTP.y += pAmount * ycalc;
           }
           else {
             // default to longest?
-            double rx = rcurve * cos(tin);
-            double ry = rcurve * sin(tin);
+            double rx = rcurve * cos(tcurve);
+            double ry = rcurve * sin(tcurve);
             pVarTP.x += pAmount * ((pAffineTP.x * spreadx) + rx);
             pVarTP.y += pAmount * ((pAffineTP.y * spready) + ry);
           }
@@ -1026,14 +1033,15 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           //   if (rin > clamp) { leave in place }
           break;
         case CURVE_SWAP:  // CURVE_SWAP swap around curve intersect point, with P' = C + (C-P)
+          // default to longest? / tin (LONGEST)
           // need to figure out what to do when 
           //       using nearest_longer for rcurve but have no longer points (nearest_longer = POSITIVE_INFINITY) 
           //       using nearest_shorter for rcurve but have no shorter points (nearest_shorter = NEGATIVE_INFINITY) 
           // currently these will end up "offscreen" at +/- infinity?
           rinx = rcurve + ((rcurve - rin) * spreadx);
           riny = rcurve + ((rcurve - rin) * spready);
-          pVarTP.x += pAmount * rinx * cos(tin);
-          pVarTP.y += pAmount * riny * sin(tin);
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
           break;
         case HIDE: // HIDE
           pVarTP.x = pAffineTP.x;
@@ -1045,60 +1053,68 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           pVarTP.y = pAffineTP.y * spready;
           break;
         case WHIRL: // WHIRL (inspired by WhorlFunc)
-          // default to rcalc and tin?
-          double ax = tin + ((spreadx/10) / (rcurve - rin));
-          double ay = tin + ((spready/10) / (rcurve - rin));
+          // default to rcalc and tin? (TRANSFORMED_R)
+          double ax = tcurve + ((spreadx/10) / (rcurve - rin));
+          double ay = tcurve + ((spready/10) / (rcurve - rin));
           double cax = cos(ax);
           double say = sin(ay);
           pVarTP.x += pAmount * rin * cax;
           pVarTP.y += pAmount * rin * say;
           break;
         case POW: // POW (inspired by Juliascope)
-          // default to rcalc and tcalc?
-          double sq = sqr(xcalc - pAffineTP.x) + sqr(ycalc - pAffineTP.y);
-          rinx = rcurve + pow(sq, spreadx) - 1.0;
-          riny = rcurve + pow(sq, spready) - 1.0;
-          pVarTP.x += pAmount * rinx * cos(tcalc);
-          pVarTP.y += pAmount * riny * sin(tcalc);
+          // default to rcalc, tcalc? (TRANSFOMRED_RT)
+          double sqr = sqr(xcurve - pAffineTP.x) + sqr(ycurve - pAffineTP.y);
+          rinx = rcurve + pow(sqr, spreadx) - 1.0;
+          riny = rcurve + pow(sqr, spready) - 1.0;
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
           break;
-        case LOOPY:  // LOOPY (inspired by loonie
-          rout = sqrt((calcPoint.getPrecalcSumsq() / pAffineTP.getPrecalcSumsq()) - 1.0);
+        case LOOPY:  // LOOPY (inspired by loonie)
+          // default to longest, tin? (LONGEST)
+          // rout = sqrt((calcPoint.getPrecalcSumsq() / pAffineTP.getPrecalcSumsq()) - 1.0);
+          rout = sqrt(((xcurve*xcurve + ycurve*ycurve)/ pAffineTP.getPrecalcSumsq()) - 1.0);
           pVarTP.x += pAmount * rout * spreadx * pAffineTP.x;
           pVarTP.y += pAmount * rout * spready * pAffineTP.y;
-          break;
+          break;          
         case STRETCH3: // STRETCH3
+          // default xcalc/ycalc (TRANSFORM_RT)
+          // or posibly LONGEsT
           xin = Math.abs(pAffineTP.x);
           yin = Math.abs(pAffineTP.y);
-          if (xcalc<0) { xin = xin * -1; }
-          if (ycalc<0) { yin = yin * -1; }
-          pVarTP.x += pAmount * (xcalc - (spreadx * (xcalc-xin)));
-          pVarTP.y += pAmount * (ycalc - (spready * (ycalc-yin)));
-          break;
+          if (xcurve<0) { xin = xin * -1; }
+          if (ycurve<0) { yin = yin * -1; }
+          pVarTP.x += pAmount * (xcurve - (spreadx * (xcurve-xin)));
+          pVarTP.y += pAmount * (ycurve - (spready * (ycurve-yin)));
+          break;          
         case STRETCH4: // STRETCH4
+          // default xcalc/ycalc? (TRANSFORM_RT)
           xin = Math.abs(pAffineTP.x);
           yin = Math.abs(pAffineTP.y);
-          if (xcalc<0) { xin = xin * -1; }
-          if (ycalc<0) { yin = yin * -1; }
-          pVarTP.x += pAmount * (xcalc - (spreadx * xin));
-          pVarTP.y += pAmount * (ycalc - (spready * yin));
+          if (xcurve<0) { xin = xin * -1; }
+          if (ycurve<0) { yin = yin * -1; }
+          pVarTP.x += pAmount * (xcurve - (spreadx * xin));
+          pVarTP.y += pAmount * (ycurve - (spready * yin));
           break;
         case STRETCH5: // STRETCH5
+          // default xcalc/ycalc? (TRANSFORM_RT)
           rinx = (0.5 * rin) + spreadx;
           riny = (0.5 * rin) + spready;
-          pVarTP.x += pAmount * rinx * xcalc;
-          pVarTP.y += pAmount * riny * ycalc;
+          pVarTP.x += pAmount * rinx * xcurve;
+          pVarTP.y += pAmount * riny * ycurve;
           break;
         case STRETCH7: // STRETCH7 -- similar to 3, different sign fiddling
+          // default xcalc/ycalc? (TRANSFORM_RT)
           xin = Math.abs(pAffineTP.x);
           yin = Math.abs(pAffineTP.y);
-          if (xcalc<0) { xin = xin * -1; }
-          if (ycalc<0) { yin = yin * -1; }
-          pVarTP.x += pAmount * (xcalc + (spreadx * xin));
-          pVarTP.y += pAmount * (ycalc + (spready * yin));
+          if (xcurve<0) { xin = xin * -1; }
+          if (ycurve<0) { yin = yin * -1; }
+          pVarTP.x += pAmount * (xcurve + (spreadx * xin));
+          pVarTP.y += pAmount * (ycurve + (spready * yin));
           break;
         case STRETCH8: // STRETCH8 -- same as mode 6, but without the sign modifications
-          pVarTP.x += pAmount * (xcalc - (spreadx * pAffineTP.x));
-          pVarTP.y += pAmount * (ycalc - (spready * pAffineTP.y));
+          // default xcalc/ycalc? (TRANSFORM_RT)
+          pVarTP.x += pAmount * (xcurve - (spreadx * pAffineTP.x));
+          pVarTP.y += pAmount * (ycurve - (spready * pAffineTP.y));
           break;
         case STRETCH9: // STRETCH9
           pVarTP.x += pAmount * rin * cos(tcalc) * spreadx;
