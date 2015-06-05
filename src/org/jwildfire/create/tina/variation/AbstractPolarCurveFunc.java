@@ -173,18 +173,28 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected static final String PARAM_MODE_MERGING = "mode_merging";
   protected static final String PARAM_INNER_MODE = "inner_mode";
   protected static final String PARAM_OUTER_MODE = "outer_mode";
-  // protected static final String PARAM_INISH_MODE = "inish_mode";
   protected static final String PARAM_OUTISH_MODE = "outish_mode";
-  protected static final String PARAM_INNER_SPREAD = "inner_spread";
-  protected static final String PARAM_OUTER_SPREAD = "outer_spread";
-  // protected static final String PARAM_INISH_SPREAD = "inish_spread";
-  protected static final String PARAM_OUTISH_SPREAD = "outish_spread";
-  protected static final String PARAM_INNER_SPREAD_RATIO = "inner_spread_ratio";
-  protected static final String PARAM_OUTER_SPREAD_RATIO = "outer_spread_ratio";
-  // protected static final String PARAM_INISH_SPREAD_RATIO = "inish_spread_ratio";
-  protected static final String PARAM_OUTISH_SPREAD_RATIO = "outish_spread_ratio";
+  // tried an "inish" mode too, but was problematic...
+  // protected static final String PARAM_INISH_MODE = "inish_mode";  
+  protected static final String PARAM_INNER_RSPREAD = "inner_rspread";
+  protected static final String PARAM_OUTER_RSPREAD = "outer_rspread";
+  protected static final String PARAM_OUTISH_RSPREAD = "outish_rspread";
+  protected static final String PARAM_INNER_XSPREAD = "inner_xspread";
+  protected static final String PARAM_OUTER_XSPREAD = "outer_xspread";
+  protected static final String PARAM_OUTISH_XSPREAD = "outish_xspread";
+  protected static final String PARAM_INNER_YSPREAD = "inner_yspread";
+  protected static final String PARAM_OUTER_YSPREAD = "outer_yspread";
+  protected static final String PARAM_OUTISH_YSPREAD = "outish_yspread";
+  protected static final String PARAM_INNER_RBLUR = "inner_rblur";
+  protected static final String PARAM_OUTER_RBLUR = "outer_rblur";
+  protected static final String PARAM_OUTISH_RBLUR = "outish_rblur";
+  protected static final String PARAM_INNER_ABLUR = "inner_ablur";
+  protected static final String PARAM_OUTER_ABLUR = "outer_ablur";
+  protected static final String PARAM_OUTISH_ABLUR = "outish_ablur";
+  
   protected static final String PARAM_SPREAD_SPLIT = "spread_split";
   protected static final String PARAM_FILL = "fill";
+  protected static final String PARAM_CURVE_THICKNESS = "curve_thickness";
   protected static final String PARAM_CYCLES = "cycles";
   protected static final String PARAM_CURVE_RADIUS_MODE = "curve_radius_mode";
   protected static final String PARAM_LOCATION_CLASSIFIER = "location_classifier";
@@ -202,11 +212,14 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                                                PARAM_CURVE_SCALE, 
                                                PARAM_MODE_MERGING, 
                                                PARAM_INNER_MODE, PARAM_OUTER_MODE, PARAM_OUTISH_MODE, 
-                                               PARAM_INNER_SPREAD, PARAM_OUTER_SPREAD, PARAM_OUTISH_SPREAD, 
-                                               PARAM_INNER_SPREAD_RATIO, PARAM_OUTER_SPREAD_RATIO, PARAM_OUTISH_SPREAD_RATIO, 
+                                               PARAM_INNER_RSPREAD, PARAM_OUTER_RSPREAD, PARAM_OUTISH_RSPREAD, 
+                                               PARAM_INNER_XSPREAD, PARAM_OUTER_XSPREAD, PARAM_OUTISH_XSPREAD, 
+                                               PARAM_INNER_YSPREAD, PARAM_OUTER_YSPREAD, PARAM_OUTISH_YSPREAD, 
+                                               PARAM_INNER_RBLUR, PARAM_OUTER_RBLUR, PARAM_OUTISH_RBLUR, 
+                                               PARAM_INNER_ABLUR, PARAM_OUTER_ABLUR, PARAM_OUTISH_ABLUR, 
                                                PARAM_SPREAD_SPLIT,
                                                PARAM_CYCLES, PARAM_CYCLE_ROTATION, 
-                                               PARAM_FILL, 
+                                               PARAM_CURVE_THICKNESS, PARAM_FILL, 
                                                PARAM_PROXIMITY_MODE, PARAM_CURVE_RADIUS_MODE, PARAM_LOCATION_CLASSIFIER, 
                                                PARAM_ANGLE_BINS, 
                                                PARAM_METACYCLES, PARAM_METACYCLE_OFFSET, PARAM_METACYCLE_SCALE, PARAM_METACYCLE_ROTATION }; 
@@ -232,16 +245,30 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   // point_rmode is currently hardwired, not available as a user param
   PointRadiusMode point_rmode = PointRadiusMode.MODIFIED;
 
-  protected double inner_spread = 0.5; // deform based on original x/y
-  protected double outer_spread = 0.5; // deform based on original x/y
-  protected double outish_spread = 0.5;
+  protected double inner_rspread = 0.5; 
+  protected double outer_rspread = 0.5; 
+  protected double outish_rspread = 0.5;
   
-  protected double inner_spread_ratio = 1; // how much inner_spread applies to x relative to y
-  protected double outer_spread_ratio = 1; // how much outer_spread applies to x relative to y
-  protected double outish_spread_ratio = 1;
+  protected double inner_xspread = 1;  // rspread multiplier for x
+  protected double outer_xspread = 1;  // rspread multiplier for x
+  protected double outish_xspread = 1; // rspread multiplier for x
+  
+  protected double inner_yspread = 1;  // rspread multiplier for y
+  protected double outer_yspread = 1;  // rspread multiplier for y
+  protected double outish_yspread = 1; // rspread multiplier for y
+  
+  protected double inner_rblur = 0;
+  protected double outer_rblur = 0;
+  protected double outish_rblur = 0;
+  
+  protected double inner_ablur = 0;
+  protected double outer_ablur = 0;
+  protected double outish_ablur = 0;
   
   protected double spread_split = 1;
   protected double fill = 0;
+
+  protected double curve_thickness = 0;
   protected double cycles_param;
   
   // protected double point_radius_mode;
@@ -726,11 +753,10 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
     double xout, yout, rout, tout;
 
     // input point
-    tin = atan2(pAffineTP.y, pAffineTP.x);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
-    // theta now only used in transform() method
-    // double theta = cycles * (tin + (cycle_offset * M_2PI));
-    // double raw_rin = sqrt((pAffineTP.x  * pAffineTP.x) + (pAffineTP.y * pAffineTP.y));
-    rin = sqrt((pAffineTP.x  * pAffineTP.x) + (pAffineTP.y * pAffineTP.y));
+    xin = pAffineTP.x;
+    yin = pAffineTP.y;
+    tin = atan2(yin, xin);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
+    rin = sqrt((xin  * xin) + (yin * yin));
     if (point_rmode == PointRadiusMode.MODIFIED) { rin = rin * spread_split; }
     
     double rinx, riny;
@@ -747,6 +773,7 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
       xcalc = rcalc * cos(tcalc);
       ycalc = rcalc * sin(tcalc);
     }
+
     ArrayList<LinkedPolarCurvePoint> tsects;
 
     int anglebin =  (int)Math.floor(((tin + M_PI)/M_2PI) * angle_bin_count);
@@ -886,46 +913,43 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
       // 3. Prep input for feeding to switch statement:
       //       using designated inner/outer/outish/(on?) for
       //       *_mode, *_spread, *_spread_ratio, etc.
-      double spread;
-      double spread_ratio;
+      double spread, xspread, yspread, radial_blur, angular_blur;
+
       RenderMode mode = RenderMode.DEFAULT;
       if (pstate == PointState.INSIDE)  {
         mode = inner_mode;
-        spread = inner_spread;
-        spread_ratio = inner_spread_ratio;
+        spread = inner_rspread;
+        xspread = inner_xspread;
+        yspread = inner_yspread;
+        radial_blur = inner_rblur;
+        angular_blur = inner_ablur;
       }
       else if (pstate == PointState.OUTSIDE) {
         mode = outer_mode;
-        spread = outer_spread;
-        spread_ratio = outer_spread_ratio;
+        spread = outer_rspread;
+        xspread = outer_xspread;
+        yspread = outer_yspread;
+        radial_blur = outer_rblur;
+        angular_blur = outer_ablur;
       }
-      /*  commenting out INISH mode for now (combined with INSIDE)
-      else if (pstate == PointState.INISH) {
-        // using same params as INSIDE for now, introduce separate modes later
-        // mode = inish_mode;
-        // spread = inish_spread;
-        // spread_ratio = inish_spread_ratio;
-        mode = inish_mode;
-        spread = inish_spread;
-        spread_ratio = inish_spread_ratio;
-      }
-      */
       else if (pstate == PointState.OUTISH) {
         mode = outish_mode;
-        spread = outish_spread;
-        spread_ratio = outish_spread_ratio;
+        spread = outish_rspread;
+        xspread = outish_xspread;
+        yspread = outish_yspread;
+        radial_blur = outish_rblur;
+        angular_blur = outish_ablur;
       }
-      else if (pstate == PointState.ON) {
-        // currently not using ON, so should never get here
-        mode = RenderMode.DEFAULT;
-        spread = 0;
-        spread_ratio = 1;
-      }
+      //  else if (pstate == PointState.ON) {
+      // currently not using ON, so should never get here
       else {
         // every point must be classified as being within one of the enum'd areas, so should never get here
         mode = RenderMode.DEFAULT;
         spread = 0;
-        spread_ratio = 0;
+        xspread = 0;
+        yspread = 0;
+        radial_blur = 0;
+        angular_blur = 0;
       }
       
       if (mode == RenderMode.DEFAULT) {
@@ -945,13 +969,15 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           rcurve = longest;
           break;
         case NEAREST_LONGER:
-          rcurve = nearest_longer;
+          if (longer > 0) { rcurve = nearest_longer; }
+          else { rcurve = longest; } // if no longer curve intersect, default to longest
           break;
         case NEAREST:
           rcurve = nearest;
           break;
         case NEAREST_SHORTER:
-          rcurve = nearest_shorter;
+          if (shorter > 0) { rcurve = nearest_shorter; } 
+          else { rcurve = 0; } // if no shorter curve intersect, default to 0
           break;
         case SHORTEST:
           rcurve = shortest;
@@ -964,11 +990,36 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
       //       using nearest_longer for rcurve but have no longer points (nearest_longer = POSITIVE_INFINITY) 
       //       using nearest_shorter for rcurve but have no shorter points (nearest_shorter = NEGATIVE_INFINITY) 
       // currently these will often end up "offscreen" at +/- infinity? could also cause problems?
+       
+      if (mode == RenderMode.ONCURVE) {
+        // override proximity mode to set rcurve to calculated
+        rcurve = rcalc;
+        tcurve = tcalc;
+        if (curve_thickness != 0) {
+          rcurve = rcurve + (curve_thickness * (pContext.random() - 0.5));
+          // recalced via xcurve calc
+          xcalc = rcurve * cos(tcalc);
+          ycalc = rcurve * sin(tcalc);
+        }
+      }
+      else if (radial_blur == 0 && angular_blur == 0) {
+          // do nothing
+      }
+      else { 
+        if (radial_blur != 0) {
+          rin = rin + (radial_blur * longest * (pContext.random() - 0.5));
+        }
+        if (angular_blur != 0) {
+          tin = tin + (angular_blur * M_2PI * (pContext.random() - 0.5));
+        }
+        xin = rin * cos(tin);
+        yin = rin * sin(tin);
+      }
       xcurve = rcurve * cos(tcurve);
       ycurve = rcurve * sin(tcurve);
       
-      double spreadx = spread * spread_ratio;
-      double spready = spread;
+      double spreadx = spread * xspread;
+      double spready = spread * yspread;
       // double spready = spread / spread_ratio;
       
       // 4. pVarTP transformations, based on mode (for given INSIDE/OUTSIDE/OUTISH classification given above)
@@ -976,6 +1027,8 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
         case ONCURVE: // ONCURVE -- no spread, place on curve
           pVarTP.x += pAmount * xcalc;
           pVarTP.y += pAmount * ycalc;
+          // pVarTP.x += pAmount * xcurve;
+          // pVarTP.y += pAmount * ycurve;
           break;
         case STRETCH1: // stretch1 with modal curve radius, and using angle from input point
           // default to TRANSFORMED_RT
@@ -993,16 +1046,16 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           break;       
         case UNCHANGED:   // UNCHANGED -- leave in place (degenerate case of SCALE where SCALE where scale = 1
           // point is inside curve, leave in place
-          pVarTP.x += pAmount * pAffineTP.x;
-          pVarTP.y += pAmount * pAffineTP.y;
+          pVarTP.x += pAmount * xin;
+          pVarTP.y += pAmount * yin;
           break;
         case MIRROR_SWAP:  // MIRROR_SWAP (swap around origin [0,0], inspired by RosoniFunc) [and degenerate case of ROTATE where rotation = 1PI (180 degrees)
-          pVarTP.x += pAmount * pAffineTP.x * -1;
-          pVarTP.y += pAmount * pAffineTP.y * -1;
+          pVarTP.x += pAmount * xin * -1;
+          pVarTP.y += pAmount * yin * -1;
           break;
         case XY_SWAP:
-          pVarTP.x += pAmount * pAffineTP.y * spreadx;
-          pVarTP.y += pAmount * pAffineTP.x * spready;
+          pVarTP.x += pAmount * yin * spreadx;
+          pVarTP.y += pAmount * xin * spready;
           break;
         case ROTATE: // ROTATE 
           // rotation around origin: 
@@ -1012,8 +1065,8 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           if (true) {
           double cost = Math.cos(spreadx * M_2PI);
           double sint = Math.sin(spready * M_2PI);
-          pVarTP.x += (pAffineTP.x * cost) - (pAffineTP.y * sint);
-          pVarTP.y += (pAffineTP.x * sint) + (pAffineTP.y * cost);
+          pVarTP.x += (xin * cost) - (yin * sint);
+          pVarTP.y += (xin * sint) + (yin * cost);
           }
           break;
         case ROTATE_RADIAL: // ROTATE_RADIAL: similar to ROTATE, but angle increases as extend 
@@ -1030,28 +1083,22 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           //    (otherwise rotation increases with curve_scale)
           //   double cost = Math.cos(spreadx * (rcurve/rmax) * M_2PI);
           //   double sint = Math.sin(spready * (rcurve/rmax) * M_2PI);
-          pVarTP.x += (pAffineTP.x * cost) - (pAffineTP.y * sint);
-          pVarTP.y += (pAffineTP.x * sint) + (pAffineTP.y * cost);
+          pVarTP.x += (xin * cost) - (yin * sint);
+          pVarTP.y += (xin * sint) + (yin * cost);
           }
           break;          
         case CURVE_XY_OFFSET: // CURVE_XY_OFFSET -- (UNCHANGED + ONCURVE) combo (with spread)
           // default to xcalc/ycalc (TRANSFORMED_RT)
-          pVarTP.x += pAmount * (xcurve + (spreadx * pAffineTP.x));
-          pVarTP.y += pAmount * (ycurve + (spready * pAffineTP.y));
+          pVarTP.x += pAmount * (xcurve + (spreadx * xin));
+          pVarTP.y += pAmount * (ycurve + (spready * yin));
           break;
         case CURVE_RADIAL_OFFSET: // CURVE_RADIUS_OFFSET -- offset with curve intersect point at input angle, with: P' = C + P
           // default to longest? / tin (LONGEST)
-          if (rcurve == Double.POSITIVE_INFINITY || rcurve == Double.NEGATIVE_INFINITY) {
-            pVarTP.x += pAmount * xcalc; 
-            pVarTP.y += pAmount * ycalc;
-          }
-          else {
-            // default to longest?
-            double rx = rcurve * cos(tcurve);
-            double ry = rcurve * sin(tcurve);
-            pVarTP.x += pAmount * ((pAffineTP.x * spreadx) + rx);
-            pVarTP.y += pAmount * ((pAffineTP.y * spready) + ry);
-          }
+          // default to longest?
+          double rx = rcurve * cos(tcurve);
+          double ry = rcurve * sin(tcurve);
+          pVarTP.x += pAmount * ((xin * spreadx) + rx);
+          pVarTP.y += pAmount * ((yin * spready) + ry);
           // may want to add a radius clamp -- beyond clamp, don't swap?
           //   if (rin > clamp) { leave in place }
           break;
@@ -1067,18 +1114,20 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           pVarTP.y += pAmount * riny * sin(tcurve);
           break;
         case HIDE: // HIDE
-          pVarTP.x = pAffineTP.x;
-          pVarTP.y = pAffineTP.y;
+          pVarTP.x = xin;
+          pVarTP.y = yin;
           pVarTP.doHide = true;
           break;
         case SCALE: // SCALE (inspired by Circus)
-          pVarTP.x = pAffineTP.x * spreadx;
-          pVarTP.y = pAffineTP.y * spready;
+          pVarTP.x = xin * spreadx;
+          pVarTP.y = yin * spready;
           break;
         case WHIRL: // WHIRL (inspired by WhorlFunc)
           // default to rcalc and tin? (TRANSFORMED_R)
-          double ax = tcurve + ((spreadx/10) / (rcurve - rin));
-          double ay = tcurve + ((spready/10) / (rcurve - rin));
+          double rdiff = rcurve - rin;
+          if (rdiff == 0) { rdiff = EPSILON; }
+          double ax = tcurve + ((spreadx/10) / rdiff);
+          double ay = tcurve + ((spready/10) / rdiff);
           double cax = cos(ax);
           double say = sin(ay);
           pVarTP.x += pAmount * rin * cax;
@@ -1086,7 +1135,7 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           break;
         case POW: // POW (inspired by Juliascope)
           // default to rcalc, tcalc? (TRANSFOMRED_RT)
-          double sqr = sqr(xcurve - pAffineTP.x) + sqr(ycurve - pAffineTP.y);
+          double sqr = sqr(xcurve - xin) + sqr(ycurve - yin);
           rinx = rcurve + pow(sqr, spreadx) - 1.0;
           riny = rcurve + pow(sqr, spready) - 1.0;
           pVarTP.x += pAmount * rinx * cos(tcurve);
@@ -1096,14 +1145,14 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           // default to longest, tin? (LONGEST)
           // rout = sqrt((calcPoint.getPrecalcSumsq() / pAffineTP.getPrecalcSumsq()) - 1.0);
           rout = sqrt(((xcurve*xcurve + ycurve*ycurve)/ pAffineTP.getPrecalcSumsq()) - 1.0);
-          pVarTP.x += pAmount * rout * spreadx * pAffineTP.x;
-          pVarTP.y += pAmount * rout * spready * pAffineTP.y;
+          pVarTP.x += pAmount * rout * spreadx * xin;
+          pVarTP.y += pAmount * rout * spready * yin;
           break;          
         case STRETCH3: // STRETCH3
           // default xcalc/ycalc (TRANSFORM_RT)
           // or posibly LONGEsT
-          xin = Math.abs(pAffineTP.x);
-          yin = Math.abs(pAffineTP.y);
+          xin = Math.abs(xin);
+          yin = Math.abs(yin);
           if (xcurve<0) { xin = xin * -1; }
           if (ycurve<0) { yin = yin * -1; }
           pVarTP.x += pAmount * (xcurve - (spreadx * (xcurve-xin)));
@@ -1111,8 +1160,8 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           break;          
         case STRETCH4: // STRETCH4
           // default xcalc/ycalc? (TRANSFORM_RT)
-          xin = Math.abs(pAffineTP.x);
-          yin = Math.abs(pAffineTP.y);
+          xin = Math.abs(xin);
+          yin = Math.abs(yin);
           if (xcurve<0) { xin = xin * -1; }
           if (ycurve<0) { yin = yin * -1; }
           pVarTP.x += pAmount * (xcurve - (spreadx * xin));
@@ -1127,8 +1176,8 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           break;
         case STRETCH7: // STRETCH7 -- similar to 3, different sign fiddling
           // default xcalc/ycalc? (TRANSFORM_RT)
-          xin = Math.abs(pAffineTP.x);
-          yin = Math.abs(pAffineTP.y);
+          xin = Math.abs(xin);
+          yin = Math.abs(yin);
           if (xcurve<0) { xin = xin * -1; }
           if (ycurve<0) { yin = yin * -1; }
           pVarTP.x += pAmount * (xcurve + (spreadx * xin));
@@ -1136,8 +1185,8 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           break;
         case STRETCH8: // STRETCH8 -- same as mode 6, but without the sign modifications
           // default xcalc/ycalc? (TRANSFORM_RT)
-          pVarTP.x += pAmount * (xcurve - (spreadx * pAffineTP.x));
-          pVarTP.y += pAmount * (ycurve - (spready * pAffineTP.y));
+          pVarTP.x += pAmount * (xcurve - (spreadx * xin));
+          pVarTP.y += pAmount * (ycurve - (spready * yin));
           break;
         case STRETCH9: // STRETCH9
           pVarTP.x += pAmount * rin * cos(tcalc) * spreadx;
@@ -1216,11 +1265,14 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
                           curve_scale, 
                           mode_merge_param.getIntegerMode(),  
                           inner_param.getIntegerMode(), outer_param.getIntegerMode(), outish_param.getIntegerMode(), 
-                          inner_spread, outer_spread, outish_spread, 
-                          inner_spread_ratio, outer_spread_ratio, outish_spread_ratio, 
+                          inner_rspread, outer_rspread, outish_rspread, 
+                          inner_xspread, outer_xspread, outish_xspread, 
+                          inner_yspread, outer_yspread, outish_yspread, 
+                          inner_rblur, outer_rblur, outish_rblur, 
+                          inner_ablur, outer_ablur, outish_ablur, 
                           spread_split,
                           cycles_param, cycle_rotation, 
-                          fill, 
+                          curve_thickness, fill, 
                           proximity_param.getIntegerMode(), curve_rmode_param.getIntegerMode(), location_mode_param.getIntegerMode(), 
                           angle_bin_count, 
                           metacycles, metacycle_offset, metacycle_scale, metacycle_rotation
@@ -1248,24 +1300,45 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
       outish_param = RenderMode.get((int)floor(pValue));
       if (outish_param == null)  { outish_param = RenderMode.DEFAULT; }
     }
-    else if (PARAM_OUTER_SPREAD.equalsIgnoreCase(pName))
-      outer_spread = pValue;
-    else if (PARAM_INNER_SPREAD.equalsIgnoreCase(pName))
-      inner_spread = pValue;
-    else if (PARAM_OUTISH_SPREAD.equalsIgnoreCase(pName))
-      outish_spread = pValue;    
-    else if (PARAM_OUTER_SPREAD_RATIO.equalsIgnoreCase(pName))
-      outer_spread_ratio = pValue;
-    else if (PARAM_INNER_SPREAD_RATIO.equalsIgnoreCase(pName))
-      inner_spread_ratio = pValue;    
-    else if (PARAM_OUTISH_SPREAD_RATIO.equalsIgnoreCase(pName))
-      outish_spread_ratio = pValue;    
+    else if (PARAM_INNER_RSPREAD.equalsIgnoreCase(pName))
+      inner_rspread = pValue;
+    else if (PARAM_OUTER_RSPREAD.equalsIgnoreCase(pName))
+      outer_rspread = pValue;
+    else if (PARAM_OUTISH_RSPREAD.equalsIgnoreCase(pName))
+      outish_rspread = pValue;    
+    else if (PARAM_INNER_XSPREAD.equalsIgnoreCase(pName))
+      inner_xspread = pValue;
+    else if (PARAM_OUTER_XSPREAD.equalsIgnoreCase(pName))
+      outer_xspread = pValue;
+    else if (PARAM_OUTISH_XSPREAD.equalsIgnoreCase(pName))
+      outish_xspread = pValue;  
+    else if (PARAM_INNER_YSPREAD.equalsIgnoreCase(pName))
+      inner_yspread = pValue;
+    else if (PARAM_OUTER_YSPREAD.equalsIgnoreCase(pName))
+      outer_yspread = pValue;
+    else if (PARAM_OUTISH_YSPREAD.equalsIgnoreCase(pName))
+      outish_yspread = pValue;
+    else if (PARAM_INNER_RBLUR.equalsIgnoreCase(pName))
+      inner_rblur = pValue;
+    else if (PARAM_OUTER_RBLUR.equalsIgnoreCase(pName))
+      outer_rblur = pValue;
+    else if (PARAM_OUTISH_RBLUR.equalsIgnoreCase(pName))
+      outish_rblur = pValue;
+    else if (PARAM_INNER_ABLUR.equalsIgnoreCase(pName))
+      inner_ablur = pValue;
+    else if (PARAM_OUTER_ABLUR.equalsIgnoreCase(pName))
+      outer_ablur = pValue;
+    else if (PARAM_OUTISH_ABLUR.equalsIgnoreCase(pName))
+      outish_ablur = pValue;    
+    
     else if (PARAM_SPREAD_SPLIT.equalsIgnoreCase(pName))
       spread_split = pValue;
     else if (PARAM_CYCLES.equalsIgnoreCase(pName))
       cycles_param = abs(pValue);
     else if (PARAM_CYCLE_ROTATION.equalsIgnoreCase(pName))
-      cycle_rotation = pValue;    
+      cycle_rotation = pValue; 
+    else if (PARAM_CURVE_THICKNESS.equalsIgnoreCase(pName))
+      curve_thickness = pValue;
     else if (PARAM_FILL.equalsIgnoreCase(pName))
       fill = pValue;
     else if (PARAM_CURVE_RADIUS_MODE.equalsIgnoreCase(pName)) {
