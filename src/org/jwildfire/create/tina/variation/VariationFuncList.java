@@ -463,6 +463,7 @@ public class VariationFuncList {
     registerVariationFunc(ButterflyFayCurveFunc.class);
     registerVariationFunc(EpitrochoidCurveFunc.class);
     registerVariationFunc(HypotrochoidCurveFunc.class);
+    registerVariationFunc(CircleCurveFunc.class);
 
   }
 
