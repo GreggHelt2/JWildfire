@@ -32,6 +32,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
 
                            STRETCH2(3),
                            UNCHANGED(4), 
+                           UNCHANGED_RAW(60), 
                            HIDE(5),
                            SCALE(6),
                            MIRROR_SWAP(7), 
@@ -49,10 +50,31 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                            STRETCH8(20),
                            STRETCH9(21), 
                            // TEST(30), 
-                           TEST2(31),
+                           // TEST2(31),
                            XY_SWAP(18), 
                            ROTATE_RADIAL(30), 
-                           END(50);
+                           
+                           RADIUS_MODULUS(31),
+                           RADIUS2_MODULUS(32),
+                           
+                           REFLECT_MODULUS(41), 
+                           REFLECT2_MODULUS(42), 
+                           REFLECT3_MODULUS(43), 
+                           REFLECT4_MODULUS(44),                     
+                           REFLECT5_MODULUS(45), 
+                           REFLECT6_MODULUS(46), 
+                           REFLECT7_MODULUS(47), 
+                           REFLECT8_MODULUS(48), 
+                           
+                           BOUNCE_MODULUS(51), 
+                           BOUNCE2_MODULUS(52), 
+                           BOUNCE3_MODULUS(53), 
+                           BOUNCE4_MODULUS(54), 
+                           BOUNCE5_MODULUS(55), 
+                           BOUNCE6_MODULUS(56), 
+                           BOUNCE7_MODULUS(57), 
+
+                           END(80);
        
      private static final Map<Integer,RenderMode> lookup = new HashMap<Integer,RenderMode>();
      private static int maxInt = 0;
@@ -207,7 +229,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected static final String PARAM_METACYCLE_ROTATION = "metacycle_rotation";
   protected static final String PARAM_PROXIMITY_MODE = "proximity_mode";
   protected static final String PARAM_ANGLE_BINS = "angle_bins";
-  
+  protected static final String PARAM_USE_AFFINE = "use_affine";
   protected static final String[] paramNames = { 
                                                PARAM_CURVE_SCALE, 
                                                PARAM_MODE_MERGING, 
@@ -221,7 +243,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                                                PARAM_CYCLES, PARAM_CYCLE_ROTATION, 
                                                PARAM_CURVE_THICKNESS, PARAM_FILL, 
                                                PARAM_PROXIMITY_MODE, PARAM_CURVE_RADIUS_MODE, PARAM_LOCATION_CLASSIFIER, 
-                                               PARAM_ANGLE_BINS, 
+                                               PARAM_ANGLE_BINS, PARAM_USE_AFFINE, 
                                                PARAM_METACYCLES, PARAM_METACYCLE_OFFSET, PARAM_METACYCLE_SCALE, PARAM_METACYCLE_ROTATION }; 
 
   protected double curve_scale = 1;
@@ -270,6 +292,8 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
 
   protected double curve_thickness = 0;
   protected double cycles_param;
+  
+  protected boolean use_affine = true;
   
   // protected double point_radius_mode;
   // protected double in_out_mode;
@@ -384,7 +408,10 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
     //    range of atan2 is from [0 --> PI] for  positive y as x:[+->0->-]  (at x=0, atan2 = PI/2)
     //                 and  from [0 --> -PI] for negative y as x:[+->0->-]  (at y=0, atan2 = -PI/2)
-    double tin = atan2(pAffineTP.y, pAffineTP.x);  
+    XYZPoint srcPoint;
+    if (use_affine) { srcPoint = pAffineTP; }
+    else { srcPoint = pVarTP; }
+    double tin = atan2(srcPoint.y, srcPoint.x);  
     
     // then stretch theta over full number of cycles
     // so range of theta is [0 --> cycles*PI] and [0 --> -cycles*PI], or overall [-cycles*PI --> cycles*PI]
@@ -753,8 +780,11 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
     double xout, yout, rout, tout;
 
     // input point
-    xin = pAffineTP.x;
-    yin = pAffineTP.y;
+    XYZPoint srcPoint;
+    if (use_affine) { srcPoint = pAffineTP; }
+    else { srcPoint = pVarTP; }
+    xin = srcPoint.x;
+    yin = srcPoint.y;
     tin = atan2(yin, xin);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
     rin = sqrt((xin  * xin) + (yin * yin));
     if (point_rmode == PointRadiusMode.MODIFIED) { rin = rin * spread_split; }
@@ -1049,6 +1079,10 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           pVarTP.x += pAmount * xin;
           pVarTP.y += pAmount * yin;
           break;
+        case UNCHANGED_RAW: 
+          pVarTP.x = xin;
+          pVarTP.y = yin;
+          break;
         case MIRROR_SWAP:  // MIRROR_SWAP (swap around origin [0,0], inspired by RosoniFunc) [and degenerate case of ROTATE where rotation = 1PI (180 degrees)
           pVarTP.x += pAmount * xin * -1;
           pVarTP.y += pAmount * yin * -1;
@@ -1113,6 +1147,244 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           pVarTP.x += pAmount * rinx * cos(tcurve);
           pVarTP.y += pAmount * riny * sin(tcurve);
           break;
+          
+        case RADIUS_MODULUS:
+          // P' = (P modulo C)
+          // apply spreadx/spready radius pre-remainder (ignoring negative spread values, will always be contained within rcurve)
+          rinx = (rin * spreadx) % rcurve;
+          riny = (rin * spready) % rcurve;
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break;
+       case RADIUS2_MODULUS:
+          // P' = (P modulo C)
+          // same as RADIUS_MODULUS but apply spreadx/spready post-remainder (so can extend beyond curve)
+          rinx = (rin % rcurve) * spreadx;
+          riny = (rin % rcurve) * spready;
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break;  
+         
+        case REFLECT_MODULUS:
+          // P' = C - (P modulo C)
+          // apply spreadx/spready radius pre-remainder (ignoring negative spread values, will always be contained within rcurve)
+          // and actually using _remainder_ instead of true modulus -- 
+          // see discussion of difference at: 
+          //     http://stackoverflow.com/questions/4412179/best-way-to-make-javas-modulus-behave-like-it-should-with-negative-numbers/4412200#4412200 and 
+          //     http://stackoverflow.com/questions/5385024/mod-in-java-produces-negative-numbers 
+          //    (only different with negative values)
+          // with negative spread values, can escape beyond the curve
+          rinx = rcurve - ((rin * spreadx) % rcurve);
+          riny = rcurve - ((rin * spready) % rcurve);
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break;            
+        case REFLECT2_MODULUS:
+          // P' = C - (P modulo C)
+          // same as REFLECT_MODULUS, but apply spreadx/spready post-remainder (so can extend beyond rcurve)
+          rinx = rcurve - ((rin % rcurve) * spreadx);
+          riny = rcurve - ((rin % rcurve) * spready);
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break;
+        case REFLECT3_MODULUS:
+          // P' = C - (P modulo C)
+          // same as REFLECT_MODULUS, but moving outward from curve instead of inward (just a sign change)
+          rinx = rcurve + ((rin * spreadx) % rcurve);
+          riny = rcurve + ((rin * spready) % rcurve);
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break;            
+        case REFLECT4_MODULUS:
+          // P' = C - (P modulo C)
+          // same as REFLECT2_MODULUS, but moving outward from curve instead of inward (just a sign change)
+          rinx = rcurve + ((rin % rcurve) * spreadx);
+          riny = rcurve + ((rin % rcurve) * spready);
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break; 
+        case REFLECT5_MODULUS:
+          // P' = C - (P modulo C)
+          // same as REFLECT_MODULUS, but use true modulus instead of Java modulus (true modulus is always positive)
+          // see discussion at http://stackoverflow.com/questions/5385024/mod-in-java-produces-negative-numbers for difference
+          //    (only different with negative values)
+          //    summary: (a modulo b) = ((a % b) + b) % b
+          //  true modulo is always positive (and < rcurve)
+          //  and spread is applied pre-modulo
+          //  so modifying term will always be + and < rcurve, therefore all output points will be within the curve
+          //  
+          rinx = rcurve - ((((rin * spreadx) % rcurve) + rcurve) % rcurve);
+          riny = rcurve - ((((rin * spready) % rcurve) + rcurve) % rcurve);
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break; 
+
+        case REFLECT6_MODULUS:
+          // P' = C - (P modulo C)
+          // same as REFLECT5_MODULUS, but replace x/y instead of adding to
+          // see discussion at http://stackoverflow.com/questions/5385024/mod-in-java-produces-negative-numbers for difference
+          //    (only different with negative values)
+          //    summary: (a modulo b) = ((a % b) + b) % b
+          //  true modulo is always positive (and < rcurve)
+          //  and spread is applied pre-modulo
+          //  s
+          rinx = rcurve - ((((rin * spreadx) % rcurve) + rcurve) % rcurve);
+          riny = rcurve - ((((rin * spready) % rcurve) + rcurve) % rcurve);
+          pVarTP.x = pAmount * rinx * cos(tcurve);
+          pVarTP.y = pAmount * riny * sin(tcurve);
+          break;              
+        // case OFFSET_MODULUS:  // can probably combine this with REFLECT_MODULUS, can change sign with rspreadr/xspread/yspread
+          // P' = C + (P modulo C) 
+        case REFLECT7_MODULUS:
+          rcurve = pAmount;
+          rin = pVarTP.getPrecalcSqrt();
+          tin = pVarTP.getPrecalcAtanYX();
+          if (rin > rcurve) {
+            rout = rcurve - (rin % rcurve);
+            pVarTP.x = rout * cos(tin);
+            pVarTP.y = rout * sin(tin);
+          }
+          else {
+            // do nothing, assuming pVarTP already set
+          }
+          break;  
+        case REFLECT8_MODULUS:
+          if (rin > rcurve) {
+            rout = rcurve - (rin % rcurve);
+            pVarTP.x = rout * cos(tin);
+            pVarTP.y = rout * sin(tin);
+          }
+          else {
+            pVarTP.x = srcPoint.x;
+            pVarTP.y = srcPoint.y;
+          }
+          break;
+       case BOUNCE_MODULUS:
+          // if ((floor(P/C) even) then P' = (P modulo C)  [as P increases, move out from origin towards curve]
+          // else P' = C - (P modulo C)  [as P increases, move in from curve towards origin]
+          boolean beven = (((floor(rin/rcurve)) % 2) == 0);
+          if (beven) {
+            rinx = (rin * spreadx) % rcurve;
+            riny = (rin * spready) % rcurve;
+          }
+          else {
+            rinx = rcurve - ((rin * spreadx) % rcurve);
+            riny = rcurve - ((rin * spready) % rcurve);
+          }
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break;          
+        case BOUNCE2_MODULUS:
+          // same as BOUNCE_MODULUS, but apply spreadx/spready post-remainder (so can extend beyond rcurve)
+          boolean b2even = (((floor(rin/rcurve)) % 2) == 0);
+          if (b2even) {
+            rinx = (rin % rcurve) * spreadx;
+            riny = (rin % rcurve) * spready;
+          }
+          else {
+            rinx = rcurve - ((rin % rcurve) * spreadx);
+            riny = rcurve - ((rin % rcurve) * spready);
+          }
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break;
+        case BOUNCE3_MODULUS:
+          // same as BOUNCE_MODULUS, but moving outward from curve instead of inward (just a sign change)
+          boolean b3even = (((floor(rin/rcurve)) % 2) == 0);
+          if (b3even) {
+            rinx = (rin * spreadx) % rcurve;
+            riny = (rin * spready) % rcurve;
+          }
+          else {
+            rinx = rcurve + ((rin * spreadx) % rcurve);
+            riny = rcurve + ((rin * spready) % rcurve);
+          }
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break;  
+        case BOUNCE4_MODULUS: 
+          // same as BOUNCE_MODULUS, but:
+          //    apply spreadx/spready post-remainder (so can extend beyond rcurve)
+          //    moving outward from curve instead of inward (just a sign change)
+          boolean b4even = (((floor(rin/rcurve)) % 2) == 0);
+          if (b4even) {
+            rinx = (rin % rcurve) * spreadx;
+            riny = (rin % rcurve) * spready;
+          }
+          else {
+            rinx = rcurve + ((rin % rcurve) * spreadx);
+            riny = rcurve + ((rin % rcurve) * spready);
+          }
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break;
+        case BOUNCE5_MODULUS:
+          // same as BOUNCE_MODULUS, but use true modulus instead of Java modulus (true modulus is always positive)
+          // see discussion of difference at: 
+          //     http://stackoverflow.com/questions/4412179/best-way-to-make-javas-modulus-behave-like-it-should-with-negative-numbers/4412200#4412200 and 
+          //     http://stackoverflow.com/questions/5385024/mod-in-java-produces-negative-numbers 
+          //    (only different with negative values)
+          //    summary: (a modulo b) = ((a % b) + b) % b
+          //  true modulo is always positive (and < rcurve)
+          //  and spread is applied pre-modulo
+          //  so modifying term will always be + and < rcurve, therefore all output points will be within the curve
+          rinx = rcurve - ((((rin * spreadx) % rcurve) + rcurve) % rcurve);          
+          boolean b5even = (((floor(rin/rcurve)) % 2) == 0);
+          if (b5even) {
+            rinx = (((rin * spreadx) % rcurve) + rcurve) % rcurve;        
+            riny = (((rin * spreadx) % rcurve) + rcurve) % rcurve;        
+          }
+          else {
+            rinx = rcurve - ((((rin * spreadx) % rcurve) + rcurve) % rcurve);         
+            riny = rcurve - ((((rin * spready) % rcurve) + rcurve) % rcurve);         
+          }
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break;               
+        case BOUNCE6_MODULUS:
+          boolean b6even = (((floor(rin/rcurve)) % 2) == 0);
+          if (b6even) {
+            rinx = rcurve + (rin * spreadx) % rcurve;
+            riny = rcurve + (rin * spready) % rcurve;
+          }
+          else {
+            rinx = rcurve - ((rin * spreadx) % rcurve);
+            riny = rcurve - ((rin * spready) % rcurve);
+          }
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break;  
+        case BOUNCE7_MODULUS:
+          // if ((floor(P/C) even) then P' = C - (P modulo C)
+          // else P' = C + (P modulo C)
+          boolean b7even = (((floor(rin/rcurve)) % 2) == 0);
+          if (b7even) {
+            rinx = rcurve - ((rin * spreadx) % rcurve);
+            riny = rcurve - ((rin * spready) % rcurve);
+          }
+          else {
+            rinx = rcurve + (rin * spreadx) % rcurve;
+            riny = rcurve + (rin * spready) % rcurve;
+          }
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break;   
+/*        case BOUNCE4_MODULUS:
+          // if ((floor(P/C) even) then P' = C - (P modulo C)
+          // else P' = C + (P modulo C)
+          boolean b4even = (((floor(rin/rcurve)) % 2) == 0);
+          if (b4even) {
+            rinx = rcurve + ((rin * spreadx) % rcurve);
+            riny = rcurve + ((rin * spready) % rcurve);
+          }
+          else {
+            rinx = rcurve - (rin % rcurve) * spreadx;
+            riny = rcurve - (rin % rcurve) * spready;
+          }
+          pVarTP.x += pAmount * rinx * cos(tcurve);
+          pVarTP.y += pAmount * riny * sin(tcurve);
+          break;   
+        */
         case HIDE: // HIDE
           pVarTP.x = xin;
           pVarTP.y = yin;
@@ -1144,7 +1416,7 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
         case LOOPY:  // LOOPY (inspired by loonie)
           // default to longest, tin? (LONGEST)
           // rout = sqrt((calcPoint.getPrecalcSumsq() / pAffineTP.getPrecalcSumsq()) - 1.0);
-          rout = sqrt(((xcurve*xcurve + ycurve*ycurve)/ pAffineTP.getPrecalcSumsq()) - 1.0);
+          rout = sqrt(((xcurve*xcurve + ycurve*ycurve)/ srcPoint.getPrecalcSumsq()) - 1.0);
           pVarTP.x += pAmount * rout * spreadx * xin;
           pVarTP.y += pAmount * rout * spready * yin;
           break;          
@@ -1198,7 +1470,8 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           break;
       }
       //    pVarTP.z += adjustedAmount * pAffineTP.z;
-      pVarTP.z += pAmount * pAffineTP.z;
+      // pVarTP.z += pAmount * pAffineTP.z;
+      pVarTP.z += pAmount * srcPoint.z;
 
       if (DRAW_DIAGNOSTICS) {
         drawDiagnostics(pContext, pVarTP);
@@ -1274,7 +1547,7 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
                           cycles_param, cycle_rotation, 
                           curve_thickness, fill, 
                           proximity_param.getIntegerMode(), curve_rmode_param.getIntegerMode(), location_mode_param.getIntegerMode(), 
-                          angle_bin_count, 
+                          angle_bin_count, (use_affine ? 1 : 0), 
                           metacycles, metacycle_offset, metacycle_scale, metacycle_rotation
     };
   }
@@ -1355,6 +1628,9 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
     }
     else if (PARAM_ANGLE_BINS.equalsIgnoreCase(pName)) {
       this.angle_bin_count = (int)abs(ceil(pValue));
+    }
+    else if (PARAM_USE_AFFINE.equalsIgnoreCase(pName)) {
+      use_affine = (pValue != 0);
     }
     else if (PARAM_METACYCLES.equalsIgnoreCase(pName)) {
       metacycles = abs(pValue);
