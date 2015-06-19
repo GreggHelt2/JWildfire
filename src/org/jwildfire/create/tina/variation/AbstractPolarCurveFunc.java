@@ -353,20 +353,43 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     if (mode_merge_param == MergeMode.AUTO) { mode_merge = MergeMode.INNER_OUTERISH; }
     else { mode_merge = mode_merge_param; }
     
-    
-    
     if (mode_merge == MergeMode.ALL) { // combine inner/outer/inish, use inner for all
       outer_mode = inner_mode;
+      this.outer_rspread = inner_rspread;
+      this.outer_xspread = inner_xspread;
+      this.outer_yspread = inner_yspread;
+      this.outer_rblur = inner_rblur;
+      this.outer_ablur = inner_ablur;
       outish_mode = inner_mode;
+      this.outish_rspread = inner_rspread;
+      this.outish_xspread = inner_xspread;
+      this.outish_yspread = inner_yspread;
+      this.outish_rblur = inner_rblur;
+      this.outish_ablur = inner_ablur;      
     }
     else if (mode_merge == MergeMode.INNERISH_OUTER) {  // combine inner and outish, use inner for outish
       outish_mode = inner_mode;
+      this.outish_rspread = inner_rspread;
+      this.outish_xspread = inner_xspread;
+      this.outish_yspread = inner_yspread;
+      this.outish_rblur = inner_rblur;
+      this.outish_ablur = inner_ablur;
     }
     else if (mode_merge == MergeMode.INNER_OUTERISH) { // combine outer and outish, use outer for outish
       outish_mode = outer_mode;
+      this.outish_rspread = outer_rspread;
+      this.outish_xspread = outer_xspread;
+      this.outish_yspread = outer_yspread;
+      this.outish_rblur = outer_rblur;
+      this.outish_ablur = outer_ablur;
     }
-    else if (mode_merge == MergeMode.INOUTER_OUTISH) { // combin inner and outer, ouse inner for outer
+    else if (mode_merge == MergeMode.INOUTER_OUTISH) { // combine inner and outer, ouse inner for outer
       outer_mode = inner_mode;
+      this.outer_rspread = inner_rspread;
+      this.outer_xspread = inner_xspread;
+      this.outer_yspread = inner_yspread;
+      this.outer_rblur = inner_rblur;
+      this.outer_ablur = inner_ablur;
     }
     else if (mode_merge == MergeMode.NONE) { } // do nothing, already separate by default
     
@@ -426,7 +449,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
       variation_type = variation_type_param;
     }
     
-    System.out.println(this.getClass().getName() + ",  type: " + this.getPriority());
+    // System.out.println(this.getClass().getName() + ",  type: " + this.getPriority());
     
     if (DEBUG_MODES) {
       System.out.println("mode_merge: " + this.mode_merge.name());
