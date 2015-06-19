@@ -153,6 +153,15 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     }
     public int getIntegerMode() { return this.ordinal(); }
   }
+
+  // for most parameters, 0 indicates AUTO, but trying to keep transform_type in line with getPriority(), where pre/normal/post is indicated by -1/0/+1
+  public static int AUTO = 2;   
+  public static int PRE = -1; 
+  public static int NORMAL = 0;
+  public static int POST = 1;
+  // POST_TO_PRE inspired by ChronologicalDot blog post:  
+  //     https://chronologicaldot.wordpress.com/2013/10/15/understanding-how-fractal-transforms-are-processed/
+  public static int POST_TO_PRE = 3;  
   
   protected class LinkedPolarCurvePoint {
     protected double radius;
@@ -238,8 +247,8 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected static final String PARAM_METACYCLE_ROTATION = "metacycle_rotation";
   protected static final String PARAM_PROXIMITY_MODE = "proximity_mode";
   protected static final String PARAM_ANGLE_BINS = "angle_bins";
-  protected static final String PARAM_USE_AFFINE = "use_affine";
   protected static final String PARAM_POINT_COMBINER = "point_combiner";
+  protected static final String PARAM_VARIATION_TYPE = "variation_type";
   
   protected static final String[] paramNames = { 
                                                PARAM_CURVE_SCALE, 
@@ -254,7 +263,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                                                PARAM_CYCLES, PARAM_CYCLE_ROTATION, 
                                                PARAM_CURVE_THICKNESS, PARAM_FILL, 
                                                PARAM_PROXIMITY_MODE, PARAM_CURVE_RADIUS_MODE, PARAM_LOCATION_CLASSIFIER, 
-                                               PARAM_ANGLE_BINS, PARAM_USE_AFFINE, PARAM_POINT_COMBINER, 
+                                               PARAM_ANGLE_BINS, PARAM_POINT_COMBINER, PARAM_VARIATION_TYPE, 
                                                PARAM_METACYCLES, PARAM_METACYCLE_OFFSET, PARAM_METACYCLE_SCALE, PARAM_METACYCLE_ROTATION }; 
 
   protected double curve_scale = 1;
@@ -267,6 +276,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected InsideOutsideRule location_mode = InsideOutsideRule.AUTO;
   protected CurveProximityMode proximity_mode = CurveProximityMode.AUTO;
   protected PointCombiner point_combo_mode = PointCombiner.REPLACE;
+  protected int variation_type_param = AUTO;
   
   protected MergeMode mode_merge_param = mode_merge;
   protected RenderMode inner_param = inner_mode;
@@ -276,6 +286,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected InsideOutsideRule location_mode_param = location_mode;
   protected CurveProximityMode proximity_param = proximity_mode;
   protected PointCombiner point_combo_mode_param = PointCombiner.REPLACE;
+  protected int variation_type = NORMAL;
 
   
   // point_rmode is currently hardwired, not available as a user param
@@ -306,9 +317,6 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
 
   protected double curve_thickness = 0;
   protected double cycles_param;
-  
-  protected boolean use_affine = true;
-
   
   // protected double point_radius_mode;
   // protected double in_out_mode;
@@ -394,6 +402,31 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     else {
       proximity_mode = proximity_param;
     }
+
+    if (variation_type_param == AUTO) {
+      // if AUTO, then set to NORMAL if first non-pre, non-post variation of an XForm, and POST if there are preceeding normal variations
+      int vindex = -1;
+      int prior_normals = 0;
+      for (int i=0; i<pXForm.getVariationCount(); i++) {
+        Variation v = pXForm.getVariation(i);
+        VariationFunc vfunc = v.getFunc();
+        if (this == vfunc) {
+          vindex = i;
+          break;
+        }
+        else if (vfunc.getPriority() == 0) {
+          prior_normals++;
+        }
+      }
+      if (vindex < 0) { System.out.println("Problem finding variation in XForm!"); }
+      else if (prior_normals == 0) { variation_type = NORMAL; } // no prior normal variations in XForm, so set type to NORMAL
+      else { variation_type = POST; } // there are prior normal variations in XForm, so set type to POST
+    }
+    else {
+      variation_type = variation_type_param;
+    }
+    
+    System.out.println(this.getClass().getName() + ",  type: " + this.getPriority());
     
     if (DEBUG_MODES) {
       System.out.println("mode_merge: " + this.mode_merge.name());
@@ -423,9 +456,28 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
     //    range of atan2 is from [0 --> PI] for  positive y as x:[+->0->-]  (at x=0, atan2 = PI/2)
     //                 and  from [0 --> -PI] for negative y as x:[+->0->-]  (at y=0, atan2 = -PI/2)
-    XYZPoint srcPoint;
-    if (use_affine) { srcPoint = pAffineTP; }
-    else { srcPoint = pVarTP; }
+    XYZPoint srcPoint, dstPoint;
+    if (variation_type == NORMAL) {
+      srcPoint = pAffineTP;
+      dstPoint = pVarTP;
+    }
+    else if (variation_type == PRE) {
+      srcPoint = pAffineTP;
+      dstPoint = pAffineTP;
+    }
+    else if (variation_type == POST) {
+      srcPoint = pVarTP;
+      dstPoint = pVarTP;
+    }
+    else if (variation_type == POST_TO_PRE) {
+      srcPoint = pVarTP;
+      dstPoint = pAffineTP;
+    }
+    else { // if unknown, consider NORMAL
+      srcPoint = pAffineTP;
+      dstPoint = pVarTP;
+    }
+
     double tin = atan2(srcPoint.y, srcPoint.x);  
     
     // then stretch theta over full number of cycles
@@ -439,7 +491,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     // use scratch XYZPoint pCurve to calc points on curve
     pCurve.clear();
     calcCurvePoint(pContext, theta, pCurve);
-    renderByMode(pContext, pXForm, pAffineTP, pVarTP, pAmount, pCurve);
+    renderByMode(pContext, pXForm, srcPoint, dstPoint, pAmount, pCurve);
   }
   
   /*
@@ -1583,7 +1635,7 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
                           cycles_param, cycle_rotation, 
                           curve_thickness, fill, 
                           proximity_param.getIntegerMode(), curve_rmode_param.getIntegerMode(), location_mode_param.getIntegerMode(), 
-                          angle_bin_count, (use_affine ? 1 : 0), point_combo_mode_param.getIntegerMode(), 
+                          angle_bin_count, point_combo_mode_param.getIntegerMode(), variation_type_param, 
                           metacycles, metacycle_offset, metacycle_scale, metacycle_rotation
     };
   }
@@ -1665,12 +1717,15 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
     else if (PARAM_ANGLE_BINS.equalsIgnoreCase(pName)) {
       this.angle_bin_count = (int)abs(ceil(pValue));
     }
-    else if (PARAM_USE_AFFINE.equalsIgnoreCase(pName)) {
-      use_affine = (pValue != 0);
-    }
     else if (PARAM_POINT_COMBINER.equalsIgnoreCase(pName)) {
       this.point_combo_mode_param = PointCombiner.get((int)floor(pValue));
       if (point_combo_mode_param == null) { point_combo_mode_param = PointCombiner.AUTO; }
+    }
+    else if (PARAM_VARIATION_TYPE.equalsIgnoreCase(pName)) {
+      this.variation_type_param = (int)floor(pValue);
+      if (variation_type_param < -1 || variation_type_param > 3)   {
+        variation_type_param = AUTO;
+      }
     }
     else if (PARAM_METACYCLES.equalsIgnoreCase(pName)) {
       metacycles = abs(pValue);
@@ -1689,6 +1744,11 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
   @Override
   public String getName() {
     return "abstract_polar_curve";
+  }
+  
+  @Override
+  public int getPriority() {
+    return variation_type;  // PRE = -1, NORMAL = 0, POST = +1, unsure what to do with PRE_FROM_POST yet
   }
 
 
