@@ -145,7 +145,8 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     public int getIntegerMode() { return this.ordinal(); }
   }
   
-  public enum PointCombiner { AUTO, REPLACE, ADD, SUBTRACT_CURRENT, SUBTRACT_PREVIOUS;
+  public enum PointCombiner { AUTO, REPLACE, ADD_PREVIOUS_DESTINATION, ADD_PREVIOUS_SOURCE, SUBTRACT_PREVIOUS_DESTINATION, SUBTRACT_PREVIOUS_SOURCE;
+      // MULTIPLY, DIVIDE_NONZERO;
     // WARNING -- DO NOT CHANGE ORDER OF ENUMS, ADD NEW ONES TO END OF LIST
     public static PointCombiner get(int oindex) {
       if (oindex < 0 || oindex >= values().length) { return null; }
@@ -275,7 +276,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected CurveRadiusMode curve_rmode = CurveRadiusMode.AUTO;
   protected InsideOutsideRule location_mode = InsideOutsideRule.AUTO;
   protected CurveProximityMode proximity_mode = CurveProximityMode.AUTO;
-  protected PointCombiner point_combo_mode = PointCombiner.REPLACE;
+  protected PointCombiner point_combo_mode = PointCombiner.AUTO;
   protected int variation_type_param = AUTO;
   
   protected MergeMode mode_merge_param = mode_merge;
@@ -285,8 +286,8 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected CurveRadiusMode curve_rmode_param = curve_rmode;
   protected InsideOutsideRule location_mode_param = location_mode;
   protected CurveProximityMode proximity_param = proximity_mode;
-  protected PointCombiner point_combo_mode_param = PointCombiner.REPLACE;
-  protected int variation_type = NORMAL;
+  protected PointCombiner point_combo_mode_param = PointCombiner.AUTO;
+  protected int variation_type = AUTO;
 
   
   // point_rmode is currently hardwired, not available as a user param
@@ -425,6 +426,13 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     else {
       proximity_mode = proximity_param;
     }
+    
+    if (point_combo_mode_param == PointCombiner.AUTO) {
+      point_combo_mode = PointCombiner.ADD_PREVIOUS_DESTINATION;
+    }
+    else {
+      point_combo_mode = point_combo_mode_param;
+    }
 
     if (variation_type_param == AUTO) {
       // if AUTO, then set to NORMAL if first non-pre, non-post variation of an XForm, and POST if there are preceeding normal variations
@@ -448,7 +456,6 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     else {
       variation_type = variation_type_param;
     }
-    
     // System.out.println(this.getClass().getName() + ",  type: " + this.getPriority());
     
     if (DEBUG_MODES) {
@@ -862,6 +869,7 @@ public void printBin(int index) {
     // (5. apply mask modes?)
     // 
    */
+int rendercount = 0;
 // public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount, XYZPoint calcPoint) {
 public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZPoint srcPoint, XYZPoint dstPoint, double pAmount, XYZPoint calcPoint) {
     PointState pstate = PointState.INSIDE;  
@@ -1559,23 +1567,56 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           break;
       }
       
+      rendercount++;
+      if (rendercount % 50000 == 0) {
+        int dummy = 0;  // placeholder for easy toggling of breakpoint in debug
+      }
+      
+      // default SHOULD BE:  derive xout/yout from srcPoint, add to dstPoint to get new dstPoint
+      //    when type=NORMAL, srcPoint = pAffineTP, dstPoint = pVartTP
+      //    when type=POST,   srcPoint = pVarTP, dstPoint = pVarTP
+      //    when type=PRE,    srcPoint = pAffineTP, dstPoint = pAffineTP
+      //  
+      //  problem with previous approach was that was doing derive from srcPoint, add to srcPoint to get new dstPoint
+      //     which only works when either srcPoint == dstPoint (POST & PRE, but _not_ NORMAL)
+      //     OR when dstPoint = (0,0) -- so first variation of XForm
+      //     instead 
+      
+      //    when first variation of XForm, incoming pVarTP = (0,0)
+      //    second etc. variations of XForm, incoming pVarTP = result of previous variation
+      //    regardless of what index this variation within the XForm is, 
+      //             incoming pAffineTP = PreVariations(PreAffine(result of previous XForm in iteration looop))
+      //     
       switch (point_combo_mode) {
         case REPLACE:
           dstPoint.x = xout;
           dstPoint.y = yout;
           break;
-        case ADD:
+        case ADD_PREVIOUS_DESTINATION:
+          dstPoint.x = dstPoint.x + xout;
+          dstPoint.y = dstPoint.y + yout;
+          break;
+        case ADD_PREVIOUS_SOURCE:
           dstPoint.x = srcPoint.x + xout;
-          dstPoint.y = srcPoint.y + yout;
+          dstPoint.y = srcPoint.y + yout;  
+        case SUBTRACT_PREVIOUS_DESTINATION:
+          dstPoint.x = xout - dstPoint.x;
+          dstPoint.y = yout - dstPoint.y;
           break;
-        case SUBTRACT_CURRENT:
-          dstPoint.x = srcPoint.x - xout;
-          dstPoint.y = srcPoint.y - yout;
-          break;
-        case SUBTRACT_PREVIOUS:
+        case SUBTRACT_PREVIOUS_SOURCE:
           dstPoint.x = xout - srcPoint.x;
           dstPoint.y = yout - srcPoint.y;
           break;
+        /*  
+          // multiply will usually quickly hit a zero and therefore collapse to single point
+          // trying log10 when x/y too small...  
+                case MULTIPLY:
+          dstPoint.x = srcPoint.x * xout;
+          dstPoint.y = srcPoint.y * yout;
+          // if (abs(dstPoint.x) < 0.01) { dstPoint.x = Math.log10(abs(dstPoint.x)); }
+          // if (abs(dstPoint.y) < 0.01) { dstPoint.y = Math.log10(abs(dstPoint.y)); }
+          break;
+        */ 
         default:  // if combo_mode specified doesn't have case statement, just treat as REPLACE
           dstPoint.x = xout;
           dstPoint.y = yout;
