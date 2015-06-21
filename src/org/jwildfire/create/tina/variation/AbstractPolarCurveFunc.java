@@ -15,6 +15,7 @@ import static org.jwildfire.base.mathlib.MathLib.floor;
 import static org.jwildfire.base.mathlib.MathLib.pow;
 import static org.jwildfire.base.mathlib.MathLib.sin;
 import static org.jwildfire.base.mathlib.MathLib.sqr;
+import static org.jwildfire.base.mathlib.MathLib.tanh;
 
 import org.jwildfire.create.tina.base.Layer;
 import org.jwildfire.create.tina.base.XForm;
@@ -52,6 +53,10 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                            // TEST(30), 
                            // TEST2(31),
                            XY_SWAP(18), 
+                           RADIAL_INVERSION2(24), 
+                           RADIAL_INVERSION(25), 
+                           HYPERBOLIC(26),
+                           HYPERBOLIC2(27), 
                            ROTATE_RADIAL(30), 
                            
                            RADIUS_MODULUS(31),
@@ -421,7 +426,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     else { location_mode = location_mode_param; }
     
     if (proximity_param == CurveProximityMode.AUTO) { 
-      proximity_mode = CurveProximityMode.TRANSFORMED_R;
+      proximity_mode = CurveProximityMode.TRANSFORMED_R;  // or should proximity_mode default to TRANFORMED_RT instead?
     }
     else {
       proximity_mode = proximity_param;
@@ -884,7 +889,7 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
     rin = sqrt((xin  * xin) + (yin * yin));
     if (point_rmode == PointRadiusMode.MODIFIED) { rin = rin * spread_split; }
     
-    double rinx, riny;
+    double routx, routy;
     
     // input point mapped to curve
     xcalc = calcPoint.x;
@@ -1157,28 +1162,38 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           break;
         case STRETCH1: // stretch1 with modal curve radius, and using angle from input point
           // default to TRANSFORMED_RT
-          rinx = rcurve + ((rin - rcurve) * spreadx);
-          riny = rcurve + ((rin - rcurve) * spready);
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          routx = rcurve + ((rin - rcurve) * spreadx);
+          routy = rcurve + ((rin - rcurve) * spready);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;
         case STRETCH2: // STRETCH2
           // default to xcalc/ycalc (TRANSFORMED_RT)
-          rinx = (rin * spreadx) - spreadx + 1;
-          riny = (rin * spready) - spready + 1;
-          xout = pAmount * rinx * xcurve;
-          yout = pAmount * riny * ycurve;
-          break;       
-        case UNCHANGED:   // UNCHANGED -- leave in place (degenerate case of SCALE where SCALE where scale = 1
+          routx = (rin * spreadx) - spreadx + 1;
+          routy = (rin * spready) - spready + 1;
+          xout = pAmount * routx * xcurve;
+          yout = pAmount * routy * ycurve;
+          break;    
+        case RADIAL_INVERSION:
+          // rout = rcurve - rin;
+          routx = rcurve - (rin * spreadx);
+          routy = rcurve - (rin * spready);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
+          break;
+        case UNCHANGED:   // UNCHANGED -- leave in place (degenerate case of SCALE where spreadx = spready = 1)
           // point is inside curve, leave in place
           xout = pAmount * xin;
           yout = pAmount * yin;
           break;
         case UNCHANGED_RAW: 
+          // leave in place, don't even apply pAmount
           xout = xin;
           yout = yin;
           break;
         case MIRROR_SWAP:  // MIRROR_SWAP (swap around origin [0,0], inspired by RosoniFunc) [and degenerate case of ROTATE where rotation = 1PI (180 degrees)
+          // xout = pAmount * xin * -1 * spreadx;
+          // yout = pAmount * yin * -1 * spready
           xout = pAmount * xin * -1;
           yout = pAmount * yin * -1;
           break;
@@ -1237,27 +1252,33 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           //       using nearest_longer for rcurve but have no longer points (nearest_longer = POSITIVE_INFINITY) 
           //       using nearest_shorter for rcurve but have no shorter points (nearest_shorter = NEGATIVE_INFINITY) 
           // currently these will end up "offscreen" at +/- infinity?
-          rinx = rcurve + ((rcurve - rin) * spreadx);
-          riny = rcurve + ((rcurve - rin) * spready);
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          routx = rcurve + ((rcurve - rin) * spreadx);
+          routy = rcurve + ((rcurve - rin) * spready);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;
-          
+        case HYPERBOLIC:
+          // default to TRANSFORMED_R ?
+          routx = tanh(rin*spreadx/2) * rcurve;
+          routy = tanh(rin*spready/2) * rcurve;
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
+          break;           
         case RADIUS_MODULUS:
           // P' = (P modulo C)
           // apply spreadx/spready radius pre-remainder (ignoring negative spread values, will always be contained within rcurve)
-          rinx = (rin * spreadx) % rcurve;
-          riny = (rin * spready) % rcurve;
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          routx = (rin * spreadx) % rcurve;
+          routy = (rin * spready) % rcurve;
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;
        case RADIUS2_MODULUS:
           // P' = (P modulo C)
           // same as RADIUS_MODULUS but apply spreadx/spready post-remainder (so can extend beyond curve)
-          rinx = (rin % rcurve) * spreadx;
-          riny = (rin % rcurve) * spready;
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          routx = (rin % rcurve) * spreadx;
+          routy = (rin % rcurve) * spready;
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;  
          
         case REFLECT_MODULUS:
@@ -1269,34 +1290,34 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           //     http://stackoverflow.com/questions/5385024/mod-in-java-produces-negative-numbers 
           //    (only different with negative values)
           // with negative spread values, can escape beyond the curve
-          rinx = rcurve - ((rin * spreadx) % rcurve);
-          riny = rcurve - ((rin * spready) % rcurve);
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          routx = rcurve - ((rin * spreadx) % rcurve);
+          routy = rcurve - ((rin * spready) % rcurve);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;            
         case REFLECT2_MODULUS:
           // P' = C - (P modulo C)
           // same as REFLECT_MODULUS, but apply spreadx/spready post-remainder (so can extend beyond rcurve)
-          rinx = rcurve - ((rin % rcurve) * spreadx);
-          riny = rcurve - ((rin % rcurve) * spready);
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          routx = rcurve - ((rin % rcurve) * spreadx);
+          routy = rcurve - ((rin % rcurve) * spready);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;
         case REFLECT3_MODULUS:
           // P' = C - (P modulo C)
           // same as REFLECT_MODULUS, but moving outward from curve instead of inward (just a sign change)
-          rinx = rcurve + ((rin * spreadx) % rcurve);
-          riny = rcurve + ((rin * spready) % rcurve);
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          routx = rcurve + ((rin * spreadx) % rcurve);
+          routy = rcurve + ((rin * spready) % rcurve);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;            
         case REFLECT4_MODULUS:
           // P' = C - (P modulo C)
           // same as REFLECT2_MODULUS, but moving outward from curve instead of inward (just a sign change)
-          rinx = rcurve + ((rin % rcurve) * spreadx);
-          riny = rcurve + ((rin % rcurve) * spready);
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          routx = rcurve + ((rin % rcurve) * spreadx);
+          routy = rcurve + ((rin % rcurve) * spready);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break; 
         case REFLECT5_MODULUS:
           // P' = C - (P modulo C)
@@ -1308,10 +1329,10 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           //  and spread is applied pre-modulo
           //  so modifying term will always be + and < rcurve, therefore all output points will be within the curve
           //  
-          rinx = rcurve - ((((rin * spreadx) % rcurve) + rcurve) % rcurve);
-          riny = rcurve - ((((rin * spready) % rcurve) + rcurve) % rcurve);
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          routx = rcurve - ((((rin * spreadx) % rcurve) + rcurve) % rcurve);
+          routy = rcurve - ((((rin * spready) % rcurve) + rcurve) % rcurve);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break; 
 
         case REFLECT6_MODULUS:
@@ -1323,12 +1344,12 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           //  true modulo is always positive (and < rcurve)
           //  and spread is applied pre-modulo
           //  s
-          rinx = rcurve - ((((rin * spreadx) % rcurve) + rcurve) % rcurve);
-          riny = rcurve - ((((rin * spready) % rcurve) + rcurve) % rcurve);
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          routx = rcurve - ((((rin * spreadx) % rcurve) + rcurve) % rcurve);
+          routy = rcurve - ((((rin * spready) % rcurve) + rcurve) % rcurve);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;              
-        // case OFFSET_MODULUS:  // can probably combine this with REFLECT_MODULUS, can change sign with rspreadr/xspread/yspread
+        // case OFFSET_MODULUS:  // can probably combine this with REFLECT_MODULUS, can change sign with spreadx/spready
           // P' = C + (P modulo C) 
         case REFLECT7_MODULUS:
           rcurve = pAmount;
@@ -1344,60 +1365,54 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
             xout = srcPoint.x;
             yout = srcPoint.y;
           }
-          break;  
+          break;
         case REFLECT8_MODULUS:
-          if (rin > rcurve) {
-            rout = rcurve - (rin % rcurve);
-            xout = rout * cos(tin);
-            yout = rout * sin(tin);
-          }
-          else {
-            xout = srcPoint.x;
-            yout = srcPoint.y;
-          }
+          rout = rcurve - (rin % rcurve);
+          xout = rout * cos(tin);
+          yout = rout * sin(tin);
           break;
        case BOUNCE_MODULUS:
           // if ((floor(P/C) even) then P' = (P modulo C)  [as P increases, move out from origin towards curve]
           // else P' = C - (P modulo C)  [as P increases, move in from curve towards origin]
           boolean beven = (((floor(rin/rcurve)) % 2) == 0);
           if (beven) {
-            rinx = (rin * spreadx) % rcurve;
-            riny = (rin * spready) % rcurve;
+            routx = (rin * spreadx) % rcurve;
+            routy = (rin * spready) % rcurve;
           }
           else {
-            rinx = rcurve - ((rin * spreadx) % rcurve);
-            riny = rcurve - ((rin * spready) % rcurve);
+            routx = rcurve - ((rin * spreadx) % rcurve);
+            routy = rcurve - ((rin * spready) % rcurve);
           }
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;          
         case BOUNCE2_MODULUS:
           // same as BOUNCE_MODULUS, but apply spreadx/spready post-remainder (so can extend beyond rcurve)
           boolean b2even = (((floor(rin/rcurve)) % 2) == 0);
           if (b2even) {
-            rinx = (rin % rcurve) * spreadx;
-            riny = (rin % rcurve) * spready;
+            routx = (rin % rcurve) * spreadx;
+            routy = (rin % rcurve) * spready;
           }
           else {
-            rinx = rcurve - ((rin % rcurve) * spreadx);
-            riny = rcurve - ((rin % rcurve) * spready);
+            routx = rcurve - ((rin % rcurve) * spreadx);
+            routy = rcurve - ((rin % rcurve) * spready);
           }
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;
         case BOUNCE3_MODULUS:
           // same as BOUNCE_MODULUS, but moving outward from curve instead of inward (just a sign change)
           boolean b3even = (((floor(rin/rcurve)) % 2) == 0);
           if (b3even) {
-            rinx = (rin * spreadx) % rcurve;
-            riny = (rin * spready) % rcurve;
+            routx = (rin * spreadx) % rcurve;
+            routy = (rin * spready) % rcurve;
           }
           else {
-            rinx = rcurve + ((rin * spreadx) % rcurve);
-            riny = rcurve + ((rin * spready) % rcurve);
+            routx = rcurve + ((rin * spreadx) % rcurve);
+            routy = rcurve + ((rin * spready) % rcurve);
           }
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;  
         case BOUNCE4_MODULUS: 
           // same as BOUNCE_MODULUS, but:
@@ -1405,15 +1420,15 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           //    moving outward from curve instead of inward (just a sign change)
           boolean b4even = (((floor(rin/rcurve)) % 2) == 0);
           if (b4even) {
-            rinx = (rin % rcurve) * spreadx;
-            riny = (rin % rcurve) * spready;
+            routx = (rin % rcurve) * spreadx;
+            routy = (rin % rcurve) * spready;
           }
           else {
-            rinx = rcurve + ((rin % rcurve) * spreadx);
-            riny = rcurve + ((rin % rcurve) * spready);
+            routx = rcurve + ((rin % rcurve) * spreadx);
+            routy = rcurve + ((rin % rcurve) * spready);
           }
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;
         case BOUNCE5_MODULUS:
           // same as BOUNCE_MODULUS, but use true modulus instead of Java modulus (true modulus is always positive)
@@ -1425,46 +1440,46 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           //  true modulo is always positive (and < rcurve)
           //  and spread is applied pre-modulo
           //  so modifying term will always be + and < rcurve, therefore all output points will be within the curve
-          rinx = rcurve - ((((rin * spreadx) % rcurve) + rcurve) % rcurve);          
+          routx = rcurve - ((((rin * spreadx) % rcurve) + rcurve) % rcurve);          
           boolean b5even = (((floor(rin/rcurve)) % 2) == 0);
           if (b5even) {
-            rinx = (((rin * spreadx) % rcurve) + rcurve) % rcurve;        
-            riny = (((rin * spreadx) % rcurve) + rcurve) % rcurve;        
+            routx = (((rin * spreadx) % rcurve) + rcurve) % rcurve;        
+            routy = (((rin * spreadx) % rcurve) + rcurve) % rcurve;        
           }
           else {
-            rinx = rcurve - ((((rin * spreadx) % rcurve) + rcurve) % rcurve);         
-            riny = rcurve - ((((rin * spready) % rcurve) + rcurve) % rcurve);         
+            routx = rcurve - ((((rin * spreadx) % rcurve) + rcurve) % rcurve);         
+            routy = rcurve - ((((rin * spready) % rcurve) + rcurve) % rcurve);         
           }
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;               
         case BOUNCE6_MODULUS:
           boolean b6even = (((floor(rin/rcurve)) % 2) == 0);
           if (b6even) {
-            rinx = rcurve + (rin * spreadx) % rcurve;
-            riny = rcurve + (rin * spready) % rcurve;
+            routx = rcurve + (rin * spreadx) % rcurve;
+            routy = rcurve + (rin * spready) % rcurve;
           }
           else {
-            rinx = rcurve - ((rin * spreadx) % rcurve);
-            riny = rcurve - ((rin * spready) % rcurve);
+            routx = rcurve - ((rin * spreadx) % rcurve);
+            routy = rcurve - ((rin * spready) % rcurve);
           }
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;  
         case BOUNCE7_MODULUS:
           // if ((floor(P/C) even) then P' = C - (P modulo C)
           // else P' = C + (P modulo C)
           boolean b7even = (((floor(rin/rcurve)) % 2) == 0);
           if (b7even) {
-            rinx = rcurve - ((rin * spreadx) % rcurve);
-            riny = rcurve - ((rin * spready) % rcurve);
+            routx = rcurve - ((rin * spreadx) % rcurve);
+            routy = rcurve - ((rin * spready) % rcurve);
           }
           else {
-            rinx = rcurve + (rin * spreadx) % rcurve;
-            riny = rcurve + (rin * spready) % rcurve;
+            routx = rcurve + (rin * spreadx) % rcurve;
+            routy = rcurve + (rin * spready) % rcurve;
           }
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;   
 /*        case BOUNCE4_MODULUS:
           // if ((floor(P/C) even) then P' = C - (P modulo C)
@@ -1505,10 +1520,10 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
         case POW: // POW (inspired by Juliascope)
           // default to rcalc, tcalc? (TRANSFOMRED_RT)
           double sqr = sqr(xcurve - xin) + sqr(ycurve - yin);
-          rinx = rcurve + pow(sqr, spreadx) - 1.0;
-          riny = rcurve + pow(sqr, spready) - 1.0;
-          xout = pAmount * rinx * cos(tcurve);
-          yout = pAmount * riny * sin(tcurve);
+          routx = rcurve + pow(sqr, spreadx) - 1.0;
+          routy = rcurve + pow(sqr, spready) - 1.0;
+          xout = pAmount * routx * cos(tcurve);
+          yout = pAmount * routy * sin(tcurve);
           break;
         case LOOPY:  // LOOPY (inspired by loonie)
           // default to longest, tin? (LONGEST)
@@ -1538,10 +1553,10 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           break;
         case STRETCH5: // STRETCH5
           // default xcalc/ycalc? (TRANSFORM_RT)
-          rinx = (0.5 * rin) + spreadx;
-          riny = (0.5 * rin) + spready;
-          xout = pAmount * rinx * xcurve;
-          yout = pAmount * riny * ycurve;
+          routx = (0.5 * rin) + spreadx;
+          routy = (0.5 * rin) + spready;
+          xout = pAmount * routx * xcurve;
+          yout = pAmount * routy * ycurve;
           break;
         case STRETCH7: // STRETCH7 -- similar to 3, different sign fiddling
           // default xcalc/ycalc? (TRANSFORM_RT)
