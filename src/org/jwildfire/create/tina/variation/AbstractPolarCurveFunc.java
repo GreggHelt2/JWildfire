@@ -426,7 +426,7 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     else { location_mode = location_mode_param; }
     
     if (proximity_param == CurveProximityMode.AUTO) { 
-      proximity_mode = CurveProximityMode.TRANSFORMED_R;  // or should proximity_mode default to TRANFORMED_RT instead?
+      proximity_mode = CurveProximityMode.TRANSFORMED_RT;  // or should proximity_mode default to TRANFORMED_RT instead?
     }
     else {
       proximity_mode = proximity_param;
@@ -876,15 +876,15 @@ public void printBin(int index) {
    */
 int rendercount = 0;
 // public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount, XYZPoint calcPoint) {
-public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZPoint srcPoint, XYZPoint dstPoint, double pAmount, XYZPoint calcPoint) {
+public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZPoint inPoint, XYZPoint outPoint, double pAmount, XYZPoint calcPoint) {
     PointState pstate = PointState.INSIDE;  
     double xin, yin, rin, tin;
     double xcalc, ycalc, rcalc, tcalc;
     double xcurve, ycurve, rcurve, tcurve;
     double xout, yout, rout, tout;
  
-    xin = srcPoint.x;
-    yin = srcPoint.y;
+    xin = inPoint.x;
+    yin = inPoint.y;
     tin = atan2(yin, xin);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
     rin = sqrt((xin  * xin) + (yin * yin));
     if (point_rmode == PointRadiusMode.MODIFIED) { rin = rin * spread_split; }
@@ -1353,8 +1353,8 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           // P' = C + (P modulo C) 
         case REFLECT7_MODULUS:
           rcurve = pAmount;
-          rin = srcPoint.getPrecalcSqrt();
-          tin = srcPoint.getPrecalcAtanYX();
+          rin = inPoint.getPrecalcSqrt();
+          tin = inPoint.getPrecalcAtanYX();
           if (rin > rcurve) {
             rout = rcurve - (rin % rcurve);
             xout = rout * cos(tin);
@@ -1362,8 +1362,8 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           }
           else {
             // do nothing, assuming x/y already set
-            xout = srcPoint.x;
-            yout = srcPoint.y;
+            xout = inPoint.x;
+            yout = inPoint.y;
           }
           break;
         case REFLECT8_MODULUS:
@@ -1500,7 +1500,7 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
         case HIDE: // HIDE
           xout = xin;
           yout = yin;
-          dstPoint.doHide = true;
+          outPoint.doHide = true;
           break;
         case SCALE: // SCALE (inspired by Circus)
           xout = xin * spreadx;
@@ -1528,7 +1528,7 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
         case LOOPY:  // LOOPY (inspired by loonie)
           // default to longest, tin? (LONGEST)
           // rout = sqrt((calcPoint.getPrecalcSumsq() / pAffineTP.getPrecalcSumsq()) - 1.0);
-          rout = sqrt(((xcurve*xcurve + ycurve*ycurve)/ srcPoint.getPrecalcSumsq()) - 1.0);
+          rout = sqrt(((xcurve*xcurve + ycurve*ycurve)/ inPoint.getPrecalcSumsq()) - 1.0);
           xout = pAmount * rout * spreadx * xin;
           yout = pAmount * rout * spready * yin;
           break;          
@@ -1604,23 +1604,23 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
       //     
       switch (point_combo_mode) {
         case REPLACE:
-          dstPoint.x = xout;
-          dstPoint.y = yout;
+          outPoint.x = xout;
+          outPoint.y = yout;
           break;
         case ADD_PREVIOUS_DESTINATION:
-          dstPoint.x = dstPoint.x + xout;
-          dstPoint.y = dstPoint.y + yout;
+          outPoint.x = outPoint.x + xout;
+          outPoint.y = outPoint.y + yout;
           break;
         case ADD_PREVIOUS_SOURCE:
-          dstPoint.x = srcPoint.x + xout;
-          dstPoint.y = srcPoint.y + yout;  
+          outPoint.x = inPoint.x + xout;
+          outPoint.y = inPoint.y + yout;  
         case SUBTRACT_PREVIOUS_DESTINATION:
-          dstPoint.x = xout - dstPoint.x;
-          dstPoint.y = yout - dstPoint.y;
+          outPoint.x = xout - outPoint.x;
+          outPoint.y = yout - outPoint.y;
           break;
         case SUBTRACT_PREVIOUS_SOURCE:
-          dstPoint.x = xout - srcPoint.x;
-          dstPoint.y = yout - srcPoint.y;
+          outPoint.x = xout - inPoint.x;
+          outPoint.y = yout - inPoint.y;
           break;
         /*  
           // multiply will usually quickly hit a zero and therefore collapse to single point
@@ -1633,15 +1633,15 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           break;
         */ 
         default:  // if combo_mode specified doesn't have case statement, just treat as REPLACE
-          dstPoint.x = xout;
-          dstPoint.y = yout;
+          outPoint.x = xout;
+          outPoint.y = yout;
           break;
       }
 
-      dstPoint.z += pAmount * srcPoint.z;
+      outPoint.z += pAmount * inPoint.z;
 
       if (DRAW_DIAGNOSTICS) {
-        drawDiagnostics(pContext, dstPoint);
+        drawDiagnostics(pContext, outPoint);
       }
   }
   
