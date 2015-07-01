@@ -16,6 +16,8 @@
 */
 package org.jwildfire.create.tina.variation;
 
+import static org.jwildfire.base.mathlib.MathLib.M_2PI;
+import static org.jwildfire.base.mathlib.MathLib.M_PI;
 import static org.jwildfire.base.mathlib.MathLib.cos;
 import static org.jwildfire.base.mathlib.MathLib.sin;
 import org.jwildfire.create.tina.base.Layer;
@@ -24,6 +26,7 @@ import org.jwildfire.create.tina.base.XYZPoint;
 
 public class CircleCurveFunc extends AbstractPolarCurveFunc {
   private static final long serialVersionUID = 1L;
+  protected boolean randomize = true;
 
   // private double radial_offset = 0;
   //  private double radians_to_close = 2 * M_PI * M_PI * M_PI; // 2(PI)^3
@@ -51,6 +54,10 @@ public class CircleCurveFunc extends AbstractPolarCurveFunc {
   public void calcCurvePoint(FlameTransformationContext pContext, double theta, XYZPoint pResult) {
     // pResult should be zero'd out before getting here
     double r = curve_scale;
+    if (randomize) {
+      // totally radomize theta to force curve:
+      theta = (pContext.random() * M_2PI) - M_PI;
+    }
     // if (theta < 0) { theta = theta + M_2PI; }
     // double r = (M_PI + theta) / M_2PI;
     pResult.x = r * cos(theta);
