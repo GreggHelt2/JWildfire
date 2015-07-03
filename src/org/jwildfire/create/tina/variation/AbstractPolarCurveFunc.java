@@ -255,6 +255,9 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected static final String PARAM_ANGLE_BINS = "angle_bins";
   protected static final String PARAM_POINT_COMBINER = "point_combiner";
   protected static final String PARAM_VARIATION_TYPE = "variation_type";
+  protected static final String PARAM_MODIFY_X = "modify_x";
+  protected static final String PARAM_MODIFY_Y = "modify_y";
+  protected static final String PARAM_MODIFY_Z = "modify_z";
   
   protected static final String[] paramNames = { 
                                                PARAM_CURVE_SCALE, 
@@ -270,7 +273,9 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                                                PARAM_CURVE_THICKNESS, PARAM_FILL, 
                                                PARAM_PROXIMITY_MODE, PARAM_CURVE_RADIUS_MODE, PARAM_LOCATION_CLASSIFIER, 
                                                PARAM_ANGLE_BINS, PARAM_POINT_COMBINER, PARAM_VARIATION_TYPE, 
-                                               PARAM_METACYCLES, PARAM_METACYCLE_OFFSET, PARAM_METACYCLE_SCALE, PARAM_METACYCLE_ROTATION }; 
+                                               PARAM_METACYCLES, PARAM_METACYCLE_OFFSET, PARAM_METACYCLE_SCALE, PARAM_METACYCLE_ROTATION, 
+                                               PARAM_MODIFY_X, PARAM_MODIFY_Y, PARAM_MODIFY_Z
+  }; 
 
   protected double curve_scale = 1;
 
@@ -293,6 +298,10 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected CurveProximityMode proximity_param = proximity_mode;
   protected PointCombiner point_combo_mode_param = PointCombiner.AUTO;
   protected int variation_type = AUTO;
+  
+  protected boolean modify_x = true;
+  protected boolean modify_y = true;
+  protected boolean modify_z = true;
 
   
   // point_rmode is currently hardwired, not available as a user param
@@ -878,13 +887,14 @@ int rendercount = 0;
 // public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount, XYZPoint calcPoint) {
 public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZPoint inPoint, XYZPoint outPoint, double pAmount, XYZPoint calcPoint) {
     PointState pstate = PointState.INSIDE;  
-    double xin, yin, rin, tin;
+    double xin, yin, rin, tin, zin;
     double xcalc, ycalc, rcalc, tcalc;
     double xcurve, ycurve, rcurve, tcurve;
     double xout, yout, rout, tout;
  
     xin = inPoint.x;
     yin = inPoint.y;
+    zin = inPoint.z;
     tin = atan2(yin, xin);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
     rin = sqrt((xin  * xin) + (yin * yin));
     if (point_rmode == PointRadiusMode.MODIFIED) { rin = rin * spread_split; }
@@ -1587,6 +1597,11 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
         int dummy = 0;  // placeholder for easy toggling of breakpoint in debug
       }
       
+      // some modes modify xin and yin, so resetting to be sure
+      // really need to eliminate these modifications, to guarantee that xin/yin/zin are same as input point at time of method call
+      xin = inPoint.x;
+      yin = inPoint.y;
+      zin = inPoint.z;
       // default SHOULD BE:  derive xout/yout from srcPoint, add to dstPoint to get new dstPoint
       //    when type=NORMAL, srcPoint = pAffineTP, dstPoint = pVartTP
       //    when type=POST,   srcPoint = pVarTP, dstPoint = pVarTP
@@ -1638,7 +1653,18 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           break;
       }
 
-      outPoint.z += pAmount * inPoint.z;
+      outPoint.z += pAmount * zin;
+      
+      // outPoint and inPoint may be same XYZPoint object, so used stashed xin/yin/zin instead
+      if (! modify_x) {
+        outPoint.x = xin;
+      }
+      if (! modify_y) {
+        outPoint.y = yin;
+      }
+      if (! modify_z) {
+        outPoint.z = zin;
+      }
 
       if (DRAW_DIAGNOSTICS) {
         drawDiagnostics(pContext, outPoint);
@@ -1715,7 +1741,8 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
                           curve_thickness, fill, 
                           proximity_param.getIntegerMode(), curve_rmode_param.getIntegerMode(), location_mode_param.getIntegerMode(), 
                           angle_bin_count, point_combo_mode_param.getIntegerMode(), variation_type_param, 
-                          metacycles, metacycle_offset, metacycle_scale, metacycle_rotation
+                          metacycles, metacycle_offset, metacycle_scale, metacycle_rotation, 
+                          (modify_x ? 1 : 0), (modify_y ? 1 : 0), (modify_z ? 1 : 0)
     };
   }
 
@@ -1816,6 +1843,15 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
       metacycle_scale = pValue;   
     else if (PARAM_METACYCLE_ROTATION.equalsIgnoreCase(pName))
       metacycle_rotation = pValue; 
+    else if (PARAM_MODIFY_X.equalsIgnoreCase(pName)) {
+     modify_x = (pValue != 0);
+    }
+    else if (PARAM_MODIFY_Y.equalsIgnoreCase(pName)) {
+     modify_y = (pValue != 0);
+    }
+    else if (PARAM_MODIFY_Z.equalsIgnoreCase(pName)) {
+     modify_z = (pValue != 0);
+    }
     else
       throw new IllegalArgumentException(pName);
   }
