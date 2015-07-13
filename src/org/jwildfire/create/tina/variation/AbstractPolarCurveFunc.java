@@ -106,6 +106,15 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
      public  static int getMaxIntegerMode() { return maxInt; }
   }
   
+  public enum Dimension { X, Y, Z;
+    public static Dimension get(int oindex) {
+      if (oindex < 0 || oindex >= values().length) { return null; }
+      else  { return values()[oindex]; }
+    }
+    public int getIntegerMode() { return this.ordinal(); }
+  }
+
+  
   // "state" of point relative to curve
   //     currently only using INSIDE, OUTSIDE, OUTISH (and outish is only used with 
   //     CurveRadiusMode *_SAMPLING_BINs, and InsideOutsideRule MODIFIED_*s
@@ -258,6 +267,15 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected static final String PARAM_MODIFY_X = "modify_x";
   protected static final String PARAM_MODIFY_Y = "modify_y";
   protected static final String PARAM_MODIFY_Z = "modify_z";
+  protected static final String PARAM_INPUT_X = "input_x";
+  protected static final String PARAM_INPUT_Y = "input_y";    
+  protected static final String PARAM_INPUT_Z = "input_z";
+  protected static final String PARAM_OUTPUT_X = "output_x";
+  protected static final String PARAM_OUTPUT_Y = "output_y";    
+  protected static final String PARAM_OUTPUT_Z = "output_z";
+
+
+    
   
   protected static final String[] paramNames = { 
                                                PARAM_CURVE_SCALE, 
@@ -274,7 +292,9 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                                                PARAM_PROXIMITY_MODE, PARAM_CURVE_RADIUS_MODE, PARAM_LOCATION_CLASSIFIER, 
                                                PARAM_ANGLE_BINS, PARAM_POINT_COMBINER, PARAM_VARIATION_TYPE, 
                                                PARAM_METACYCLES, PARAM_METACYCLE_OFFSET, PARAM_METACYCLE_SCALE, PARAM_METACYCLE_ROTATION, 
-                                               PARAM_MODIFY_X, PARAM_MODIFY_Y, PARAM_MODIFY_Z
+                                               PARAM_MODIFY_X, PARAM_MODIFY_Y, PARAM_MODIFY_Z, 
+                                               PARAM_INPUT_X, PARAM_INPUT_Y, PARAM_INPUT_Z, 
+                                               PARAM_OUTPUT_X, PARAM_OUTPUT_Y, PARAM_OUTPUT_Z, 
   }; 
 
   protected double curve_scale = 1;
@@ -302,7 +322,13 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected boolean modify_x = true;
   protected boolean modify_y = true;
   protected boolean modify_z = true;
-
+  
+  protected Dimension input_x = Dimension.X;
+  protected Dimension input_y = Dimension.Y;
+  protected Dimension input_z = Dimension.Z;
+  protected Dimension output_x = Dimension.X;
+  protected Dimension output_y = Dimension.Y;
+  protected Dimension output_z = Dimension.Z;
   
   // point_rmode is currently hardwired, not available as a user param
   PointRadiusMode point_rmode = PointRadiusMode.MODIFIED;
@@ -890,11 +916,58 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
     double xin, yin, rin, tin, zin;
     double xcalc, ycalc, rcalc, tcalc;
     double xcurve, ycurve, rcurve, tcurve;
-    double xout, yout, rout, tout;
+    double xout, yout, zout, rout, tout;
+
+  // enabling "twizzling" of input X/Y/Z
+  //    xin = inPoint.x;
+  //    yin = inPoint.y;
+  //    zin = inPoint.z;
  
-    xin = inPoint.x;
-    yin = inPoint.y;
-    zin = inPoint.z;
+    switch(input_x) {
+      case X:
+        xin = inPoint.x;
+        break;
+      case Y:
+        xin = inPoint.y;
+        break;
+      case Z: 
+        xin = inPoint.z;
+        break;
+      default: 
+        xin = inPoint.x;
+        break;
+    }
+    
+    switch(input_y) {
+      case X:
+        yin = inPoint.x;
+        break;
+      case Y:
+        yin = inPoint.y;
+        break;
+      case Z: 
+        yin = inPoint.z;
+        break;
+      default: 
+        yin = inPoint.y;
+        break;
+    }
+    
+    switch(input_z) {
+      case X:
+        zin = inPoint.x;
+        break;
+      case Y:
+        zin = inPoint.y;
+        break;
+      case Z: 
+        zin = inPoint.z;
+        break;
+      default:
+        zin = inPoint.z;
+        break;
+    }
+
     tin = atan2(yin, xin);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
     rin = sqrt((xin  * xin) + (yin * yin));
     if (point_rmode == PointRadiusMode.MODIFIED) { rin = rin * spread_split; }
@@ -1545,21 +1618,21 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
         case STRETCH3: // STRETCH3
           // default xcalc/ycalc (TRANSFORM_RT)
           // or posibly LONGEsT
-          xin = Math.abs(xin);
-          yin = Math.abs(yin);
-          if (xcurve<0) { xin = xin * -1; }
-          if (ycurve<0) { yin = yin * -1; }
-          xout = pAmount * (xcurve - (spreadx * (xcurve-xin)));
-          yout = pAmount * (ycurve - (spready * (ycurve-yin)));
+          xout = Math.abs(xin);
+          yout = Math.abs(yin);
+          if (xcurve<0) { xout = xout * -1; }
+          if (ycurve<0) { yout = yout * -1; }
+          xout = pAmount * (xcurve - (spreadx * (xcurve-xout)));
+          yout = pAmount * (ycurve - (spready * (ycurve-yout)));
           break;          
         case STRETCH4: // STRETCH4
           // default xcalc/ycalc? (TRANSFORM_RT)
-          xin = Math.abs(xin);
-          yin = Math.abs(yin);
-          if (xcurve<0) { xin = xin * -1; }
-          if (ycurve<0) { yin = yin * -1; }
-          xout = pAmount * (xcurve - (spreadx * xin));
-          yout = pAmount * (ycurve - (spready * yin));
+          xout = Math.abs(xin);
+          yout = Math.abs(yin);
+          if (xcurve<0) { xout = xout * -1; }
+          if (ycurve<0) { yout = yout * -1; }
+          xout = pAmount * (xcurve - (spreadx * xout));
+          yout = pAmount * (ycurve - (spready * yout));
           break;
         case STRETCH5: // STRETCH5
           // default xcalc/ycalc? (TRANSFORM_RT)
@@ -1570,12 +1643,12 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           break;
         case STRETCH7: // STRETCH7 -- similar to 3, different sign fiddling
           // default xcalc/ycalc? (TRANSFORM_RT)
-          xin = Math.abs(xin);
-          yin = Math.abs(yin);
-          if (xcurve<0) { xin = xin * -1; }
-          if (ycurve<0) { yin = yin * -1; }
-          xout = pAmount * (xcurve + (spreadx * xin));
-          yout = pAmount * (ycurve + (spready * yin));
+          xout = Math.abs(xin);
+          yout = Math.abs(yin);
+          if (xcurve<0) { xout = xout * -1; }
+          if (ycurve<0) { yout = yout * -1; }
+          xout = pAmount * (xcurve + (spreadx * xout));
+          yout = pAmount * (ycurve + (spready * yout));
           break;
         case STRETCH8: // STRETCH8 -- same as mode 6, but without the sign modifications
           // default xcalc/ycalc? (TRANSFORM_RT)
@@ -1591,17 +1664,125 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           yout = pAmount * ycalc;
           break;
       }
+      zout = pAmount * zin;
+      // some modes modify xin and yin, so resetting to be sure
+      // really need to eliminate these modifications, to guarantee that xin/yin/zin are same as input point at time of method call
+      // UPDATE -- removed all alterations to xin/yin/zin _except_ radial blur and angular blur, shouldn't need to reset now
+      // xin = inPoint.x;
+      // yin = inPoint.y;
+      // zin = inPoint.z;
       
       rendercount++;
       if (rendercount % 50000 == 0) {
         int dummy = 0;  // placeholder for easy toggling of breakpoint in debug
       }
       
-      // some modes modify xin and yin, so resetting to be sure
-      // really need to eliminate these modifications, to guarantee that xin/yin/zin are same as input point at time of method call
-      xin = inPoint.x;
-      yin = inPoint.y;
-      zin = inPoint.z;
+      // enabling "twizzling" of output X/Y/Z
+      double temp_xout = xout;
+      double temp_yout = yout;
+      double temp_zout = zout;
+      switch(output_x) {
+        case X:
+          xout = temp_xout;
+          break;
+        case Y:
+          xout = temp_yout;
+          break;
+        case Z: 
+          xout = temp_zout;
+          break;
+        default: 
+          xout = temp_xout;
+          break;
+      }
+      
+      switch(output_y) {
+        case X:
+          yout = temp_xout;
+          break;
+        case Y:
+          yout = temp_yout;
+          break;
+        case Z: 
+          yout = temp_zout;
+          break;
+        default: 
+          yout = temp_yout;
+          break;
+      }
+            
+      switch(output_z) {
+        case X:
+          zout = temp_xout;
+          break;
+        case Y:
+          zout = temp_yout;
+          break;
+        case Z: 
+          zout = temp_zout;
+          break;
+        default: 
+          zout = temp_zout;
+          break;
+      }   
+      
+      XYZPoint prevPoint;
+      if (point_combo_mode == PointCombiner.ADD_PREVIOUS_DESTINATION || 
+          point_combo_mode == PointCombiner.SUBTRACT_PREVIOUS_DESTINATION) {
+        prevPoint = outPoint;
+      }
+      else {
+        prevPoint = inPoint;
+      }
+      
+      double xprev, yprev, zprev;
+      switch(input_x) {
+        case X:
+          xprev = prevPoint.x;
+          break;
+        case Y:
+          xprev = prevPoint.y;
+          break;
+        case Z: 
+          xprev = prevPoint.z;
+          break;
+        default: 
+          xprev = prevPoint.x;
+          break;
+      }
+      
+      switch(input_y) {
+        case X:
+          yprev = prevPoint.x;
+          break;
+        case Y:
+          yprev = prevPoint.y;
+          break;
+        case Z: 
+          yprev = prevPoint.z;
+          break;
+        default: 
+          yprev = prevPoint.y;
+          break;
+      }
+
+      switch(input_z) {
+        case X:
+          zprev = prevPoint.x;
+          break;
+        case Y:
+          zprev = prevPoint.y;
+          break;
+        case Z: 
+          zprev = prevPoint.z;
+          break;
+        default: 
+          zprev = prevPoint.z;
+          break;
+      }
+
+
+      // POINT_COMBO_MODE
       // default SHOULD BE:  derive xout/yout from srcPoint, add to dstPoint to get new dstPoint
       //    when type=NORMAL, srcPoint = pAffineTP, dstPoint = pVartTP
       //    when type=POST,   srcPoint = pVarTP, dstPoint = pVarTP
@@ -1609,9 +1790,8 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
       //  
       //  problem with previous approach was that was doing derive from srcPoint, add to srcPoint to get new dstPoint
       //     which only works when either srcPoint == dstPoint (POST & PRE, but _not_ NORMAL)
-      //     OR when dstPoint = (0,0) -- so first variation of XForm
-      //     instead 
-      
+      //     OR when dstPoint = (0,0) (like in first variation of XForm)
+      //
       //    when first variation of XForm, incoming pVarTP = (0,0)
       //    second etc. variations of XForm, incoming pVarTP = result of previous variation
       //    regardless of what index this variation within the XForm is, 
@@ -1621,39 +1801,54 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
         case REPLACE:
           outPoint.x = xout;
           outPoint.y = yout;
+          outPoint.z = zout;
           break;
         case ADD_PREVIOUS_DESTINATION:
+        case ADD_PREVIOUS_SOURCE:
+          outPoint.x = xout + xprev;
+          outPoint.y = yout + yprev;
+          outPoint.z = zout + zprev;
+          break;
+        case SUBTRACT_PREVIOUS_DESTINATION:
+        case SUBTRACT_PREVIOUS_SOURCE:
+          outPoint.x = xout - xprev;
+          outPoint.y = yout - yprev;
+          outPoint.z = zout = zprev;
+          break;
+/*       case ADD_PREVIOUS_DESTINATION:
           outPoint.x = outPoint.x + xout;
           outPoint.y = outPoint.y + yout;
+          outPoint.z = outPoint.z + zout;
           break;
         case ADD_PREVIOUS_SOURCE:
           outPoint.x = inPoint.x + xout;
           outPoint.y = inPoint.y + yout;  
+          outPoint.z = inPoint.z + zout;
         case SUBTRACT_PREVIOUS_DESTINATION:
           outPoint.x = xout - outPoint.x;
           outPoint.y = yout - outPoint.y;
+          outPoint.z = zout = outPoint.z;
           break;
         case SUBTRACT_PREVIOUS_SOURCE:
           outPoint.x = xout - inPoint.x;
           outPoint.y = yout - inPoint.y;
+          outPoint.z = zout - inPoint.z;
           break;
+          */
         /*  
           // multiply will usually quickly hit a zero and therefore collapse to single point
-          // trying log10 when x/y too small...  
-                case MULTIPLY:
+          // BUT, see counter-example of supershape multiplication (for example super-roses)?
+          case MULTIPLY:
           dstPoint.x = srcPoint.x * xout;
           dstPoint.y = srcPoint.y * yout;
-          // if (abs(dstPoint.x) < 0.01) { dstPoint.x = Math.log10(abs(dstPoint.x)); }
-          // if (abs(dstPoint.y) < 0.01) { dstPoint.y = Math.log10(abs(dstPoint.y)); }
           break;
         */ 
         default:  // if combo_mode specified doesn't have case statement, just treat as REPLACE
           outPoint.x = xout;
           outPoint.y = yout;
+          outPoint.z = zout;
           break;
       }
-
-      outPoint.z += pAmount * zin;
       
       // outPoint and inPoint may be same XYZPoint object, so used stashed xin/yin/zin instead
       if (! modify_x) {
@@ -1742,7 +1937,9 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
                           proximity_param.getIntegerMode(), curve_rmode_param.getIntegerMode(), location_mode_param.getIntegerMode(), 
                           angle_bin_count, point_combo_mode_param.getIntegerMode(), variation_type_param, 
                           metacycles, metacycle_offset, metacycle_scale, metacycle_rotation, 
-                          (modify_x ? 1 : 0), (modify_y ? 1 : 0), (modify_z ? 1 : 0)
+                          (modify_x ? 1 : 0), (modify_y ? 1 : 0), (modify_z ? 1 : 0), 
+                          input_x.getIntegerMode(), input_y.getIntegerMode(), input_z.getIntegerMode(), 
+                          output_x.getIntegerMode(), output_y.getIntegerMode(), output_z.getIntegerMode(), 
     };
   }
 
@@ -1851,6 +2048,30 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
     }
     else if (PARAM_MODIFY_Z.equalsIgnoreCase(pName)) {
      modify_z = (pValue != 0);
+    }
+    else if (PARAM_INPUT_X.equalsIgnoreCase(pName))  {
+      input_x = Dimension.get((int)floor(pValue));
+      if (input_x == null) { input_x = Dimension.X; }
+    }
+    else if (PARAM_INPUT_Y.equalsIgnoreCase(pName))  {
+      input_y = Dimension.get((int)floor(pValue));
+      if (input_y == null) { input_y = Dimension.Y; }
+    }
+    else if (PARAM_INPUT_Z.equalsIgnoreCase(pName))  {
+      input_z = Dimension.get((int)floor(pValue));
+      if (input_z == null) { input_z = Dimension.Z; }
+    }
+    else if (PARAM_OUTPUT_X.equalsIgnoreCase(pName))  {
+      output_x = Dimension.get((int)floor(pValue));
+      if (output_x == null) { output_x = Dimension.X; }
+    }
+    else if (PARAM_OUTPUT_Y.equalsIgnoreCase(pName))  {
+      output_y = Dimension.get((int)floor(pValue));
+      if (output_y == null) { output_y = Dimension.Y; }
+    }
+    else if (PARAM_OUTPUT_Z.equalsIgnoreCase(pName))  {
+      output_z = Dimension.get((int)floor(pValue));
+      if (output_z == null) { output_z = Dimension.Z; }
     }
     else
       throw new IllegalArgumentException(pName);
