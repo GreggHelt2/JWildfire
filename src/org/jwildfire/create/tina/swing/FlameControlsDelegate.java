@@ -1,6 +1,6 @@
 /*
   JWildfire - an image and animation processor written in Java 
-  Copyright (C) 1995-2014 Andreas Maschke
+  Copyright (C) 1995-2015 Andreas Maschke
 
   This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser 
   General Public License as published by the Free Software Foundation; either version 2.1 of the 
@@ -155,6 +155,9 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
     enableControl(data.camPosXREd, false);
     enableControl(data.camPosYREd, false);
     enableControl(data.camPosZREd, false);
+
+    enableControl(data.bgTransparencyCBx, false);
+    enableControl(data.foregroundOpacityField, false);
 
     enableControl(data.motionBlurLengthField, false);
     enableControl(data.motionBlurTimeStepField, false);
@@ -338,6 +341,7 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
 
   public void filterRadiusSlider_stateChanged(ChangeEvent e) {
     flameSliderChanged(data.filterRadiusSlider, data.filterRadiusREd, "spatialFilterRadius", TinaController.SLIDER_SCALE_FILTER_RADIUS);
+    owner.refreshFilterKernelPreviewImg();
   }
 
   public void gammaThresholdSlider_stateChanged(ChangeEvent e) {
@@ -408,6 +412,7 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
 
   public void filterRadiusREd_changed() {
     flameTextFieldChanged(data.filterRadiusSlider, data.filterRadiusREd, "spatialFilterRadius", TinaController.SLIDER_SCALE_FILTER_RADIUS);
+    owner.refreshFilterKernelPreviewImg();
   }
 
   public void gammaREd_changed() {
@@ -529,6 +534,11 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
   public void enableDEFilterUI() {
     enableControl(data.filterRadiusREd, false);
     enableControl(data.filterKernelCmb, false);
+    enableControl(data.tinaSpatialOversamplingREd, false);
+    enableControl(data.tinaColorOversamplingREd, !data.tinaSampleJitteringCheckBox.isSelected());
+    enableControl(data.tinaSampleJitteringCheckBox, false);
+    enableControl(data.tinaPostNoiseFilterCheckBox, false);
+    enableControl(data.tinaPostNoiseThresholdField, !data.tinaPostNoiseFilterCheckBox.isSelected());
   }
 
   public void enableShadingUI() {
@@ -653,6 +663,17 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
       data.filterRadiusREd.setText(Tools.doubleToString(getCurrFlame().getSpatialFilterRadius()));
       data.filterRadiusSlider.setValue(Tools.FTOI(getCurrFlame().getSpatialFilterRadius() * TinaController.SLIDER_SCALE_FILTER_RADIUS));
       data.filterKernelCmb.setSelectedItem(getCurrFlame().getSpatialFilterKernel());
+
+      data.tinaSpatialOversamplingREd.setText(String.valueOf(getCurrFlame().getSpatialOversampling()));
+      data.tinaSpatialOversamplingSlider.setValue(getCurrFlame().getSpatialOversampling());
+      data.tinaColorOversamplingREd.setText(String.valueOf(getCurrFlame().getColorOversampling()));
+      data.tinaColorOversamplingSlider.setValue(getCurrFlame().getColorOversampling());
+      data.tinaSampleJitteringCheckBox.setSelected(getCurrFlame().isSampleJittering());
+      data.tinaPostNoiseFilterCheckBox.setSelected(getCurrFlame().isPostNoiseFilter());
+      data.tinaPostNoiseThresholdField.setText(String.valueOf(getCurrFlame().getPostNoiseFilterThreshold()));
+      data.tinaPostNoiseThresholdSlider.setValue(Tools.FTOI(getCurrFlame().getPostNoiseFilterThreshold() * TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD));
+      data.foregroundOpacityField.setText(String.valueOf(getCurrFlame().getForegroundOpacity()));
+      data.foregroundOpacitySlider.setValue(Tools.FTOI(getCurrFlame().getForegroundOpacity() * TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD));
 
       data.gammaThresholdREd.setText(String.valueOf(getCurrFlame().getGammaThreshold()));
       data.gammaThresholdSlider.setValue(Tools.FTOI(getCurrFlame().getGammaThreshold() * TinaController.SLIDER_SCALE_GAMMA_THRESHOLD));
@@ -1490,5 +1511,72 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
 
   public void dofDOFParam6REd_changed() {
     flameTextFieldChanged(data.dofDOFParam6Slider, data.dofDOFParam6REd, "camDOFParam6", TinaController.SLIDER_SCALE_ZOOM);
+  }
+
+  public void spatialOversamplingSlider_stateChanged(ChangeEvent e) {
+    flameSliderChanged(data.tinaSpatialOversamplingSlider, data.tinaSpatialOversamplingREd, "spatialOversampling", 1.0);
+    owner.refreshFilterKernelPreviewImg();
+  }
+
+  public void spatialOversamplingREd_changed() {
+    flameTextFieldChanged(data.tinaSpatialOversamplingSlider, data.tinaSpatialOversamplingREd, "spatialOversampling", 1.0);
+    owner.refreshFilterKernelPreviewImg();
+  }
+
+  public void colorOversamplingSlider_stateChanged(ChangeEvent e) {
+    flameSliderChanged(data.tinaColorOversamplingSlider, data.tinaColorOversamplingREd, "colorOversampling", 1.0);
+  }
+
+  public void colorOversamplingREd_changed() {
+    flameTextFieldChanged(data.tinaColorOversamplingSlider, data.tinaColorOversamplingREd, "colorOversampling", 1.0);
+  }
+
+  public void sampleJitteringCbx_changed() {
+    if (!isNoRefresh()) {
+      Flame flame = getCurrFlame();
+      if (flame != null) {
+        owner.saveUndoPoint();
+        flame.setSampleJittering(data.tinaSampleJitteringCheckBox.isSelected());
+        enableControls();
+      }
+    }
+  }
+
+  public void flameTransparencyCbx_changed() {
+    if (!isNoRefresh()) {
+      Flame flame = getCurrFlame();
+      if (flame != null) {
+        owner.saveUndoPoint();
+        flame.setBGTransparency(data.bgTransparencyCBx.isSelected());
+        enableControls();
+      }
+    }
+  }
+
+  public void postNoiseFilterCheckBox_changed() {
+    if (!isNoRefresh()) {
+      Flame flame = getCurrFlame();
+      if (flame != null) {
+        owner.saveUndoPoint();
+        flame.setPostNoiseFilter(data.tinaPostNoiseFilterCheckBox.isSelected());
+        enableControls();
+      }
+    }
+  }
+
+  public void postNoiseFilterThresholdSlider_stateChanged(ChangeEvent e) {
+    flameSliderChanged(data.tinaPostNoiseThresholdSlider, data.tinaPostNoiseThresholdField, "postNoiseFilterThreshold", TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD);
+  }
+
+  public void postNoiseFilterThresholdREd_changed() {
+    flameTextFieldChanged(data.tinaPostNoiseThresholdSlider, data.tinaPostNoiseThresholdField, "postNoiseFilterThreshold", TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD);
+  }
+
+  public void foregroundOpacitySlider_stateChanged(ChangeEvent e) {
+    flameSliderChanged(data.foregroundOpacitySlider, data.foregroundOpacityField, "foregroundOpacity", TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD);
+  }
+
+  public void foregroundOpacityREd_changed() {
+    flameTextFieldChanged(data.foregroundOpacitySlider, data.foregroundOpacityField, "foregroundOpacity", TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD);
   }
 }

@@ -25,6 +25,7 @@ import java.util.List;
 import org.jwildfire.base.Prefs;
 import org.jwildfire.base.QualityProfile;
 import org.jwildfire.base.ResolutionProfile;
+import org.jwildfire.base.Tools;
 import org.jwildfire.base.mathlib.MathLib;
 import org.jwildfire.create.tina.animate.AnimAware;
 import org.jwildfire.create.tina.base.motion.MotionCurve;
@@ -118,10 +119,16 @@ public class Flame implements Assignable<Flame>, Serializable {
   private double camDOFArea;
   private final MotionCurve camDOFAreaCurve = new MotionCurve();
   private boolean newCamDOF;
+  private int spatialOversampling;
+  private int colorOversampling;
+  private boolean sampleJittering;
   private double spatialFilterRadius;
   private FilterKernelType spatialFilterKernel;
   private double sampleDensity;
   private boolean bgTransparency;
+  private boolean postNoiseFilter;
+  private double postNoiseFilterThreshold;
+  private double foregroundOpacity;
   @AnimAware
   private int bgColorRed;
   @AnimAware
@@ -256,12 +263,15 @@ public class Flame implements Assignable<Flame>, Serializable {
   }
 
   public void resetAntialiasingSettings() {
-    //    antialiasAmount = 0.75;
-    //    antialiasRadius = 0.36;
-    antialiasAmount = 0.5;
-    antialiasRadius = 0.16;
-    spatialFilterRadius = 0.0;
-    spatialFilterKernel = FilterKernelType.GAUSSIAN;
+    spatialFilterRadius = Prefs.getPrefs().getTinaDefaultSpatialFilterRadius();
+    spatialFilterKernel = Prefs.getPrefs().getTinaDefaultSpatialFilterKernel();
+    spatialOversampling = Prefs.getPrefs().getTinaDefaultSpatialOversampling();
+    colorOversampling = Prefs.getPrefs().getTinaDefaultColorOversampling();
+    sampleJittering = Prefs.getPrefs().isTinaDefaultSampleJittering();
+    postNoiseFilter = Prefs.getPrefs().isTinaDefaultPostNoiseFilter();
+    postNoiseFilterThreshold = Prefs.getPrefs().getTinaDefaultPostNoiseFilterThreshold();
+    antialiasAmount = Prefs.getPrefs().getTinaDefaultAntialiasingAmount();
+    antialiasRadius = Prefs.getPrefs().getTinaDefaultAntialiasingRadius();
   }
 
   public void resetColoringSettings() {
@@ -273,6 +283,7 @@ public class Flame implements Assignable<Flame>, Serializable {
     bgColorRed = bgColorGreen = bgColorBlue = 0;
     whiteLevel = Prefs.getPrefs().getTinaDefaultFadeToWhiteLevel();
     saturation = 1.0;
+    foregroundOpacity = Prefs.getPrefs().getTinaDefaultForegroundOpacity();
   }
 
   public void resetBokehSettings() {
@@ -681,6 +692,12 @@ public class Flame implements Assignable<Flame>, Serializable {
     lastFilename = pFlame.lastFilename;
     antialiasAmount = pFlame.antialiasAmount;
     antialiasRadius = pFlame.antialiasRadius;
+    spatialOversampling = pFlame.spatialOversampling;
+    colorOversampling = pFlame.colorOversampling;
+    sampleJittering = pFlame.sampleJittering;
+    postNoiseFilter = pFlame.postNoiseFilter;
+    postNoiseFilterThreshold = pFlame.postNoiseFilterThreshold;
+    foregroundOpacity = pFlame.foregroundOpacity;
 
     motionBlurLength = pFlame.motionBlurLength;
     motionBlurTimeStep = pFlame.motionBlurTimeStep;
@@ -744,7 +761,10 @@ public class Flame implements Assignable<Flame>, Serializable {
         (fabs(focusZ - pFlame.focusZ) > EPSILON) || !focusZCurve.isEqual(pFlame.focusZCurve) ||
         (fabs(dimishZ - pFlame.dimishZ) > EPSILON) || !dimishZCurve.isEqual(pFlame.dimishZCurve) ||
         (fabs(camDOF - pFlame.camDOF) > EPSILON) || !camDOFCurve.isEqual(pFlame.camDOFCurve) ||
-        (camDOFShape != pFlame.camDOFShape) ||
+        (camDOFShape != pFlame.camDOFShape) || (spatialOversampling != pFlame.spatialOversampling) ||
+        (colorOversampling != pFlame.colorOversampling) || (sampleJittering != pFlame.sampleJittering) ||
+        (postNoiseFilter != pFlame.postNoiseFilter) || (fabs(postNoiseFilterThreshold - pFlame.postNoiseFilterThreshold) > EPSILON) ||
+        (fabs(foregroundOpacity - pFlame.foregroundOpacity) > EPSILON) ||
         (fabs(camDOFScale - pFlame.camDOFScale) > EPSILON) || !camDOFScaleCurve.isEqual(pFlame.camDOFScaleCurve) ||
         (fabs(camDOFAngle - pFlame.camDOFAngle) > EPSILON) || !camDOFAngleCurve.isEqual(pFlame.camDOFAngleCurve) ||
         (fabs(camDOFFade - pFlame.camDOFFade) > EPSILON) || !camDOFFadeCurve.isEqual(pFlame.camDOFFadeCurve) ||
@@ -906,24 +926,24 @@ public class Flame implements Assignable<Flame>, Serializable {
     return antialiasAmount;
   }
 
-  public void setAntialiasAmount(double antialiasAmount) {
-    this.antialiasAmount = antialiasAmount;
+  public void setAntialiasAmount(double pAntialiasAmount) {
+    antialiasAmount = pAntialiasAmount;
   }
 
   public double getAntialiasRadius() {
     return antialiasRadius;
   }
 
-  public void setAntialiasRadius(double antialiasRadius) {
-    this.antialiasRadius = antialiasRadius;
+  public void setAntialiasRadius(double pAntialiasRadius) {
+    antialiasRadius = pAntialiasRadius;
   }
 
   public int getMotionBlurLength() {
     return motionBlurLength;
   }
 
-  public void setMotionBlurLength(int motionBlurLength) {
-    this.motionBlurLength = motionBlurLength;
+  public void setMotionBlurLength(int pMotionBlurLength) {
+    motionBlurLength = pMotionBlurLength;
   }
 
   public double getMotionBlurTimeStep() {
@@ -1382,4 +1402,73 @@ public class Flame implements Assignable<Flame>, Serializable {
   public MotionCurve getCamZoomCurve() {
     return camZoomCurve;
   }
+
+  public int getSpatialOversampling() {
+    return spatialOversampling;
+  }
+
+  public void setSpatialOversampling(int pSpatialOversampling) {
+    spatialOversampling = pSpatialOversampling;
+    if (spatialOversampling < 1) {
+      spatialOversampling = 1;
+    }
+    else if (spatialOversampling > Tools.MAX_SPATIAL_OVERSAMPLING) {
+      spatialOversampling = Tools.MAX_SPATIAL_OVERSAMPLING;
+    }
+  }
+
+  public int getColorOversampling() {
+    return colorOversampling;
+  }
+
+  public void setColorOversampling(int pColorOversampling) {
+    colorOversampling = pColorOversampling;
+    if (colorOversampling < 1) {
+      colorOversampling = 1;
+    }
+    else if (colorOversampling > Tools.MAX_COLOR_OVERSAMPLING) {
+      colorOversampling = Tools.MAX_COLOR_OVERSAMPLING;
+    }
+  }
+
+  public boolean isSampleJittering() {
+    return sampleJittering;
+  }
+
+  public void setSampleJittering(boolean pSampleJittering) {
+    sampleJittering = pSampleJittering;
+  }
+
+  public void applyFastOversamplingSettings() {
+    setSpatialFilterRadius(0.0);
+    setSpatialOversampling(1);
+    setColorOversampling(1);
+    setSampleJittering(false);
+    setPostNoiseFilter(false);
+  }
+
+  public boolean isPostNoiseFilter() {
+    return postNoiseFilter;
+  }
+
+  public void setPostNoiseFilter(boolean pPostNoiseFilter) {
+    postNoiseFilter = pPostNoiseFilter;
+  }
+
+  public double getPostNoiseFilterThreshold() {
+    return postNoiseFilterThreshold;
+  }
+
+  public void setPostNoiseFilterThreshold(double pPostNoiseFilterThreshold) {
+    postNoiseFilterThreshold = pPostNoiseFilterThreshold;
+  }
+
+  public double getForegroundOpacity() {
+    return foregroundOpacity;
+  }
+
+  public void setForegroundOpacity(double pForegroundOpacity) {
+    foregroundOpacity = pForegroundOpacity;
+  }
+
 }

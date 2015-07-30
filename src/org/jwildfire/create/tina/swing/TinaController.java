@@ -121,6 +121,9 @@ import org.jwildfire.create.tina.render.RenderInfo;
 import org.jwildfire.create.tina.render.RenderMode;
 import org.jwildfire.create.tina.render.RenderedFlame;
 import org.jwildfire.create.tina.render.filter.FilterKernelType;
+import org.jwildfire.create.tina.render.filter.FilterKernelVisualisation3dRenderer;
+import org.jwildfire.create.tina.render.filter.FilterKernelVisualisationFlatRenderer;
+import org.jwildfire.create.tina.render.filter.FilterKernelVisualisationRenderer;
 import org.jwildfire.create.tina.script.ScriptParam;
 import org.jwildfire.create.tina.script.ScriptRunner;
 import org.jwildfire.create.tina.script.ScriptRunnerEnvironment;
@@ -164,6 +167,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
   static final double SLIDER_SCALE_GAMMA = 100.0;
   static final double SLIDER_SCALE_FILTER_RADIUS = 100.0;
   static final double SLIDER_SCALE_GAMMA_THRESHOLD = 5000.0;
+  static final double SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD = 1000.0;
   static final double SLIDER_SCALE_COLOR = 100.0;
   static final double SLIDER_SCALE_ZPOS = 50.0;
   static final double SLIDER_SCALE_DOF = 100.0;
@@ -547,7 +551,6 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     data.motionBlurDecayField = parameterObject.motionBlurDecayField;
     data.motionBlurDecaySlider = parameterObject.motionBlurDecaySlider;
     data.flameFPSField = parameterObject.flameFPSField;
-
     data.postSymmetryTypeCmb = parameterObject.postSymmetryTypeCmb;
     data.postSymmetryDistanceREd = parameterObject.postSymmetryDistanceREd;
     data.postSymmetryDistanceSlider = parameterObject.postSymmetryDistanceSlider;
@@ -629,6 +632,19 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     data.shadingDistanceColorCoordinateSlider = parameterObject.pShadingDistanceColorCoordinateSlider;
     data.shadingDistanceColorShiftREd = parameterObject.pShadingDistanceColorShiftREd;
     data.shadingDistanceColorShiftSlider = parameterObject.pShadingDistanceColorShiftSlider;
+
+    data.tinaSpatialOversamplingREd = parameterObject.tinaSpatialOversamplingREd;
+    data.tinaSpatialOversamplingSlider = parameterObject.tinaSpatialOversamplingSlider;
+    data.filterKernelPreviewRootPnl = parameterObject.filterKernelPreviewRootPnl;
+    data.tinaColorOversamplingREd = parameterObject.tinaColorOversamplingREd;
+    data.tinaColorOversamplingSlider = parameterObject.tinaColorOversamplingSlider;
+    data.tinaSampleJitteringCheckBox = parameterObject.tinaSampleJitteringCheckBox;
+    data.filterKernelFlatPreviewBtn = parameterObject.filterKernelFlatPreviewBtn;
+    data.tinaPostNoiseFilterCheckBox = parameterObject.tinaPostNoiseFilterCheckBox;
+    data.tinaPostNoiseThresholdField = parameterObject.tinaPostNoiseThresholdField;
+    data.tinaPostNoiseThresholdSlider = parameterObject.tinaPostNoiseThresholdSlider;
+    data.foregroundOpacityField = parameterObject.foregroundOpacityField;
+    data.foregroundOpacitySlider = parameterObject.foregroundOpacitySlider;
 
     data.mouseTransformSlowButton = parameterObject.pMouseTransformSlowButton;
     data.toggleTriangleWithColorsButton = parameterObject.toggleTriangleWithColorsButton;
@@ -1222,11 +1238,11 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
       if (row < 0 && getCurrFlame() != null && getCurrFlame().getLayers().size() > 0) {
         data.layersTable.getSelectionModel().setSelectionInterval(0, 0);
       }
-
     }
     finally {
       gridRefreshing = false;
     }
+    refreshFilterKernelPreviewImg();
     refreshLayerUI();
     refreshLayerControls(getCurrLayer());
     refreshKeyFramesUI();
@@ -3310,8 +3326,6 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     flame.setHeight(600);
     flame.setPixelsPerUnit(50);
     flame.setBGTransparency(prefs.isTinaDefaultBGTransparency());
-    flame.setAntialiasAmount(prefs.getTinaDefaultAntialiasingAmount());
-    flame.setAntialiasRadius(prefs.getTinaDefaultAntialiasingRadius());
     RandomGradientGenerator gradientGen = RandomGradientGeneratorList.getRandomGradientGeneratorInstance((String) data.paletteRandomGeneratorCmb.getSelectedItem());
     RGBPalette palette = gradientGen.generatePalette(Integer.parseInt(data.paletteRandomPointsREd.getText()), data.paletteFadeColorsCBx.isSelected());
     flame.getFirstLayer().setPalette(palette);
@@ -4333,13 +4347,6 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     }
   }
 
-  public void flameTransparencyCbx_changed() {
-    if (getCurrFlame() != null) {
-      getCurrFlame().setBGTransparency(data.bgTransparencyCBx.isSelected());
-      flameControls.enableDOFUI();
-    }
-  }
-
   public DancingFractalsController getDancingFractalsController() {
     return dancingFractalsController;
   }
@@ -4407,7 +4414,9 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
           };
           mainRenderThread = new RenderMainFlameThread(prefs, flame, file, qualProfile, resProfile, finishEvent, mainProgressUpdater);
           enableMainRenderControls();
-          new Thread(mainRenderThread).start();
+          Thread worker = new Thread(mainRenderThread);
+          worker.setPriority(Thread.MIN_PRIORITY);
+          worker.start();
         }
       }
       catch (Throwable ex) {
@@ -4422,6 +4431,8 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
       if (flame != null) {
         saveUndoPoint();
         flame.setSpatialFilterKernel((FilterKernelType) data.filterKernelCmb.getSelectedItem());
+        refreshFlameImage(false);
+        refreshFilterKernelPreviewImg();
       }
     }
   }
@@ -5706,4 +5717,48 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     }
   }
 
+  private ImagePanel getFilterKernelPreviewPanel() {
+    if (data.filterKernelPreviewPanel == null) {
+      int width = data.filterKernelPreviewRootPnl.getWidth();
+      int height = data.filterKernelPreviewRootPnl.getHeight();
+      SimpleImage img = new SimpleImage(width, height);
+      img.fillBackground(0, 0, 0);
+      data.filterKernelPreviewPanel = new ImagePanel(img, 0, 0, data.filterKernelPreviewRootPnl.getWidth());
+      data.filterKernelPreviewRootPnl.add(data.filterKernelPreviewPanel, BorderLayout.CENTER);
+      data.filterKernelPreviewRootPnl.getParent().validate();
+    }
+    return data.filterKernelPreviewPanel;
+  }
+
+  private FilterKernelVisualisationRenderer getFilterKernelVisualisationRenderer(boolean pFlatMode) {
+    if (pFlatMode) {
+      return new FilterKernelVisualisationFlatRenderer(getCurrFlame());
+    }
+    else {
+      return new FilterKernelVisualisation3dRenderer(getCurrFlame());
+    }
+  }
+
+  protected void refreshFilterKernelPreviewImg() {
+    try {
+      if (getCurrFlame() != null) {
+        ImagePanel imgPanel = getFilterKernelPreviewPanel();
+        int width = imgPanel.getWidth();
+        int height = imgPanel.getHeight();
+        if (width >= 16 && height >= 4) {
+          SimpleImage img = getFilterKernelVisualisationRenderer(data.filterKernelFlatPreviewBtn.isSelected()).createKernelVisualisation(width, height);
+          imgPanel.setImage(img);
+        }
+        imgPanel.getParent().validate();
+        imgPanel.repaint();
+      }
+    }
+    catch (Throwable ex) {
+      errorHandler.handleError(ex);
+    }
+  }
+
+  public void filterKernelFlatPreviewBtn_clicked() {
+    refreshFilterKernelPreviewImg();
+  }
 }

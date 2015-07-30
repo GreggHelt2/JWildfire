@@ -133,6 +133,10 @@ public class FlamePreviewHelper {
       if (flame != null) {
         double oldSpatialFilterRadius = flame.getSpatialFilterRadius();
         double oldSampleDensity = flame.getSampleDensity();
+        int oldSpatialOversampling = flame.getSpatialOversampling();
+        int oldColorOversampling = flame.getColorOversampling();
+        boolean oldSampleJittering = flame.isSampleJittering();
+        boolean oldPostNoiseFilter = flame.isPostNoiseFilter();
         try {
           double wScl = (double) info.getImageWidth() / (double) flame.getWidth();
           double hScl = (double) info.getImageHeight() / (double) flame.getHeight();
@@ -141,21 +145,28 @@ public class FlamePreviewHelper {
           flame.setHeight(info.getImageHeight());
           try {
             FlameRenderer renderer;
+            if (pQuickRender) {
+              flame.setSampleDensity(prefs.getTinaRenderRealtimeQuality());
+              flame.applyFastOversamplingSettings();
+            }
+            else {
+              flame.setSampleDensity(prefs.getTinaRenderPreviewQuality());
+            }
+
             if (!cfg.isNoControls() && imgPanel.getConfig().getMouseDragOperation() == MouseDragOperation.FOCUS) {
               renderer = new DrawFocusPointFlameRenderer(flame, prefs, toggleTransparencyButton != null && toggleTransparencyButton.isSelected());
             }
             else {
               renderer = new FlameRenderer(flame, prefs, toggleTransparencyButton != null && toggleTransparencyButton.isSelected(), false);
             }
+
             if (pQuickRender) {
               renderer.setProgressUpdater(null);
-              flame.setSampleDensity(prefs.getTinaRenderRealtimeQuality());
-              flame.setSpatialFilterRadius(0.0);
             }
             else {
               renderer.setProgressUpdater(mainProgressUpdater);
-              flame.setSampleDensity(prefs.getTinaRenderPreviewQuality());
             }
+
             renderer.setRenderScale(renderScale);
             long t0 = System.currentTimeMillis();
             RenderedFlame res = renderer.renderFlame(info);
@@ -281,6 +292,10 @@ public class FlamePreviewHelper {
         finally {
           flame.setSpatialFilterRadius(oldSpatialFilterRadius);
           flame.setSampleDensity(oldSampleDensity);
+          flame.setSpatialOversampling(oldSpatialOversampling);
+          flame.setColorOversampling(oldColorOversampling);
+          flame.setSampleJittering(oldSampleJittering);
+          flame.setPostNoiseFilter(oldPostNoiseFilter);
         }
       }
     }
@@ -309,7 +324,10 @@ public class FlamePreviewHelper {
       if (flame != null) {
         double oldSpatialFilterRadius = flame.getSpatialFilterRadius();
         double oldSampleDensity = flame.getSampleDensity();
-        double oldAntialiasAmount = flame.getAntialiasAmount();
+        int oldSpatialOversampling = flame.getSpatialOversampling();
+        int oldColorOversampling = flame.getColorOversampling();
+        boolean oldSampleJittering = flame.isSampleJittering();
+        boolean oldPostNoiseFilter = flame.isPostNoiseFilter();
         try {
           double wScl = (double) info.getImageWidth() / (double) flame.getWidth();
           double hScl = (double) info.getImageHeight() / (double) flame.getHeight();
@@ -326,8 +344,7 @@ public class FlamePreviewHelper {
             }
             renderer.setProgressUpdater(null);
             flame.setSampleDensity(prefs.getTinaRenderRealtimeQuality());
-            flame.setSpatialFilterRadius(0.0);
-            flame.setAntialiasAmount(0.0);
+            flame.applyFastOversamplingSettings();
             renderer.setRenderScale(renderScale);
             RenderedFlame res = renderer.renderFlame(info);
             SimpleImage img = res.getImage();
@@ -339,9 +356,12 @@ public class FlamePreviewHelper {
           }
         }
         finally {
-          flame.setSpatialFilterRadius(oldSpatialFilterRadius);
           flame.setSampleDensity(oldSampleDensity);
-          flame.setAntialiasAmount(oldAntialiasAmount);
+          flame.setSpatialFilterRadius(oldSpatialFilterRadius);
+          flame.setSpatialOversampling(oldSpatialOversampling);
+          flame.setColorOversampling(oldColorOversampling);
+          flame.setSampleJittering(oldSampleJittering);
+          flame.setPostNoiseFilter(oldPostNoiseFilter);
         }
       }
     }

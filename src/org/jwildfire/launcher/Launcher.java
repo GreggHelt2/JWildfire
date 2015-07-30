@@ -1,6 +1,6 @@
 /*
   JWildfire - an image and animation processor written in Java 
-  Copyright (C) 1995-2012 Andreas Maschke
+  Copyright (C) 1995-2015 Andreas Maschke
 
   This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser 
   General Public License as published by the Free Software Foundation; either version 2.1 of the 
@@ -30,13 +30,12 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.net.URLDecoder;
 import java.util.List;
 
 import javax.swing.JButton;
@@ -109,7 +108,38 @@ public class Launcher {
     initialize();
     loadImages();
     scanForJDKs();
+    checkForIncludedJRE();
     updateControls();
+  }
+
+  private void checkForIncludedJRE() {
+    String jdk = locateIncludedJRE();
+    if (jdk != null && jdk.length() > 0) {
+      getJdkCmb().removeAllItems();
+      getJdkCmb().addItem(jdk);
+      getJdkCmb().setSelectedIndex(0);
+      //      getJdkCmb().setEnabled(false);
+      //      getBtnAddJavaRuntime().setEnabled(false);
+    }
+  }
+
+  private String locateIncludedJRE() {
+    try {
+      String path = this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
+      String decodedPath = URLDecoder.decode(path, "UTF-8");
+      if (decodedPath.endsWith(".jar")) {
+        File jrePath = new File(new File(decodedPath).getParentFile(), "jre");
+        if (jrePath.exists() && jrePath.isDirectory()) {
+          getLogTextArea().setText("Included JRE found in \"" + jrePath.getAbsolutePath() + "\"");
+          return jrePath.getAbsolutePath();
+        }
+      }
+      getLogTextArea().setText("No JRE found in \"" + decodedPath + "\"");
+      return null;
+    }
+    catch (Exception ex) {
+      return null;
+    }
   }
 
   private JTextArea logTextArea;
@@ -119,7 +149,7 @@ public class Launcher {
   private JPanel imgDisplayPanel;
   private JTabbedPane mainTabbedPane;
   private JCheckBox debugCmb;
-  private JCheckBox openCLCmb;
+  private JButton btnAddJavaRuntime;
 
   private void loadImages() {
     frame.setTitle("Welcome to " + Tools.APP_TITLE + " " + Tools.APP_VERSION);
@@ -247,14 +277,6 @@ public class Launcher {
     debugCmb.setBackground(Color.BLACK);
     panel_2.add(debugCmb);
 
-    openCLCmb = new JCheckBox("OpenCL (experimental)");
-    openCLCmb.setVisible(false);
-    openCLCmb.setToolTipText("Enable experimental OpenCL code");
-    openCLCmb.setForeground(SystemColor.menu);
-    openCLCmb.setBackground(Color.BLACK);
-    openCLCmb.setBounds(369, 20, 170, 18);
-    panel_2.add(openCLCmb);
-
     mainPanel = new JPanel();
     mainPanel.setBackground(Color.BLACK);
     startPanel_1.add(mainPanel, BorderLayout.CENTER);
@@ -283,7 +305,7 @@ public class Launcher {
     lblMemoryToUse.setPreferredSize(new Dimension(94, 22));
     lblMemoryToUse.setFont(new Font("Dialog", Font.BOLD, 10));
 
-    JButton btnAddJavaRuntime = new JButton("Add Java runtime...");
+    btnAddJavaRuntime = new JButton("Add Java runtime...");
     btnAddJavaRuntime.setToolTipText("Manually add the path of a Java runtime which is installed on this system andwas not detected by the launcher");
     btnAddJavaRuntime.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
@@ -350,14 +372,6 @@ public class Launcher {
     scrollPane.setViewportView(logTextArea);
 
     imgDisplayPanel = new JPanel();
-    imgDisplayPanel.addMouseListener(new MouseAdapter() {
-      @Override
-      public void mouseClicked(MouseEvent e) {
-        if (e.getClickCount() == 2) {
-          openCLCmb.setVisible(true);
-        }
-      }
-    });
     imgDisplayPanel.setBackground(Color.BLACK);
     imgDisplayPanel.setBounds(20, 86, 500, 270);
     mainPanel.add(imgDisplayPanel);
@@ -472,7 +486,6 @@ public class Launcher {
   private void savePrefs() throws Exception {
     prefs.setJavaPath((String) getJdkCmb().getSelectedItem());
     prefs.setMaxMem(Integer.parseInt(getMaxMemField().getText()));
-    prefs.setWithOpenCL(openCLCmb.isSelected());
     prefs.saveToFile();
   }
 
@@ -496,7 +509,6 @@ public class Launcher {
     if (prefs.getMaxMem() > 0) {
       getMaxMemField().setText(String.valueOf(prefs.getMaxMem()));
     }
-    getOpenCLCmb().setSelected(prefs.isWithOpenCL());
   }
 
   public JComboBox getJdkCmb() {
@@ -596,7 +608,7 @@ public class Launcher {
     return debugCmb;
   }
 
-  public JCheckBox getOpenCLCmb() {
-    return openCLCmb;
+  public JButton getBtnAddJavaRuntime() {
+    return btnAddJavaRuntime;
   }
 }

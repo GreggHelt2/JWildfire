@@ -1,6 +1,6 @@
 /*
   JWildfire - an image and animation processor written in Java 
-  Copyright (C) 1995-2014 Andreas Maschke
+  Copyright (C) 1995-2015 Andreas Maschke
 
   This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser 
   General Public License as published by the Free Software Foundation; either version 2.1 of the 
@@ -24,8 +24,9 @@ import java.util.List;
 
 import org.jwildfire.base.mathlib.BaseMathLibType;
 import org.jwildfire.base.mathlib.MathLib;
-import org.jwildfire.create.tina.base.raster.RasterPointPrecision;
+import org.jwildfire.create.tina.base.raster.RasterCreator;
 import org.jwildfire.create.tina.random.RandomGeneratorType;
+import org.jwildfire.create.tina.render.filter.FilterKernelType;
 import org.jwildfire.create.tina.swing.EditorDoubleClickActionType;
 import org.jwildfire.create.tina.swing.RandomBatchRefreshType;
 import org.jwildfire.create.tina.swing.flamepanel.FlamePanelControlStyle;
@@ -77,8 +78,8 @@ public class Prefs extends ManagedObject {
   static final String KEY_TINA_RENDER_REALTIME_QUALITY = "tina.render.realtime.quality";
   static final String KEY_TINA_RENDER_PREVIEW_QUALITY = "tina.render.preview.quality";
   static final String KEY_TINA_RENDER_DEFAULT_BG_TRANSPARENCY = "tina.render.default_bg_transparency";
-  static final String KEY_TINA_RENDER_DEFAULT_ANTIALIASING_AMOUNT = "tina.render.default_antialiasing_amount.2";
-  static final String KEY_TINA_RENDER_DEFAULT_ANTIALIASING_RADIUS = "tina.render.default_antialiasing_radius.2";
+  static final String KEY_TINA_RENDER_DEFAULT_ANTIALIASING_AMOUNT = "tina.render.default_antialiasing_amount.7";
+  static final String KEY_TINA_RENDER_DEFAULT_ANTIALIASING_RADIUS = "tina.render.default_antialiasing_radius.5";
   static final String KEY_TINA_PROFILE_ASSOCIATE_WITH_FLAMES = "tina.profile.associate_with_flames";
 
   static final String KEY_TINA_RANDOM_GENERATOR = "tina.random.generator.2";
@@ -87,7 +88,7 @@ public class Prefs extends ManagedObject {
   static final String KEY_TINA_RANDOMBATCH_DUALITY_PREFERED_VARIATION_PROBABILITY1 = "tina.random_batch.duality.prefered_variation_probability1";
   static final String KEY_TINA_RANDOMBATCH_DUALITY_PREFERED_VARIATION_PROBABILITY2 = "tina.random_batch.duality.prefered_variation_probability2";
   static final String KEY_TINA_RANDOMMOVIEBATCH_SIZE = "tina.random_movie_batch.size";
-  static final String KEY_TINA_RASTERPOINT_PRECISION = "tina.rasterpoint.precision";
+  static final String KEY_TINA_RASTER_TYPE = "tina.raster_type";
   static final String KEY_TINA_RANDOMBATCH_BGCOLOR_RED = "tina.random_batch.bg_color.red";
   static final String KEY_TINA_RANDOMBATCH_BGCOLOR_GREEN = "tina.random_batch.bg_color.green";
   static final String KEY_TINA_RANDOMBATCH_BGCOLOR_BLUE = "tina.random_batch.bg_color.blue";
@@ -105,13 +106,23 @@ public class Prefs extends ManagedObject {
   static final String KEY_TINA_EDITOR_GUIDES_COLOR_RULE_OF_THIRDS = "tina.editor.guides.color.rule_of_thirds";
   static final String KEY_TINA_EDITOR_GUIDES_COLOR_GOLDEN_RATIO = "tina.editor.guides.color.golden_ratio";
 
+  static final String KEY_TINA_DEFAULT_SPATIAL_OVERSAMPLING = "tina.default.spatial_oversampling";
+  static final String KEY_TINA_DEFAULT_COLOR_OVERSAMPLING = "tina.default.color_oversampling.2";
+  static final String KEY_TINA_DEFAULT_SAMPLE_JITTERING = "tina.default.sample_jittering.2";
+  static final String KEY_TINA_DEFAULT_POST_NOISE_FILTER = "tina.default.post_noise_filter.2";
+  static final String KEY_TINA_DEFAULT_POST_NOISE_FILTER_THRESHOLD = "tina.default.post_noise_filter_threshold";
+  static final String KEY_TINA_DEFAULT_FOREGROUND_OPACITY = "tina.default.foreground_opacity";
+  static final String KEY_TINA_DEFAULT_FILTER_KERNEL = "tina.default.filter_kernel";
+  static final String KEY_TINA_DEFAULT_FILTER_RADIUS = "tina.default.filter_radius";
+  static final String KEY_TINA_DEFAULT_FILTER_VISUALISATION_FLAT = "tina.default.filter_visualisation_flat";
+
   public static final String KEY_TINA_EDITOR_DEFAULT_DOUBLECLICK_ACTION = "tina.editor.default.double_click_action";
   public static final String KEY_TINA_DEFAULT_FADE_TO_WHITE_LEVEL = "tina.default.fade_to_white_level";
   public static final String KEY_TINA_DEFAULT_FPS = "tina.default.fps";
 
   static final String KEY_TINA_SAVING_STORE_HDR_IN_IR = "tina.saving.store_hdr_in_ir";
   static final String KEY_TINA_SAVING_STORE_FLAMES_WHEN_SAVING_IMAGE = "tina.saving.store_flames_when_saving_image";
-  static final String KEY_TINA_OPTIMIZED_RENDERING_IR = "tina.optimized_rendering_ir.2";
+  static final String KEY_TINA_OPTIMIZED_RENDERING_IR = "tina.optimized_rendering_ir.5";
 
   static final String KEY_TINA_DISABLE_WIKIMEDIA_COMMONS_WARNING = "tina.random_batch.disable_wikimedia_commons_warning";
   static final String KEY_TINA_COLORMAP_RANDGEN_IMAGE_PATH = "tina.random_batch.random_gen.colormap.image_path";
@@ -131,7 +142,7 @@ public class Prefs extends ManagedObject {
   public static final String KEY_TINA_MUTAGEN_MUTATIONTYPE_VERT1 = "tina.mutagen.mutationtype_vert1";
   public static final String KEY_TINA_MUTAGEN_MUTATIONTYPE_VERT2 = "tina.mutagen.mutationtype_vert2";
 
-  public static final String KEY_TINA_INTEGRATION_CHAOTICA_DISABLED = "tina.integration.chaotica.disabled";
+  public static final String KEY_TINA_INTEGRATION_CHAOTICA_DISABLED = "tina.integration.chaotica.disabled.2";
   public static final String KEY_TINA_INTEGRATION_CHAOTICA_DRAWER = "tina.integration.chaotica.drawer";
   public static final String KEY_TINA_INTEGRATION_CHAOTICA_EXECUTABLE = "tina.integration.chaotica.executable";
   public static final String KEY_TINA_INTEGRATION_CHAOTICA_FLAME_DRAWER = "tina.integration.chaotica.flame_drawer";
@@ -140,9 +151,6 @@ public class Prefs extends ManagedObject {
   static final String KEY_IFLAMES_LIBRARY_PATH_FLAMES = "iflames.library_path.flames";
   static final String KEY_IFLAMES_LIBRARY_PATH_IMAGES = "iflames.library_path.images";
   static final String KEY_IFLAMES_LOAD_LIBRARY_AT_STARTUP = "iflames.load_library_at_startup";
-
-  public static final String KEY_TINA_OVERWRITE_MOTIONBLUR_TIMESTEP = "tina.overwrite.motionblur_timestep";
-  public static final String KEY_TINA_OVERWRITE_MOTIONBLUR_LENGTH = "tina.overwrite.motionblur_length";
 
   @Property(description = "Script drawer for the animation editor", category = PropertyCategory.MISC)
   private String scriptPath = null;
@@ -230,6 +238,33 @@ public class Prefs extends ManagedObject {
   @Property(description = "Add small shadows to the controls, to increase contrast with background, in the editor", category = PropertyCategory.TINA)
   private boolean tinaEditorControlsWithShadows = true;
 
+  @Property(description = "Default spatial oversampling setting, used when creating a new flame", category = PropertyCategory.TINA)
+  private int tinaDefaultSpatialOversampling = 2;
+
+  @Property(description = "Default color oversampling setting, used when creating a new flame", category = PropertyCategory.TINA)
+  private int tinaDefaultColorOversampling = 3;
+
+  @Property(description = "Default jitter setting for reducing aliasing artifacts, used when creating a new flame", category = PropertyCategory.TINA)
+  private boolean tinaDefaultSampleJittering = false;
+
+  @Property(description = "Default setting for applying a post-noise-filter to rendered images", category = PropertyCategory.TINA)
+  private boolean tinaDefaultPostNoiseFilter = false;
+
+  @Property(description = "Default threshold-setting for the post-noise-filter", category = PropertyCategory.TINA)
+  private double tinaDefaultPostNoiseFilterThreshold = 0.35;
+
+  @Property(description = "Default foreground-opacity when rendering images with transparent background", category = PropertyCategory.TINA)
+  private double tinaDefaultForegroundOpacity = 1.0;
+
+  @Property(description = "Use flat (and faster) rendering to visualize filter-kernels", category = PropertyCategory.TINA)
+  private boolean tinaDefaultFilterVisualisationFlat = false;
+
+  @Property(description = "Default spatial filter-kernel, used when creating a new flame", category = PropertyCategory.TINA, editorClass = FilterKernelTypeEditor.class)
+  private FilterKernelType tinaDefaultSpatialFilterKernel = FilterKernelType.MITCHELL;
+
+  @Property(description = "Default spatial filter-radius, used when creating a new flame (set to 0 in order to turn off spatial filtering)", category = PropertyCategory.TINA)
+  private double tinaDefaultSpatialFilterRadius = 0.75;
+
   @Property(description = "Style of the controls (\"triangles\") in the editor", category = PropertyCategory.TINA, editorClass = FlamePanelTriangleStyleEditor.class)
   private FlamePanelControlStyle tinaEditorControlsStyle = FlamePanelControlStyle.TRIANGLE;
 
@@ -245,16 +280,8 @@ public class Prefs extends ManagedObject {
   @Property(description = "Default FPS of new generated flames", category = PropertyCategory.TINA)
   private int tinaDefaultFPS = 30;
 
-  @Property(description = "Overwrite the time-step for motion-blur when loading a flame (may be usefull to force that all flames use the sames settings in larger projects)", category = PropertyCategory.TINA)
-  private double tinaOverwriteMotionBlurTimeStep = 0.0;
-
-  @Property(description = "Overwrite the time-step for motion-blur when loading a flame (may be usefull to force that all flames use the sames settings in larger projects)", category = PropertyCategory.TINA)
-  private int tinaOverwriteMotionBlurLength = 0;
-
   @Property(description = "Optimize display-refresh in the interactive renderer, but may be slower at some really old computers", category = PropertyCategory.TINA)
   private boolean tinaOptimizedRenderingIR = true;
-
-  private boolean tinaUseExperimentalOpenClCode = false;
 
   @Property(description = "User-defined mutation-sub-types for mutation-type USER1 in the MutaGen", category = PropertyCategory.TINA)
   private String tinaMutaGenMutationTypesUser1 = "ADD_TRANSFORM, CHANGE_WEIGHT, AFFINE, RANDOM_PARAMETER";
@@ -287,7 +314,7 @@ public class Prefs extends ManagedObject {
   @Property(description = "Image-input-path for the \"Color map\"-random-flame-generator (is scanned recursively, so BEWARE)", category = PropertyCategory.TINA)
   private String tinaRandGenColorMapImagePath = null;
 
-  @Property(description = "Development mode", category = PropertyCategory.GENERAL)
+  @Property(description = "Activate development mode", category = PropertyCategory.GENERAL)
   private boolean developmentMode = false;
 
   @Property(description = "Implementation of basic mathematical functions to use", category = PropertyCategory.GENERAL, editorClass = BaseMathLibTypeEditor.class)
@@ -312,7 +339,7 @@ public class Prefs extends ManagedObject {
   private boolean tinaMacroButtonsVertical = false;
 
   @Property(description = "Disable the Chaotica-support inside the flame-module", category = PropertyCategory.TINA)
-  private boolean tinaIntegrationChaoticaDisabled = false;
+  private boolean tinaIntegrationChaoticaDisabled = true;
 
   @Property(description = "Allow the animation-export from with the Chaotica-bridge. Please note that this reduces the maximum possible resolution in Chaotica when you do not have a Studio licence", category = PropertyCategory.TINA)
   private boolean tinaIntegrationChaoticaAnimationExport = false;
@@ -361,10 +388,10 @@ public class Prefs extends ManagedObject {
     }
   }
 
-  public static class RasterPointPrecisionEditor extends ComboBoxPropertyEditor {
-    public RasterPointPrecisionEditor() {
+  public static class RasterCreatorEditor extends ComboBoxPropertyEditor {
+    public RasterCreatorEditor() {
       super();
-      setAvailableValues(new RasterPointPrecision[] { RasterPointPrecision.DOUBLE_PRECISION, RasterPointPrecision.SINGLE_PRECISION });
+      setAvailableValues(new RasterCreator[] { RasterCreator.FLOAT_INT_RASTER });
     }
   }
 
@@ -372,6 +399,13 @@ public class Prefs extends ManagedObject {
     public EditorDoubleClickActionTypeEditor() {
       super();
       setAvailableValues(new EditorDoubleClickActionType[] { EditorDoubleClickActionType.ACTIVATE_TRIANGLE_EDIT, EditorDoubleClickActionType.RENDER_FLAME, EditorDoubleClickActionType.SWITCH_TRIANGLE_CAM_EDIT, EditorDoubleClickActionType.NONE });
+    }
+  }
+
+  public static class FilterKernelTypeEditor extends ComboBoxPropertyEditor {
+    public FilterKernelTypeEditor() {
+      super();
+      setAvailableValues(FilterKernelType.values());
     }
   }
 
@@ -383,8 +417,8 @@ public class Prefs extends ManagedObject {
 
   private static int tinaRenderThreads;
 
-  @Property(description = "Precision of the raster (less precision needs less memory)", category = PropertyCategory.TINA, editorClass = RasterPointPrecisionEditor.class)
-  private RasterPointPrecision tinaRasterPointPrecision = RasterPointPrecision.getDefaultValue();
+  @Property(description = "Type of the iteration-raster (less precision needs less memory)", category = PropertyCategory.TINA, editorClass = RasterCreatorEditor.class)
+  private RasterCreator tinaRasterType = RasterCreator.getDefaultValue();
 
   @Property(description = "Random number generator to use", category = PropertyCategory.TINA, editorClass = RandomGeneratorTypeEditor.class)
   private RandomGeneratorType tinaRandomNumberGenerator = RandomGeneratorType.getDefaultValue();
@@ -409,10 +443,10 @@ public class Prefs extends ManagedObject {
   private boolean tinaDefaultBGTransparency = false;
 
   @Property(description = "Default antialiasing amount (set to zero to turn antialiasing off by default)", category = PropertyCategory.TINA)
-  private double tinaDefaultAntialiasingAmount = 0.5;
+  private double tinaDefaultAntialiasingAmount = 0.0;
 
   @Property(description = "Default antialiasing radius (set to zero to turn antialiasing off by default)", category = PropertyCategory.TINA)
-  private double tinaDefaultAntialiasingRadius = 0.16;
+  private double tinaDefaultAntialiasingRadius = 0.5;
 
   @Property(description = "Quality for preview rendering", category = PropertyCategory.TINA)
   private int tinaRenderPreviewQuality = 100;
@@ -647,8 +681,6 @@ public class Prefs extends ManagedObject {
     lookAndFeelTheme = pSrc.lookAndFeelTheme;
     developmentMode = pSrc.developmentMode;
     tinaRandomNumberGenerator = pSrc.tinaRandomNumberGenerator;
-    tinaDefaultAntialiasingAmount = pSrc.tinaDefaultAntialiasingAmount;
-    tinaDefaultAntialiasingRadius = pSrc.tinaDefaultAntialiasingRadius;
     tinaPreserveFreeCPUs = pSrc.tinaPreserveFreeCPUs;
     tinaDisableWikimediaCommonsWarning = pSrc.tinaDisableWikimediaCommonsWarning;
     tinaEditorControlsWithColor = pSrc.tinaEditorControlsWithColor;
@@ -658,7 +690,8 @@ public class Prefs extends ManagedObject {
     tinaEditorControlsWithNumbers = pSrc.tinaEditorControlsWithNumbers;
     tinaEditorGridSize = pSrc.tinaEditorGridSize;
     tinaRandGenColorMapImagePath = pSrc.tinaRandGenColorMapImagePath;
-
+    tinaDefaultAntialiasingAmount = pSrc.tinaDefaultAntialiasingAmount;
+    tinaDefaultAntialiasingRadius = pSrc.tinaDefaultAntialiasingRadius;
     tinaRenderMovieFrames = pSrc.tinaRenderMovieFrames;
     tinaRenderPreviewQuality = pSrc.tinaRenderPreviewQuality;
     tinaRenderRealtimeQuality = pSrc.tinaRenderRealtimeQuality;
@@ -672,18 +705,15 @@ public class Prefs extends ManagedObject {
     tinaSaveFlamesWhenImageIsSaved = pSrc.tinaSaveFlamesWhenImageIsSaved;
     tinaSaveHDRInIR = pSrc.tinaSaveHDRInIR;
     tinaDefaultBGTransparency = pSrc.tinaDefaultBGTransparency;
-    tinaRasterPointPrecision = pSrc.tinaRasterPointPrecision;
+    tinaRasterType = pSrc.tinaRasterType;
     tinaJWFScriptPath = pSrc.tinaJWFScriptPath;
     tinaGradientPath = pSrc.tinaGradientPath;
     tinaSVGPath = pSrc.tinaSVGPath;
     baseMathLibType = pSrc.baseMathLibType;
     tinaOptimizedRenderingIR = pSrc.tinaOptimizedRenderingIR;
-    tinaUseExperimentalOpenClCode = pSrc.tinaUseExperimentalOpenClCode;
     tinaMacroButtonsVertical = pSrc.tinaMacroButtonsVertical;
     tinaMacroToolbarHeight = pSrc.tinaMacroToolbarHeight;
     tinaFreeCacheInBatchRenderer = pSrc.tinaFreeCacheInBatchRenderer;
-    tinaOverwriteMotionBlurTimeStep = pSrc.tinaOverwriteMotionBlurTimeStep;
-    tinaOverwriteMotionBlurLength = pSrc.tinaOverwriteMotionBlurLength;
 
     tinaRandGenDualityPreferedVariation = pSrc.tinaRandGenDualityPreferedVariation;
     tinaRandGenDualityPreferedVariationProbability1 = pSrc.tinaRandGenDualityPreferedVariationProbability1;
@@ -713,6 +743,15 @@ public class Prefs extends ManagedObject {
     tinaIntegrationChaoticaAnimationExport = pSrc.tinaIntegrationChaoticaAnimationExport;
     tinaDefaultFPS = pSrc.tinaDefaultFPS;
     tinaRawMotionDataPath = pSrc.tinaRawMotionDataPath;
+    tinaDefaultSpatialOversampling = pSrc.tinaDefaultSpatialOversampling;
+    tinaDefaultColorOversampling = pSrc.tinaDefaultColorOversampling;
+    tinaDefaultSampleJittering = pSrc.tinaDefaultSampleJittering;
+    tinaDefaultSpatialFilterKernel = pSrc.tinaDefaultSpatialFilterKernel;
+    tinaDefaultSpatialFilterRadius = pSrc.tinaDefaultSpatialFilterRadius;
+    tinaDefaultFilterVisualisationFlat = pSrc.tinaDefaultFilterVisualisationFlat;
+    tinaDefaultForegroundOpacity = pSrc.tinaDefaultForegroundOpacity;
+    tinaDefaultPostNoiseFilter = pSrc.tinaDefaultPostNoiseFilter;
+    tinaDefaultPostNoiseFilterThreshold = pSrc.tinaDefaultPostNoiseFilterThreshold;
 
     resolutionProfiles.clear();
     for (ResolutionProfile profile : pSrc.resolutionProfiles) {
@@ -743,8 +782,6 @@ public class Prefs extends ManagedObject {
 
   public int getTinaRenderThreads() {
     int numThreads = tinaRenderThreads - tinaPreserveFreeCPUs;
-    if (tinaUseExperimentalOpenClCode)
-      numThreads--;
     return numThreads > 1 ? numThreads : 1;
   }
 
@@ -894,30 +931,6 @@ public class Prefs extends ManagedObject {
   public void setBaseMathLibType(BaseMathLibType baseMathLibType) {
     MathLib.setBaseMathLibType(baseMathLibType);
     this.baseMathLibType = baseMathLibType;
-  }
-
-  public double getTinaDefaultAntialiasingAmount() {
-    return tinaDefaultAntialiasingAmount;
-  }
-
-  public void setTinaDefaultAntialiasingAmount(double tinaDefaultAntialiasingAmount) {
-    this.tinaDefaultAntialiasingAmount = tinaDefaultAntialiasingAmount;
-  }
-
-  public double getTinaDefaultAntialiasingRadius() {
-    return tinaDefaultAntialiasingRadius;
-  }
-
-  public void setTinaDefaultAntialiasingRadius(double tinaDefaultAntialiasingRadius) {
-    this.tinaDefaultAntialiasingRadius = tinaDefaultAntialiasingRadius;
-  }
-
-  public RasterPointPrecision getTinaRasterPointPrecision() {
-    return tinaRasterPointPrecision;
-  }
-
-  public void setTinaRasterPointPrecision(RasterPointPrecision tinaRasterPointPrecision) {
-    this.tinaRasterPointPrecision = tinaRasterPointPrecision;
   }
 
   public RandomBatchRefreshType getTinaRandomBatchRefreshType() {
@@ -1077,14 +1090,6 @@ public class Prefs extends ManagedObject {
 
   public void setTinaOptimizedRenderingIR(boolean pTinaOptimizedRenderingIR) {
     tinaOptimizedRenderingIR = pTinaOptimizedRenderingIR;
-  }
-
-  public boolean isTinaUseExperimentalOpenClCode() {
-    return tinaUseExperimentalOpenClCode;
-  }
-
-  public void setTinaUseExperimentalOpenClCode(boolean pTinaUseExperimentalOpenClCode) {
-    tinaUseExperimentalOpenClCode = pTinaUseExperimentalOpenClCode;
   }
 
   public static Prefs newInstance() {
@@ -1299,22 +1304,6 @@ public class Prefs extends ManagedObject {
     tinaFreeCacheInBatchRenderer = pTinaFreeCacheInBatchRenderer;
   }
 
-  public double getTinaOverwriteMotionBlurTimeStep() {
-    return tinaOverwriteMotionBlurTimeStep;
-  }
-
-  public void setTinaOverwriteMotionBlurTimeStep(double pTinaOverwriteMotionBlurTimeStep) {
-    tinaOverwriteMotionBlurTimeStep = pTinaOverwriteMotionBlurTimeStep;
-  }
-
-  public int getTinaOverwriteMotionBlurLength() {
-    return tinaOverwriteMotionBlurLength;
-  }
-
-  public void setTinaOverwriteMotionBlurLength(int pTinaOverwriteMotionBlurLength) {
-    tinaOverwriteMotionBlurLength = pTinaOverwriteMotionBlurLength;
-  }
-
   public EditorDoubleClickActionType getTinaEditorDoubleClickAction() {
     return tinaEditorDoubleClickAction;
   }
@@ -1385,6 +1374,114 @@ public class Prefs extends ManagedObject {
 
   public void setTinaIntegrationChaoticaAnimationExport(boolean pTinaIntegrationChaoticaAnimationExport) {
     tinaIntegrationChaoticaAnimationExport = pTinaIntegrationChaoticaAnimationExport;
+  }
+
+  public int getTinaDefaultSpatialOversampling() {
+    return tinaDefaultSpatialOversampling;
+  }
+
+  public void setTinaDefaultSpatialOversampling(int pTinaDefaultSpatialOversampling) {
+    tinaDefaultSpatialOversampling = pTinaDefaultSpatialOversampling;
+    if (tinaDefaultSpatialOversampling < 1) {
+      tinaDefaultSpatialOversampling = 1;
+    }
+    else if (tinaDefaultSpatialOversampling > Tools.MAX_SPATIAL_OVERSAMPLING) {
+      tinaDefaultSpatialOversampling = Tools.MAX_SPATIAL_OVERSAMPLING;
+    }
+  }
+
+  public int getTinaDefaultColorOversampling() {
+    return tinaDefaultColorOversampling;
+  }
+
+  public void setTinaDefaultColorOversampling(int pTinaDefaultColorOversampling) {
+    tinaDefaultColorOversampling = pTinaDefaultColorOversampling;
+    if (tinaDefaultColorOversampling < 1) {
+      tinaDefaultColorOversampling = 1;
+    }
+    else if (tinaDefaultColorOversampling > Tools.MAX_COLOR_OVERSAMPLING) {
+      tinaDefaultColorOversampling = Tools.MAX_COLOR_OVERSAMPLING;
+    }
+  }
+
+  public boolean isTinaDefaultSampleJittering() {
+    return tinaDefaultSampleJittering;
+  }
+
+  public void setTinaDefaultSampleJittering(boolean pTinaDefaultSampleJittering) {
+    tinaDefaultSampleJittering = pTinaDefaultSampleJittering;
+  }
+
+  public FilterKernelType getTinaDefaultSpatialFilterKernel() {
+    return tinaDefaultSpatialFilterKernel;
+  }
+
+  public void setTinaDefaultSpatialFilterKernel(FilterKernelType pTinaDefaultSpatialFilterKernel) {
+    tinaDefaultSpatialFilterKernel = pTinaDefaultSpatialFilterKernel;
+  }
+
+  public double getTinaDefaultSpatialFilterRadius() {
+    return tinaDefaultSpatialFilterRadius;
+  }
+
+  public void setTinaDefaultSpatialFilterRadius(double pTinaDefaultSpatialFilterRadius) {
+    tinaDefaultSpatialFilterRadius = pTinaDefaultSpatialFilterRadius;
+  }
+
+  public boolean isTinaDefaultFilterVisualisationFlat() {
+    return tinaDefaultFilterVisualisationFlat;
+  }
+
+  public void setTinaDefaultFilterVisualisationFlat(boolean pTinaDefaultFilterVisualisationFlat) {
+    tinaDefaultFilterVisualisationFlat = pTinaDefaultFilterVisualisationFlat;
+  }
+
+  public boolean isTinaDefaultPostNoiseFilter() {
+    return tinaDefaultPostNoiseFilter;
+  }
+
+  public void setTinaDefaultPostNoiseFilter(boolean pTinaDefaultPostNoiseFilter) {
+    tinaDefaultPostNoiseFilter = pTinaDefaultPostNoiseFilter;
+  }
+
+  public double getTinaDefaultPostNoiseFilterThreshold() {
+    return tinaDefaultPostNoiseFilterThreshold;
+  }
+
+  public void setTinaDefaultPostNoiseFilterThreshold(double pTinaDefaultPostNoiseFilterThreshold) {
+    tinaDefaultPostNoiseFilterThreshold = pTinaDefaultPostNoiseFilterThreshold;
+  }
+
+  public double getTinaDefaultForegroundOpacity() {
+    return tinaDefaultForegroundOpacity;
+  }
+
+  public void setTinaDefaultForegroundOpacity(double pTinaDefaultForegroundOpacity) {
+    tinaDefaultForegroundOpacity = pTinaDefaultForegroundOpacity;
+  }
+
+  public RasterCreator getTinaRasterType() {
+    return tinaRasterType;
+  }
+
+  public void setTinaRasterType(RasterCreator pTinaRasterType) {
+    tinaRasterType = pTinaRasterType;
+  }
+
+  public double getTinaDefaultAntialiasingAmount() {
+    return tinaDefaultAntialiasingAmount;
+  }
+
+  public void setTinaDefaultAntialiasingAmount(double pTinaDefaultAntialiasingAmount) {
+    tinaDefaultAntialiasingAmount = pTinaDefaultAntialiasingAmount;
+  }
+
+  public double getTinaDefaultAntialiasingRadius() {
+    return tinaDefaultAntialiasingRadius;
+  }
+
+  public void setTinaDefaultAntialiasingRadius(double pTinaDefaultAntialiasingRadius) {
+    tinaDefaultAntialiasingRadius = pTinaDefaultAntialiasingRadius;
   }
 
 }

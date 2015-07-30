@@ -1,6 +1,6 @@
 /*
   JWildfire - an image and animation processor written in Java 
-  Copyright (C) 1995-2014 Andreas Maschke
+  Copyright (C) 1995-2015 Andreas Maschke
 
   This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser 
   General Public License as published by the Free Software Foundation; either version 2.1 of the 
@@ -40,7 +40,7 @@ import org.jwildfire.create.tina.base.Layer;
 import org.jwildfire.create.tina.base.XForm;
 import org.jwildfire.create.tina.base.XYZPoint;
 import org.jwildfire.create.tina.base.XYZProjectedPoint;
-import org.jwildfire.create.tina.base.raster.AbstractRasterPoint;
+import org.jwildfire.create.tina.base.raster.AbstractRaster;
 import org.jwildfire.create.tina.palette.RGBPalette;
 import org.jwildfire.create.tina.palette.RenderColor;
 import org.jwildfire.create.tina.random.AbstractRandomGenerator;
@@ -109,13 +109,17 @@ public class DefaultRenderIterationState extends RenderIterationState {
     xf = layer.getXForms().get(0);
     transformPoint();
     for (int i = 0; i <= Constants.INITIAL_ITERATIONS; i++) {
-      xf = xf.getNextAppliedXFormTable()[randGen.random(Constants.NEXT_APPLIED_XFORM_TABLE_SIZE)];
+      xf = selectNextXForm(xf);
       if (xf == null) {
         xf = layer.getXForms().get(0);
         return;
       }
       transformPoint();
     }
+  }
+
+  protected XForm selectNextXForm(XForm pFrom) {
+    return pFrom.getNextAppliedXFormTable()[randGen.random(Constants.NEXT_APPLIED_XFORM_TABLE_SIZE)];
   }
 
   public void validateState() {
@@ -125,14 +129,7 @@ public class DefaultRenderIterationState extends RenderIterationState {
   }
 
   public void iterateNext() {
-    int nextXForm = randGen.random(Constants.NEXT_APPLIED_XFORM_TABLE_SIZE);
-    if (xf == null) {
-      return;
-    }
-    xf = xf.getNextAppliedXFormTable()[nextXForm];
-    if (xf == null) {
-      return;
-    }
+    xf = selectNextXForm(xf);
     transformPoint();
     if (xf.getDrawMode() == DrawMode.HIDDEN)
       return;
@@ -173,8 +170,8 @@ public class DefaultRenderIterationState extends RenderIterationState {
       try {
         for (int i = 0; i < pTicknessSamples; i++) {
           addNoise(w, q, pThicknessMod);
-          List<AbstractRasterPoint[][]> sliceRasters = collectSliceRasters(q, pSlices);
-          for (AbstractRasterPoint[][] sliceRaster : sliceRasters) {
+          List<AbstractRaster> sliceRasters = collectSliceRasters(q, pSlices);
+          for (AbstractRaster sliceRaster : sliceRasters) {
             raster = sliceRaster;
             projector.projectPoint(q);
           }
@@ -215,8 +212,8 @@ public class DefaultRenderIterationState extends RenderIterationState {
     }
   }
 
-  private List<AbstractRasterPoint[][]> collectSliceRasters(XYZPoint pPoint, List<RenderSlice> pSlices) {
-    List<AbstractRasterPoint[][]> res = new ArrayList<AbstractRasterPoint[][]>();
+  private List<AbstractRaster> collectSliceRasters(XYZPoint pPoint, List<RenderSlice> pSlices) {
+    List<AbstractRaster> res = new ArrayList<AbstractRaster>();
     int sliceIdx = -1;
     while (true) {
       sliceIdx = getSliceIndex(pPoint, pSlices, sliceIdx + 1);
@@ -414,8 +411,6 @@ public class DefaultRenderIterationState extends RenderIterationState {
     if (plotBufferIdx >= plotBuffer.length) {
       applySamplesToRaster();
     }
-    raster[yIdx][xIdx].addSample(plotRed * intensity, plotGreen * intensity, plotBlue * intensity);
-
     if (observers != null && observers.size() > 0) {
       for (IterationObserver observer : observers) {
         observer.notifyIterationFinished(renderThread, xIdx, yIdx);
@@ -423,12 +418,21 @@ public class DefaultRenderIterationState extends RenderIterationState {
     }
   }
 
+  long t0 = System.currentTimeMillis();
+
   protected void applySamplesToRaster() {
-    for (int i = 0; i < plotBufferIdx; i++) {
-      PlotSample sample = plotBuffer[i];
-      raster[sample.y][sample.x].addSample(sample.r, sample.g, sample.b);
-    }
+    raster.addSamples(plotBuffer, plotBufferIdx);
     plotBufferIdx = 0;
+    long t1 = System.currentTimeMillis();
+    if (t1 - t0 > 125) {
+      try {
+        Thread.sleep(1);
+      }
+      catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+      t0 = t1;
+    }
   }
 
   private PlotSample[] initPlotBuffer() {

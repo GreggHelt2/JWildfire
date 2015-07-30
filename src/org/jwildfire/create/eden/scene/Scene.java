@@ -1,6 +1,6 @@
 /*
   JWildfire - an image and animation processor written in Java 
-  Copyright (C) 1995-2011 Andreas Maschke
+  Copyright (C) 1995-2015 Andreas Maschke
 
   This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser 
   General Public License as published by the Free Software Foundation; either version 2.1 of the 
@@ -16,18 +16,47 @@
 */
 package org.jwildfire.create.eden.scene;
 
-import org.jwildfire.create.eden.group.Group;
-import org.jwildfire.create.eden.primitive.Primitive;
+import java.util.List;
 
-public class Scene {
-  private final Group rootGroup = new Group();
+import org.jwildfire.create.eden.export.CollectAllVisibleObjectsVisitor;
+import org.jwildfire.create.eden.scene.camera.Camera;
 
-  public Group getRootGroup() {
-    return rootGroup;
+public class Scene extends SceneElementGroup {
+  private int imageWidth = 256;
+  private int imageHeight = 256;
+  private Camera camera;
+
+  public Scene() {
+    super(null);
+    getElements().add(new MaterialGroup(this));
+    camera = new Camera(this);
+    getElements().add(camera);
   }
 
-  public void addObject(Primitive pPrimitive) {
-    rootGroup.getMembers().add(pPrimitive);
-
+  public List<VisibleSceneElement> getAllVisibleElements() {
+    CollectAllVisibleObjectsVisitor visitor = new CollectAllVisibleObjectsVisitor();
+    accept(visitor);
+    return visitor.getElements();
   }
+
+  public Camera getCamera() {
+    return camera;
+  }
+
+  public int getImageWidth() {
+    return imageWidth;
+  }
+
+  public void setImageWidth(int pImageWidth) {
+    imageWidth = pImageWidth;
+  }
+
+  public int getImageHeight() {
+    return imageHeight;
+  }
+
+  public void setImageHeight(int pImageHeight) {
+    imageHeight = pImageHeight;
+  }
+
 }
