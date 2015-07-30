@@ -442,7 +442,7 @@ public class VariationFuncList {
     registerVariationFunc(FDiscFunc.class);
     registerVariationFunc(RhodoneaFunc.class);
     registerVariationFunc(ButterflyFayFunc.class);
-    
+
     registerVariationFunc(Sin2Func.class);
     registerVariationFunc(HelicoidFunc.class);
     registerVariationFunc(DoubleHelixFunc.class);
@@ -464,6 +464,12 @@ public class VariationFuncList {
     registerVariationFunc(ZFunc.class);
 
     registerVariationFunc(CustomFullVariationWrapperFunc.class);
+
+    registerVariationFunc(RhodoneaCurveFunc.class);
+    registerVariationFunc(ButterflyFayCurveFunc.class);
+    registerVariationFunc(EpitrochoidCurveFunc.class);
+    registerVariationFunc(HypotrochoidCurveFunc.class);
+    registerVariationFunc(CircleCurveFunc.class);
     
     resolvedAliasMap = new HashMap<>();
     for (Entry<Class<? extends VariationFunc>, String> funcCls : aliasMap.entrySet()) {
