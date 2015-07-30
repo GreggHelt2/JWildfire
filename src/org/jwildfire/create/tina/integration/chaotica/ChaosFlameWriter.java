@@ -19,6 +19,7 @@ package org.jwildfire.create.tina.integration.chaotica;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jwildfire.base.Prefs;
 import org.jwildfire.base.Tools;
 import org.jwildfire.base.mathlib.MathLib;
 import org.jwildfire.create.tina.base.Flame;
@@ -97,6 +98,9 @@ public class ChaosFlameWriter {
   private static final String PROPERTY_Y_AXIS_LENGTH = "y_axis_length";
 
   private static final int AA_LEVEL = 2;
+  private static final String PROPERTY_MITCHELL_NETRAVALI_BLUR = "mitchell_netravali_blur";
+  private static final String PROPERTY_MITCHELL_NETRAVALI_RING = "mitchell_netravali_ring";
+  private static final String PROPERTY_MITCHELL_NETRAVALI_WIDTH = "mitchell_netravali_width";
 
   private ChaoticaPluginTranslators translator = new ChaoticaPluginTranslators();
   private final Flame flame;
@@ -157,6 +161,7 @@ public class ChaosFlameWriter {
           break;
         case OPAQUE:
           opacity = xform.getOpacity();
+          break;
         default:
           opacity = 1.0;
           break;
@@ -574,6 +579,10 @@ public class ChaosFlameWriter {
     addIntProperty(xb, PROPERTY_IMAGE_LAYERS, 1, null);
     addIntProperty(xb, PROPERTY_IMAGE_QUALITY, 0, null);
     addStringProperty(xb, PROPERTY_ANTIALIASING_MODE, "strong");
+    //    addStringProperty(xb, PROPERTY_ANTIALIASING_MODE, "mitchell-netravali");
+    //    addRealProperty(xb, PROPERTY_MITCHELL_NETRAVALI_BLUR, 0.33, null);
+    //    addRealProperty(xb, PROPERTY_MITCHELL_NETRAVALI_RING, 0.33, null);
+    //    addRealProperty(xb, PROPERTY_MITCHELL_NETRAVALI_WIDTH, 4, null);
     addRealProperty(xb, PROPERTY_BRIGHTNESS, pFlame.getBrightness(), null);
     addVec4Property(xb, PROPERTY_BACKGROUND_COLOR, convertColorValue(pFlame.getBGColorRed()), convertColorValue(pFlame.getBGColorGreen()), convertColorValue(pFlame.getBGColorBlue()), convertColorValue(255));
     addBoolProperty(xb, PROPERTY_APPLY_BG_BEFORE_CURVES, false);
@@ -587,7 +596,12 @@ public class ChaosFlameWriter {
   }
 
   private void addAnimAndCamera(SimpleXMLBuilder xb, IdProvider variatonIdProvider, Flame pFlame) {
-    addIntProperty(xb, PROPERTY_ANIM_LENGTH, Tools.FTOI((double) pFlame.getFrameCount() / (double) pFlame.getFps()), null);
+    if (Prefs.getPrefs().isTinaIntegrationChaoticaAnimationExport()) {
+      addIntProperty(xb, PROPERTY_ANIM_LENGTH, Tools.FTOI((double) pFlame.getFrameCount() / (double) pFlame.getFps()), null);
+    }
+    else {
+      addIntProperty(xb, PROPERTY_ANIM_LENGTH, 0, null);
+    }
     addIntProperty(xb, PROPERTY_ANIM_FPS, pFlame.getFps(), null);
     addRealProperty(xb, PROPERTY_ANIM_EXPOSURE_TIME, 1.0 / (double) pFlame.getFps(), null);
     addStringProperty(xb, PROPERTY_ANIM_EXPOSURE_SHAPE, "uniform");
@@ -628,9 +642,22 @@ public class ChaosFlameWriter {
     }
     addVec2Property(xb, PROPERTY_POS, pFlame.getCentreX(), -pFlame.getCentreY(), cxCurve, cyCurve);
     addRealProperty(xb, PROPERTY_ROTATE, pFlame.getCamRoll(), pFlame.getCamRollCurve());
-    double final_scale = pFlame.getPixelsPerUnit() * pFlame.getCamZoom() * 2.0;
-    double sensor_width = (double) (pFlame.getWidth() * AA_LEVEL) / final_scale;
-    addRealProperty(xb, PROPERTY_SENSOR_WIDTH, sensor_width, null);
+
+    double sensorWidth = calcSensorWidth(pFlame, pFlame.getPixelsPerUnit(), pFlame.getCamZoom());
+    List<Integer> camKeyFrames = collectKeyFrames(pFlame.getPixelsPerUnitCurve(), pFlame.getCamZoomCurve());
+    if (camKeyFrames.size() > 0) {
+      MotionCurve sensorWidthCurve = new MotionCurve();
+      sensorWidthCurve.setEnabled(true);
+      for (Integer keyFrame : camKeyFrames) {
+        double pixelsPerUnit = evalCurve(pFlame.getPixelsPerUnitCurve(), keyFrame, pFlame.getPixelsPerUnit());
+        double camZoom = evalCurve(pFlame.getCamZoomCurve(), keyFrame, pFlame.getCamZoom());
+        sensorWidthCurve.appendKeyFrame(keyFrame, calcSensorWidth(pFlame, pixelsPerUnit, camZoom));
+      }
+      addRealProperty(xb, PROPERTY_SENSOR_WIDTH, sensorWidth, sensorWidthCurve);
+    }
+    else {
+      addRealProperty(xb, PROPERTY_SENSOR_WIDTH, sensorWidth, null);
+    }
     Layer layer = pFlame.getFirstLayer();
     if (layer.getFinalXForms().size() > 0) {
       addTransform(xb, layer.getFinalXForms().get(0), variatonIdProvider, "Viewing transform");
@@ -638,8 +665,13 @@ public class ChaosFlameWriter {
     xb.endElement(ELEM_CAMERA);
   }
 
+  private double calcSensorWidth(Flame pFlame, double pPixelsPerUnit, double pCamZoom) {
+    double final_scale = pPixelsPerUnit * pCamZoom * 2.0;
+    return (double) (pFlame.getWidth() * AA_LEVEL) / final_scale;
+  }
+
   private void addIntProperty(SimpleXMLBuilder xb, String property, int value, MotionCurve pCurve) {
-    if (pCurve == null || pCurve.isEmpty() || !pCurve.isEnabled()) {
+    if (pCurve == null || pCurve.isEmpty() || !pCurve.isEnabled() || !Prefs.getPrefs().isTinaIntegrationChaoticaAnimationExport()) {
       xb.simpleElement(ELEM_INT, String.valueOf(value), xb.createAttrList(xb.createAttr(ATTR_NAME, property)));
     }
     else {
@@ -664,7 +696,7 @@ public class ChaosFlameWriter {
   }
 
   private void addRealProperty(SimpleXMLBuilder xb, String property, double value, MotionCurve pCurve) {
-    if (pCurve == null || pCurve.isEmpty() || !pCurve.isEnabled()) {
+    if (pCurve == null || pCurve.isEmpty() || !pCurve.isEnabled() || !Prefs.getPrefs().isTinaIntegrationChaoticaAnimationExport()) {
       xb.simpleElement(ELEM_REAL, Tools.doubleToString(value), xb.createAttrList(xb.createAttr(ATTR_NAME, property)));
     }
     else {
@@ -692,7 +724,7 @@ public class ChaosFlameWriter {
   }
 
   private void addVec2Property(SimpleXMLBuilder xb, String property, double v1, double v2, MotionCurve v1Curve, MotionCurve v2Curve) {
-    if ((v1Curve == null || v1Curve.isEmpty() || !v1Curve.isEnabled()) && (v2Curve == null || v2Curve.isEmpty() || !v2Curve.isEnabled())) {
+    if ((v1Curve == null || v1Curve.isEmpty() || !v1Curve.isEnabled() || !Prefs.getPrefs().isTinaIntegrationChaoticaAnimationExport()) && (v2Curve == null || v2Curve.isEmpty() || !v2Curve.isEnabled() || !Prefs.getPrefs().isTinaIntegrationChaoticaAnimationExport())) {
       xb.simpleElement(ELEM_VEC2, Tools.doubleToString(v1) + " " + Tools.doubleToString(v2), xb.createAttrList(xb.createAttr(ATTR_NAME, property)));
     }
     else {

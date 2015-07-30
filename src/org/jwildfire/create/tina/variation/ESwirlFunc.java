@@ -35,8 +35,8 @@ public class ESwirlFunc extends VariationFunc {
 
   private static final String[] paramNames = { PARAM_IN, PARAM_OUT };
 
-  private double in = 0.0;
-  private double out = 0.0;
+  private double in = 1.2;
+  private double out = 0.2;
 
   //Taking the square root of numbers close to zero is dangerous.  If x is negative
   //due to floating point errors we get NaN results.
@@ -75,7 +75,9 @@ public class ESwirlFunc extends VariationFunc {
     cosnu = cos(nu);
     pVarTP.x += pAmount * coshmu * cosnu;
     pVarTP.y += pAmount * sinhmu * sinnu;
-    pVarTP.z = pAmount * pAffineTP.z;
+    if (pContext.isPreserveZCoordinate()) {
+  pVarTP.z += pAmount * pAffineTP.z;
+}
   }
 
   @Override

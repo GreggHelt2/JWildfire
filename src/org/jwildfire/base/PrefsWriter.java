@@ -1,6 +1,6 @@
 /*
   JWildfire - an image and animation processor written in Java 
-  Copyright (C) 1995-2014 Andreas Maschke
+  Copyright (C) 1995-2015 Andreas Maschke
 
   This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser 
   General Public License as published by the Free Software Foundation; either version 2.1 of the 
@@ -50,6 +50,7 @@ public class PrefsWriter {
     addValue(sb, Prefs.KEY_TINA_PATH_JWFSCRIPTS, pPrefs.getTinaJWFScriptPath());
     addValue(sb, Prefs.KEY_TINA_PATH_GRADIENTS, pPrefs.getTinaGradientPath());
     addValue(sb, Prefs.KEY_TINA_PATH_SVG, pPrefs.getTinaSVGPath());
+    addValue(sb, Prefs.KEY_TINA_PATH_RAW_MOTION_DATA, pPrefs.getTinaRawMotionDataPath());
     addValue(sb, Prefs.KEY_TINA_RENDER_MOVIE_FRAMES, pPrefs.getTinaRenderMovieFrames());
     addValue(sb, Prefs.KEY_TINA_RENDER_PREVIEW_QUALITY, pPrefs.getTinaRenderPreviewQuality());
     addValue(sb, Prefs.KEY_TINA_RENDER_REALTIME_QUALITY, pPrefs.getTinaRenderRealtimeQuality());
@@ -60,7 +61,7 @@ public class PrefsWriter {
     addValue(sb, Prefs.KEY_TINA_RANDOMBATCH_BGCOLOR_GREEN, pPrefs.getTinaRandomBatchBGColorGreen());
     addValue(sb, Prefs.KEY_TINA_RANDOMBATCH_BGCOLOR_BLUE, pPrefs.getTinaRandomBatchBGColorBlue());
     addValue(sb, Prefs.KEY_TINA_RANDOMBATCH_REFRESH_TYPE, pPrefs.getTinaRandomBatchRefreshType().toString());
-    addValue(sb, Prefs.KEY_TINA_RASTERPOINT_PRECISION, pPrefs.getTinaRasterPointPrecision().toString());
+    addValue(sb, Prefs.KEY_TINA_RASTER_TYPE, pPrefs.getTinaRasterType().toString());
     addValue(sb, Prefs.KEY_SUNFLOW_PATH_SCENES, pPrefs.getSunflowScenePath());
     addValue(sb, Prefs.KEY_TINA_PRESERVE_FREE_CPUS, pPrefs.getTinaPreserveFreeCPUs());
     addValue(sb, Prefs.KEY_TINA_DISABLE_WIKIMEDIA_COMMONS_WARNING, pPrefs.isTinaDisableWikimediaCommonsWarning());
@@ -78,8 +79,6 @@ public class PrefsWriter {
     addValue(sb, Prefs.KEY_TINA_EDITOR_GUIDES_LINE_WIDTH, pPrefs.getTinaEditorGuidesLineWidth());
     addValue(sb, Prefs.KEY_TINA_VERTICAL_MACRO_BUTTONS, pPrefs.isTinaMacroButtonsVertical());
     addValue(sb, Prefs.KEY_TINA_FREE_CACHE_IN_BATCH_RENDERER, pPrefs.isTinaFreeCacheInBatchRenderer());
-    addValue(sb, Prefs.KEY_TINA_OVERWRITE_MOTIONBLUR_LENGTH, pPrefs.getTinaOverwriteMotionBlurLength());
-    addValue(sb, Prefs.KEY_TINA_OVERWRITE_MOTIONBLUR_TIMESTEP, pPrefs.getTinaOverwriteMotionBlurTimeStep());
 
     addValue(sb, Prefs.KEY_TINA_MUTAGEN_MUTATIONTYPES_USER1, pPrefs.getTinaMutaGenMutationTypesUser1());
     addValue(sb, Prefs.KEY_TINA_MUTAGEN_MUTATIONTYPES_USER2, pPrefs.getTinaMutaGenMutationTypesUser2());
@@ -95,6 +94,7 @@ public class PrefsWriter {
     addValue(sb, Prefs.KEY_TINA_RANDOMBATCH_DUALITY_PREFERED_VARIATION_PROBABILITY2, pPrefs.getTinaRandGenDualityPreferedVariationProbability2());
 
     addValue(sb, Prefs.KEY_TINA_INTEGRATION_CHAOTICA_DISABLED, pPrefs.isTinaIntegrationChaoticaDisabled());
+    addValue(sb, Prefs.KEY_TINA_INTEGRATION_CHAOTICA_ANIMATION_EXPORT, pPrefs.isTinaIntegrationChaoticaAnimationExport());
     addValue(sb, Prefs.KEY_TINA_INTEGRATION_CHAOTICA_DRAWER, pPrefs.getTinaIntegrationChaoticaDrawer());
     addValue(sb, Prefs.KEY_TINA_INTEGRATION_CHAOTICA_EXECUTABLE, pPrefs.getTinaIntegrationChaoticaExecutable());
     addValue(sb, Prefs.KEY_TINA_INTEGRATION_CHAOTICA_FLAME_DRAWER, pPrefs.getTinaIntegrationChaoticaFlameDrawer());
@@ -102,6 +102,16 @@ public class PrefsWriter {
     addValue(sb, Prefs.KEY_IFLAMES_LIBRARY_PATH_FLAMES, pPrefs.getIflamesFlameLibraryPath());
     addValue(sb, Prefs.KEY_IFLAMES_LIBRARY_PATH_IMAGES, pPrefs.getIflamesImageLibraryPath());
     addValue(sb, Prefs.KEY_IFLAMES_LOAD_LIBRARY_AT_STARTUP, pPrefs.isIflamesLoadLibraryAtStartup());
+
+    addValue(sb, Prefs.KEY_TINA_DEFAULT_SPATIAL_OVERSAMPLING, pPrefs.getTinaDefaultSpatialOversampling());
+    addValue(sb, Prefs.KEY_TINA_DEFAULT_COLOR_OVERSAMPLING, pPrefs.getTinaDefaultColorOversampling());
+    addValue(sb, Prefs.KEY_TINA_DEFAULT_SAMPLE_JITTERING, pPrefs.isTinaDefaultSampleJittering());
+    addValue(sb, Prefs.KEY_TINA_DEFAULT_FILTER_VISUALISATION_FLAT, pPrefs.isTinaDefaultFilterVisualisationFlat());
+    addValue(sb, Prefs.KEY_TINA_DEFAULT_FILTER_KERNEL, pPrefs.getTinaDefaultSpatialFilterKernel().toString());
+    addValue(sb, Prefs.KEY_TINA_DEFAULT_FILTER_RADIUS, pPrefs.getTinaDefaultSpatialFilterRadius());
+    addValue(sb, Prefs.KEY_TINA_DEFAULT_POST_NOISE_FILTER, pPrefs.isTinaDefaultPostNoiseFilter());
+    addValue(sb, Prefs.KEY_TINA_DEFAULT_POST_NOISE_FILTER_THRESHOLD, pPrefs.getTinaDefaultPostNoiseFilterThreshold());
+    addValue(sb, Prefs.KEY_TINA_DEFAULT_FOREGROUND_OPACITY, pPrefs.getTinaDefaultForegroundOpacity());
 
     addValue(sb, Prefs.KEY_TINA_EDITOR_DEFAULT_DOUBLECLICK_ACTION, pPrefs.getTinaEditorDoubleClickAction().toString());
     addValue(sb, Prefs.KEY_TINA_DEFAULT_FADE_TO_WHITE_LEVEL, pPrefs.getTinaDefaultFadeToWhiteLevel());

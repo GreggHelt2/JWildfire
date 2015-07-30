@@ -94,6 +94,7 @@ import org.jwildfire.create.tina.io.Flam3GradientReader;
 import org.jwildfire.create.tina.io.FlameReader;
 import org.jwildfire.create.tina.io.FlameWriter;
 import org.jwildfire.create.tina.io.RGBPaletteReader;
+import org.jwildfire.create.tina.leapmotion.LeapMotionMainEditorController;
 import org.jwildfire.create.tina.meshgen.MeshGenController;
 import org.jwildfire.create.tina.mutagen.BokehMutation;
 import org.jwildfire.create.tina.mutagen.MutaGenController;
@@ -120,6 +121,9 @@ import org.jwildfire.create.tina.render.RenderInfo;
 import org.jwildfire.create.tina.render.RenderMode;
 import org.jwildfire.create.tina.render.RenderedFlame;
 import org.jwildfire.create.tina.render.filter.FilterKernelType;
+import org.jwildfire.create.tina.render.filter.FilterKernelVisualisation3dRenderer;
+import org.jwildfire.create.tina.render.filter.FilterKernelVisualisationFlatRenderer;
+import org.jwildfire.create.tina.render.filter.FilterKernelVisualisationRenderer;
 import org.jwildfire.create.tina.script.ScriptParam;
 import org.jwildfire.create.tina.script.ScriptRunner;
 import org.jwildfire.create.tina.script.ScriptRunnerEnvironment;
@@ -142,6 +146,11 @@ import org.jwildfire.swing.ErrorHandler;
 import org.jwildfire.swing.ImageFileChooser;
 import org.jwildfire.swing.ImagePanel;
 import org.jwildfire.swing.MainController;
+import org.jwildfire.transform.TextTransformer;
+import org.jwildfire.transform.TextTransformer.FontStyle;
+import org.jwildfire.transform.TextTransformer.HAlignment;
+import org.jwildfire.transform.TextTransformer.Mode;
+import org.jwildfire.transform.TextTransformer.VAlignment;
 
 import com.l2fprod.common.beans.editor.FilePropertyEditor;
 import com.l2fprod.common.swing.JFontChooser;
@@ -158,6 +167,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
   static final double SLIDER_SCALE_GAMMA = 100.0;
   static final double SLIDER_SCALE_FILTER_RADIUS = 100.0;
   static final double SLIDER_SCALE_GAMMA_THRESHOLD = 5000.0;
+  static final double SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD = 1000.0;
   static final double SLIDER_SCALE_COLOR = 100.0;
   static final double SLIDER_SCALE_ZPOS = 50.0;
   static final double SLIDER_SCALE_DOF = 100.0;
@@ -178,6 +188,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
   private FlameBrowserController flameBrowserController;
   private GradientController gradientController;
   private AnimationController animationController;
+  private LeapMotionMainEditorController leapMotionMainEditorController;
 
   private FlameControlsDelegate flameControls;
   private GradientControlsDelegate gradientControls;
@@ -207,7 +218,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
   private Flame _currFlame, _currRandomizeFlame;
   private boolean noRefresh;
   private final ProgressUpdater mainProgressUpdater;
-  private TinaControllerData data = new TinaControllerData();
+  public TinaControllerData data = new TinaControllerData();
   private VariationControlsDelegate[] variationControlsDelegates;
   private RGBPalette _lastGradient;
 
@@ -315,7 +326,16 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     animationController = new AnimationController(this, parameterObject.pErrorHandler, prefs, parameterObject.pCenterPanel,
         parameterObject.keyframesFrameField, parameterObject.keyframesFrameSlider, parameterObject.keyframesFrameCountField,
         parameterObject.frameSliderPanel, parameterObject.keyframesFrameLbl, parameterObject.keyframesFrameCountLbl,
-        parameterObject.motionCurveEditModeButton, parameterObject.motionBlurPanel, parameterObject.motionCurvePlayPreviewButton);
+        parameterObject.motionCurveEditModeButton, parameterObject.motionBlurPanel, parameterObject.motionCurvePlayPreviewButton,
+        parameterObject.flameFPSField);
+
+    leapMotionMainEditorController = new LeapMotionMainEditorController(this, parameterObject.pErrorHandler, prefs,
+        parameterObject.pCenterPanel, parameterObject.flameFPSField, parameterObject.leapMotionToggleButton,
+        parameterObject.leapMotionConfigTable, parameterObject.leapMotionHandCmb, parameterObject.leapMotionInputChannelCmb,
+        parameterObject.leapMotionOutputChannelCmb, parameterObject.leapMotionIndex1Field, parameterObject.leapMotionIndex2Field,
+        parameterObject.leapMotionIndex3Field, parameterObject.leapMotionInvScaleField,
+        parameterObject.leapMotionOffsetField, parameterObject.leapMotionAddButton, parameterObject.leapMotionDuplicateButton,
+        parameterObject.leapMotionDeleteButton, parameterObject.leapMotionClearButton, parameterObject.leapMotionResetConfigButton);
 
     data.toggleDetachedPreviewButton = parameterObject.toggleDetachedPreviewButton;
     data.cameraRollREd = parameterObject.pCameraRollREd;
@@ -445,6 +465,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     data.affineRotateEditMotionCurveBtn = parameterObject.affineRotateEditMotionCurveBtn;
     data.affineScaleEditMotionCurveBtn = parameterObject.affineScaleEditMotionCurveBtn;
     data.affineEditPostTransformSmallButton = parameterObject.pAffineEditPostTransformSmallButton;
+    data.affinePreserveZButton = parameterObject.pAffinePreserveZButton;
     data.affineScaleXButton = parameterObject.pAffineScaleXButton;
     data.affineScaleYButton = parameterObject.pAffineScaleYButton;
 
@@ -530,7 +551,6 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     data.motionBlurDecayField = parameterObject.motionBlurDecayField;
     data.motionBlurDecaySlider = parameterObject.motionBlurDecaySlider;
     data.flameFPSField = parameterObject.flameFPSField;
-
     data.postSymmetryTypeCmb = parameterObject.postSymmetryTypeCmb;
     data.postSymmetryDistanceREd = parameterObject.postSymmetryDistanceREd;
     data.postSymmetryDistanceSlider = parameterObject.postSymmetryDistanceSlider;
@@ -612,6 +632,19 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     data.shadingDistanceColorCoordinateSlider = parameterObject.pShadingDistanceColorCoordinateSlider;
     data.shadingDistanceColorShiftREd = parameterObject.pShadingDistanceColorShiftREd;
     data.shadingDistanceColorShiftSlider = parameterObject.pShadingDistanceColorShiftSlider;
+
+    data.tinaSpatialOversamplingREd = parameterObject.tinaSpatialOversamplingREd;
+    data.tinaSpatialOversamplingSlider = parameterObject.tinaSpatialOversamplingSlider;
+    data.filterKernelPreviewRootPnl = parameterObject.filterKernelPreviewRootPnl;
+    data.tinaColorOversamplingREd = parameterObject.tinaColorOversamplingREd;
+    data.tinaColorOversamplingSlider = parameterObject.tinaColorOversamplingSlider;
+    data.tinaSampleJitteringCheckBox = parameterObject.tinaSampleJitteringCheckBox;
+    data.filterKernelFlatPreviewBtn = parameterObject.filterKernelFlatPreviewBtn;
+    data.tinaPostNoiseFilterCheckBox = parameterObject.tinaPostNoiseFilterCheckBox;
+    data.tinaPostNoiseThresholdField = parameterObject.tinaPostNoiseThresholdField;
+    data.tinaPostNoiseThresholdSlider = parameterObject.tinaPostNoiseThresholdSlider;
+    data.foregroundOpacityField = parameterObject.foregroundOpacityField;
+    data.foregroundOpacitySlider = parameterObject.foregroundOpacitySlider;
 
     data.mouseTransformSlowButton = parameterObject.pMouseTransformSlowButton;
     data.toggleTriangleWithColorsButton = parameterObject.toggleTriangleWithColorsButton;
@@ -1192,6 +1225,10 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     flamePreviewHelper.refreshFlameImage(pQuickRender, pMouseDown, pDownScale);
   }
 
+  public void fastRefreshFlameImage(boolean pQuickRender, boolean pMouseDown, int pDownScale) {
+    flamePreviewHelper.fastRefreshFlameImage(pQuickRender, pMouseDown, pDownScale);
+  }
+
   @Override
   public void refreshUI() {
     gridRefreshing = true;
@@ -1201,11 +1238,11 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
       if (row < 0 && getCurrFlame() != null && getCurrFlame().getLayers().size() > 0) {
         data.layersTable.getSelectionModel().setSelectionInterval(0, 0);
       }
-
     }
     finally {
       gridRefreshing = false;
     }
+    refreshFilterKernelPreviewImg();
     refreshLayerUI();
     refreshLayerControls(getCurrLayer());
     refreshKeyFramesUI();
@@ -1227,6 +1264,8 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
       flameControls.refreshFlameValues();
 
       refreshBGColorIndicator();
+
+      data.affinePreserveZButton.setSelected(getCurrFlame().isPreserveZ());
 
       gridRefreshing = true;
       try {
@@ -2245,6 +2284,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     enableUndoControls();
     getBatchRendererController().enableJobRenderControls();
     getAnimationController().enableControls();
+    getLeapMotionMainEditorController().enableControls();
     getJwfScriptController().enableControls();
     getGradientController().enableControls();
     getFlameBrowserController().enableControls();
@@ -3286,8 +3326,6 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     flame.setHeight(600);
     flame.setPixelsPerUnit(50);
     flame.setBGTransparency(prefs.isTinaDefaultBGTransparency());
-    flame.setAntialiasAmount(prefs.getTinaDefaultAntialiasingAmount());
-    flame.setAntialiasRadius(prefs.getTinaDefaultAntialiasingRadius());
     RandomGradientGenerator gradientGen = RandomGradientGeneratorList.getRandomGradientGeneratorInstance((String) data.paletteRandomGeneratorCmb.getSelectedItem());
     RGBPalette palette = gradientGen.generatePalette(Integer.parseInt(data.paletteRandomPointsREd.getText()), data.paletteFadeColorsCBx.isSelected());
     flame.getFirstLayer().setPalette(palette);
@@ -3921,6 +3959,17 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     this.interactiveRendererCtrl = interactiveRendererCtrl;
   }
 
+  public void affinePreserveZButton_clicked() {
+    if (gridRefreshing || cmbRefreshing) {
+      return;
+    }
+    if (getCurrFlame() != null) {
+      saveUndoPoint();
+      getCurrFlame().setPreserveZ(data.affinePreserveZButton.isSelected());
+      refreshFlameImage(false);
+    }
+  }
+
   private void setupProfiles(Flame pFlame) {
     if (prefs.isTinaAssociateProfilesWithFlames()) {
       if (pFlame.getResolutionProfile() != null) {
@@ -4298,13 +4347,6 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     }
   }
 
-  public void flameTransparencyCbx_changed() {
-    if (getCurrFlame() != null) {
-      getCurrFlame().setBGTransparency(data.bgTransparencyCBx.isSelected());
-      flameControls.enableDOFUI();
-    }
-  }
-
   public DancingFractalsController getDancingFractalsController() {
     return dancingFractalsController;
   }
@@ -4372,7 +4414,9 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
           };
           mainRenderThread = new RenderMainFlameThread(prefs, flame, file, qualProfile, resProfile, finishEvent, mainProgressUpdater);
           enableMainRenderControls();
-          new Thread(mainRenderThread).start();
+          Thread worker = new Thread(mainRenderThread);
+          worker.setPriority(Thread.MIN_PRIORITY);
+          worker.start();
         }
       }
       catch (Throwable ex) {
@@ -4387,6 +4431,8 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
       if (flame != null) {
         saveUndoPoint();
         flame.setSpatialFilterKernel((FilterKernelType) data.filterKernelCmb.getSelectedItem());
+        refreshFlameImage(false);
+        refreshFilterKernelPreviewImg();
       }
     }
   }
@@ -4517,6 +4563,10 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
 
   public AnimationController getAnimationController() {
     return animationController;
+  }
+
+  public LeapMotionMainEditorController getLeapMotionMainEditorController() {
+    return leapMotionMainEditorController;
   }
 
   public void mouseTransformEditGradientButton_clicked() {
@@ -5630,6 +5680,8 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
   public void exportToChaotica() {
     try {
       if (getCurrFlame() != null) {
+        closeDetachedPreview();
+        data.toggleDetachedPreviewButton.setSelected(false);
         new ChaoticaLauncher().launchChaotica(generateExportFlame(getCurrFlame()));
         messageHelper.showStatusMessage(getCurrFlame(), "flame sucessfully exported");
       }
@@ -5637,5 +5689,76 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     catch (Throwable ex) {
       errorHandler.handleError(ex);
     }
+  }
+
+  public void countDown(int pTime) {
+    for (int i = pTime; i >= 0; i--) {
+      Rectangle bounds = flamePreviewHelper.getPanelBounds();
+      SimpleImage img = new SimpleImage((int) bounds.getWidth(), (int) bounds.getHeight());
+      TextTransformer txt = new TextTransformer();
+      txt.setText1(i > 0 ? String.valueOf(i) : "go!");
+      txt.setAntialiasing(true);
+      txt.setColor(Color.RED);
+      txt.setMode(Mode.NORMAL);
+      txt.setFontStyle(FontStyle.BOLD);
+      txt.setFontName("Arial");
+      txt.setFontSize(64);
+      txt.setHAlign(HAlignment.CENTRE);
+      txt.setVAlign(VAlignment.CENTRE);
+      txt.transformImage(img);
+      flamePreviewHelper.setImage(img);
+      flamePreviewHelper.forceRepaint();
+      try {
+        Thread.sleep(i > 0 ? 500 : 50);
+      }
+      catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+  private ImagePanel getFilterKernelPreviewPanel() {
+    if (data.filterKernelPreviewPanel == null) {
+      int width = data.filterKernelPreviewRootPnl.getWidth();
+      int height = data.filterKernelPreviewRootPnl.getHeight();
+      SimpleImage img = new SimpleImage(width, height);
+      img.fillBackground(0, 0, 0);
+      data.filterKernelPreviewPanel = new ImagePanel(img, 0, 0, data.filterKernelPreviewRootPnl.getWidth());
+      data.filterKernelPreviewRootPnl.add(data.filterKernelPreviewPanel, BorderLayout.CENTER);
+      data.filterKernelPreviewRootPnl.getParent().validate();
+    }
+    return data.filterKernelPreviewPanel;
+  }
+
+  private FilterKernelVisualisationRenderer getFilterKernelVisualisationRenderer(boolean pFlatMode) {
+    if (pFlatMode) {
+      return new FilterKernelVisualisationFlatRenderer(getCurrFlame());
+    }
+    else {
+      return new FilterKernelVisualisation3dRenderer(getCurrFlame());
+    }
+  }
+
+  protected void refreshFilterKernelPreviewImg() {
+    try {
+      if (getCurrFlame() != null) {
+        ImagePanel imgPanel = getFilterKernelPreviewPanel();
+        int width = imgPanel.getWidth();
+        int height = imgPanel.getHeight();
+        if (width >= 16 && height >= 4) {
+          SimpleImage img = getFilterKernelVisualisationRenderer(data.filterKernelFlatPreviewBtn.isSelected()).createKernelVisualisation(width, height);
+          imgPanel.setImage(img);
+        }
+        imgPanel.getParent().validate();
+        imgPanel.repaint();
+      }
+    }
+    catch (Throwable ex) {
+      errorHandler.handleError(ex);
+    }
+  }
+
+  public void filterKernelFlatPreviewBtn_clicked() {
+    refreshFilterKernelPreviewImg();
   }
 }

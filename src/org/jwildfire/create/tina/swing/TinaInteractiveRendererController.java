@@ -24,7 +24,11 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.io.File;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -188,7 +192,9 @@ public class TinaInteractiveRendererController implements IterationObserver {
     if (currFlame != null) {
       try {
         String filename = qsaveFilenameGen.generateFilename("jwf_ir_current.flame");
-        new FlameWriter().writeFlame(currFlame, filename);
+        if (filename != null) {
+          new FlameWriter().writeFlame(currFlame, filename);
+        }
       }
       catch (Exception ex) {
         errorHandler.handleError(ex);
@@ -308,6 +314,9 @@ public class TinaInteractiveRendererController implements IterationObserver {
       displayUpdater.setSampleCount(0);
       renderStartTime = System.currentTimeMillis();
       pausedRenderTime = 0;
+      lastQuality = 0.0;
+      lastQualitySpeed = 0.0;
+      lastQualityTime = 0;
       threads = renderer.startRenderFlame(info);
       for (Thread t : threads.getExecutingThreads()) {
         t.setPriority(Thread.MIN_PRIORITY);
@@ -424,8 +433,8 @@ public class TinaInteractiveRendererController implements IterationObserver {
 
   private final static int STATS_UPDATE_INTERVAL = 1000;
   private final static int INITIAL_IMAGE_UPDATE_INTERVAL = 50;
-  private final static int IMAGE_UPDATE_INC_INTERVAL = 5;
-  private final static int MAX_IMAGE_UPDATE_INC_INTERVAL = 5000;
+  private final static int IMAGE_UPDATE_INC_INTERVAL = 25;
+  private final static int MAX_IMAGE_UPDATE_INC_INTERVAL = 15000;
   private final static int SLEEP_INTERVAL = 25;
 
   private class UpdateDisplayThread implements Runnable {
@@ -494,14 +503,48 @@ public class TinaInteractiveRendererController implements IterationObserver {
 
   private long renderStartTime = 0;
   private long pausedRenderTime = 0;
-
+  private int advanceQuality = 500;
+  private double lastQuality;
+  private double lastQualitySpeed;
+  private long lastQualityTime;
   private boolean showStats = true;
+  private final DateFormat timeFormat = createTimeFormat();
+
+  private DateFormat createTimeFormat() {
+    DateFormat res = new SimpleDateFormat("HH:mm:ss");
+    res.setTimeZone(TimeZone.getTimeZone("GMT+0:00"));
+    return res;
+  }
 
   private void updateStats(double pQuality) {
     if (showStats) {
-      statsTextArea.setText("Current quality: " + Tools.doubleToString(pQuality) + "\n" +
-          "samples so far: " + displayUpdater.getSampleCount() + "\n" +
-          "render time: " + Tools.doubleToString((System.currentTimeMillis() - renderStartTime + pausedRenderTime) / 1000.0) + "s");
+      StringBuilder sb = new StringBuilder();
+      long currTime = System.currentTimeMillis();
+      sb.append("Current quality: " + Tools.doubleToString(pQuality) + "\n");
+      sb.append("Samples so far: " + displayUpdater.getSampleCount() + "\n\n");
+      long renderTime = currTime - renderStartTime + pausedRenderTime;
+      if (lastQuality > 0) {
+        double qualitySpeed = (pQuality - lastQuality) / (currTime - lastQualityTime);
+        if (lastQualitySpeed > 0.0) {
+          qualitySpeed = (qualitySpeed + lastQualitySpeed) / 2.0;
+        }
+        if (qualitySpeed > 0.0) {
+          int nextQuality = (Tools.FTOI(pQuality) / advanceQuality) * advanceQuality;
+          if (nextQuality <= pQuality) {
+            nextQuality += advanceQuality;
+          }
+          long qualityReach1 = (long) ((nextQuality - pQuality) / qualitySpeed + 0.5);
+          long qualityReach2 = (long) ((nextQuality + advanceQuality - pQuality) / qualitySpeed + 0.5);
+          sb.append("Render speed: " + Tools.FTOI(qualitySpeed * 1000.0 * 3600.0) + "\n");
+          sb.append("Reach quality " + nextQuality + " in: " + timeFormat.format(new Date(qualityReach1)) + "\n");
+          sb.append("Reach quality " + (nextQuality + advanceQuality) + " in: " + timeFormat.format(new Date(qualityReach2)) + "\n\n");
+        }
+        lastQualitySpeed = qualitySpeed;
+      }
+      sb.append("Elapsed time: " + timeFormat.format(new Date(renderTime)));
+      lastQuality = pQuality;
+      lastQualityTime = currTime;
+      statsTextArea.setText(sb.toString());
       statsTextArea.validate();
     }
   }
@@ -694,6 +737,9 @@ public class TinaInteractiveRendererController implements IterationObserver {
         displayUpdater.setSampleCount(renderer.calcSampleCount());
         pausedRenderTime = resumedRender.getHeader().getElapsedMilliseconds();
         renderStartTime = System.currentTimeMillis();
+        lastQuality = 0.0;
+        lastQualitySpeed = 0.0;
+        lastQualityTime = 0;
         for (AbstractRenderThread thread : threads.getRenderThreads()) {
           startRenderThread(thread);
         }

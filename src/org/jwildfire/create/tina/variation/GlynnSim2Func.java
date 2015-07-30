@@ -48,7 +48,7 @@ public class GlynnSim2Func extends VariationFunc {
   private double phi1 = 110.0;
   private double phi2 = 150.0;
 
-  private class Point implements Serializable {
+  private static class Point implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private double x, y;
@@ -83,7 +83,9 @@ public class GlynnSim2Func extends VariationFunc {
         pVarTP.y += pAmount * Alpha * Alpha * pAffineTP.y;
       }
     }
-    pVarTP.z = pAmount * pAffineTP.z;
+    if (pContext.isPreserveZCoordinate()) {
+  pVarTP.z += pAmount * pAffineTP.z;
+}
   }
 
   @Override

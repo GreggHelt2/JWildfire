@@ -97,7 +97,9 @@ public class XTrbFunc extends VariationFunc {
     }
     pVarTP.x += pAmount * X;
     pVarTP.y += pAmount * Y;
-    pVarTP.z = pAmount * pAffineTP.z;
+    if (pContext.isPreserveZCoordinate()) {
+  pVarTP.z += pAmount * pAffineTP.z;
+}
 
   }
 
@@ -191,7 +193,7 @@ public class XTrbFunc extends VariationFunc {
     cN = dist / (double) power / 2.0;
   }
 
-  private class DirectTrilinearTO {
+  private static class DirectTrilinearTO {
     double Al, Be;
   }
 
@@ -202,7 +204,7 @@ public class XTrbFunc extends VariationFunc {
     res.Be = V;
   }
 
-  private class InverseTrilinearTO {
+  private static class InverseTrilinearTO {
     double x, y;
   }
 
@@ -219,7 +221,7 @@ public class XTrbFunc extends VariationFunc {
     res.y = r * sina;
   }
 
-  private class HexTo {
+  private static class HexTo {
     double Al1, Be1;
   }
 

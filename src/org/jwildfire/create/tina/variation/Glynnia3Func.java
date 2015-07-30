@@ -31,8 +31,7 @@ public class Glynnia3Func extends VariationFunc {
   private static final String PARAM_RTHRESH = "rthresh";
   private static final String PARAM_YTHRESH = "ythresh";
 
-  private static final String[] paramNames = { PARAM_RSCALE, PARAM_DSCALE,
-      PARAM_RTHRESH, PARAM_YTHRESH };
+  private static final String[] paramNames = { PARAM_RSCALE, PARAM_DSCALE, PARAM_RTHRESH, PARAM_YTHRESH };
 
   private double rscale = 1.0;
   private double dscale = 1.0;
@@ -90,7 +89,9 @@ public class Glynnia3Func extends VariationFunc {
         pVarTP.y += r * pAffineTP.y;
       }
     }
-    pVarTP.z = pAmount * pAffineTP.z;
+    if (pContext.isPreserveZCoordinate()) {
+  pVarTP.z += pAmount * pAffineTP.z;
+}
   }
 
   @Override

@@ -50,8 +50,7 @@ public class YFunc extends VariationFunc {
   private static final String PARAM_SUPER_N2 = "super_n2";
   private static final String PARAM_SUPER_N3 = "super_n3";
 
-  private static final String[] paramNames = { PARAM_HYPERGON, PARAM_HYPERGON_N, PARAM_HYPERGON_R, PARAM_STAR, PARAM_STAR_N, PARAM_STAR_SLOPE,
-      PARAM_LITUUS, PARAM_LITUUS_A, PARAM_SUPER, PARAM_SUPER_M, PARAM_SUPER_N1, PARAM_SUPER_N2, PARAM_SUPER_N3 };
+  private static final String[] paramNames = { PARAM_HYPERGON, PARAM_HYPERGON_N, PARAM_HYPERGON_R, PARAM_STAR, PARAM_STAR_N, PARAM_STAR_SLOPE, PARAM_LITUUS, PARAM_LITUUS_A, PARAM_SUPER, PARAM_SUPER_M, PARAM_SUPER_N1, PARAM_SUPER_N2, PARAM_SUPER_N3 };
 
   private double hypergon = Math.random();
   private int hypergon_n = 4;
@@ -113,7 +112,9 @@ public class YFunc extends VariationFunc {
 
     pVarTP.x += r * c;
     pVarTP.y += r * s;
-    pVarTP.z = pAmount * pAffineTP.z;
+    if (pContext.isPreserveZCoordinate()) {
+      pVarTP.z += pAmount * pAffineTP.z;
+    }
   }
 
   @Override
@@ -131,13 +132,13 @@ public class YFunc extends VariationFunc {
     if (PARAM_HYPERGON.equalsIgnoreCase(pName))
       hypergon = pValue;
     else if (PARAM_HYPERGON_N.equalsIgnoreCase(pName))
-      hypergon_n = limitIntVal(3, Integer.MAX_VALUE, Tools.FTOI(pValue));
+      hypergon_n = limitIntVal(Tools.FTOI(pValue), 3, Integer.MAX_VALUE);
     else if (PARAM_HYPERGON_R.equalsIgnoreCase(pName))
       hypergon_r = pValue;
     else if (PARAM_STAR.equalsIgnoreCase(pName))
       star = pValue;
     else if (PARAM_STAR_N.equalsIgnoreCase(pName))
-      star_n = limitIntVal(3, Integer.MAX_VALUE, Tools.FTOI(pValue));
+      star_n = limitIntVal(Tools.FTOI(pValue), 3, Integer.MAX_VALUE);
     else if (PARAM_STAR_SLOPE.equalsIgnoreCase(pName))
       star_slope = pValue;
     else if (PARAM_LITUUS.equalsIgnoreCase(pName))

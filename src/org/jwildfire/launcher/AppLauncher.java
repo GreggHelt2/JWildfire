@@ -1,6 +1,6 @@
 /*
   JWildfire - an image and animation processor written in Java 
-  Copyright (C) 1995-2012 Andreas Maschke
+  Copyright (C) 1995-2015 Andreas Maschke
 
   This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser 
   General Public License as published by the Free Software Foundation; either version 2.1 of the 
@@ -20,13 +20,13 @@ import java.io.File;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AppLauncher {
   private final LauncherPrefs prefs;
   private final String JWFILDFIRE_JAR = "j-wildfire.jar";
   private final String JWILDFIRE_MAIN_CLASS = "org.jwildfire.swing.Desktop";
-
-  public static final String PROPERTY_OPENCL = "org.jwildfire.experimental_opencl";
 
   public AppLauncher(LauncherPrefs pPrefs) {
     prefs = pPrefs;
@@ -64,15 +64,28 @@ public class AppLauncher {
     }
 
     //String cmd = javaCmd + " " + options + " -cp " + cp + " " + JWILDFIRE_MAIN_CLASS;
-    String cmd[];
-    if (prefs.isWithOpenCL()) {
-      String openClOption = "-D" + PROPERTY_OPENCL + "=true";
-      cmd = new String[] { javaCmd, minMemOption, maxMemOption, "-cp", cp, JWILDFIRE_MAIN_CLASS, openClOption };
+    List<String> cmd = new ArrayList<String>();
+    cmd.add(javaCmd);
+    cmd.add(minMemOption);
+    cmd.add(maxMemOption);
+    String os = System.getProperty("os.name").toLowerCase();
+    if (os.startsWith("win")) {
+      boolean is64bit = (System.getenv("ProgramFiles(x86)") != null);
+      String libPath = new File(new File(currentDir.getParentFile().getAbsolutePath(), "lib"), (is64bit ? "x64" : "x86")).getAbsolutePath();
+      String libraryPathOption;
+      if (libPath.contains(" ")) {
+        libraryPathOption = "\"-Djava.library.path=" + libPath + "\"";
+      }
+      else {
+        libraryPathOption = "-Djava.library.path=" + libPath;
+      }
+      cmd.add(libraryPathOption);
     }
-    else {
-      cmd = new String[] { javaCmd, minMemOption, maxMemOption, "-cp", cp, JWILDFIRE_MAIN_CLASS };
-    }
-    return cmd;
+
+    cmd.add("-cp");
+    cmd.add(cp);
+    cmd.add(JWILDFIRE_MAIN_CLASS);
+    return cmd.toArray(new String[cmd.size()]);
   }
 
   public void launchSync(String[] pCmd) throws Exception {

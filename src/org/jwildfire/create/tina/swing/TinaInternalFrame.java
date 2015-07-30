@@ -80,6 +80,7 @@ import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 
 import org.jwildfire.base.Prefs;
+import org.jwildfire.base.Tools;
 import org.jwildfire.create.tina.animate.GlobalScriptType;
 import org.jwildfire.create.tina.animate.SequenceOutputType;
 import org.jwildfire.create.tina.animate.XFormScriptType;
@@ -1305,6 +1306,99 @@ public class TinaInternalFrame extends JInternalFrame {
       tinaSouthTabbedPane.addTab("Layerz ", new ImageIcon(TinaInternalFrame.class.getResource("/org/jwildfire/swing/icons/new/emblem-photos.png")), getPanel_74(), null);
       tinaSouthTabbedPane.addTab("Channel mixer ", new ImageIcon(TinaInternalFrame.class.getResource("/org/jwildfire/swing/icons/new/color-fill.png")), getChannelMixerPanel(), null);
 
+      JPanel panel_1 = new JPanel();
+      tinaSouthTabbedPane.addTab("Leap Motion", null, panel_1, null);
+      panel_1.setLayout(new BorderLayout(0, 0));
+
+      JPanel panel_2 = new JPanel();
+      panel_2.setPreferredSize(new Dimension(114, 10));
+      panel_1.add(panel_2, BorderLayout.WEST);
+      panel_2.setLayout(null);
+
+      leapMotionResetConfigButton = new JButton();
+      leapMotionResetConfigButton.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+          tinaController.getLeapMotionMainEditorController().resetConfigButton_clicked();
+        }
+      });
+      leapMotionResetConfigButton.setToolTipText("Reset the post-symmetry-options to the defaults");
+      leapMotionResetConfigButton.setText("Reset");
+      leapMotionResetConfigButton.setIcon(new ImageIcon(getClass().getResource("/org/jwildfire/swing/icons/new/edit-undo-6.png")));
+      leapMotionResetConfigButton.setPreferredSize(new Dimension(125, 24));
+      leapMotionResetConfigButton.setMinimumSize(new Dimension(100, 24));
+      leapMotionResetConfigButton.setMaximumSize(new Dimension(32000, 24));
+      leapMotionResetConfigButton.setIconTextGap(2);
+      leapMotionResetConfigButton.setFont(new Font("Dialog", Font.BOLD, 10));
+      leapMotionResetConfigButton.setBounds(6, 114, 100, 24);
+      panel_2.add(leapMotionResetConfigButton);
+      panel_2.add(getLeapMotionToggleButton());
+
+      JPanel panel_3 = new JPanel();
+      panel_3.setPreferredSize(new Dimension(340, 10));
+      panel_1.add(panel_3, BorderLayout.EAST);
+      panel_3.setLayout(null);
+
+      leapMotionAddButton = new JButton();
+      leapMotionAddButton.setToolTipText("Add new motion listener");
+      leapMotionAddButton.setText("Add");
+      leapMotionAddButton.setPreferredSize(new Dimension(56, 24));
+      leapMotionAddButton.setFont(new Font("Dialog", Font.BOLD, 10));
+      leapMotionAddButton.setBounds(6, 6, 90, 24);
+      leapMotionAddButton.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+          tinaController.getLeapMotionMainEditorController().leapMotionAddButton_clicked();
+        }
+      });
+      panel_3.add(leapMotionAddButton);
+
+      leapMotionDeleteButton = new JButton();
+      leapMotionDeleteButton.setToolTipText("Delete motion listener");
+      leapMotionDeleteButton.setText("Delete");
+      leapMotionDeleteButton.setPreferredSize(new Dimension(90, 24));
+      leapMotionDeleteButton.setFont(new Font("Dialog", Font.BOLD, 10));
+      leapMotionDeleteButton.setBounds(6, 80, 90, 24);
+      leapMotionDeleteButton.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+          tinaController.getLeapMotionMainEditorController().leapMotionDeleteButton_clicked();
+        }
+      });
+      panel_3.add(leapMotionDeleteButton);
+
+      leapMotionDuplicateButton = new JButton();
+      leapMotionDuplicateButton.setToolTipText("Duplicate motion listener");
+      leapMotionDuplicateButton.setText("Duplicate");
+      leapMotionDuplicateButton.setPreferredSize(new Dimension(90, 24));
+      leapMotionDuplicateButton.setFont(new Font("Dialog", Font.BOLD, 10));
+      leapMotionDuplicateButton.setBounds(6, 32, 90, 24);
+      leapMotionDuplicateButton.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+          tinaController.getLeapMotionMainEditorController().leapMotionDuplicateButton_clicked();
+        }
+      });
+      panel_3.add(leapMotionDuplicateButton);
+
+      JTextArea txtrPleaseNoteThat = new JTextArea();
+      txtrPleaseNoteThat.setEditable(false);
+      txtrPleaseNoteThat.setLineWrap(true);
+      txtrPleaseNoteThat.setWrapStyleWord(true);
+      txtrPleaseNoteThat.setText("Please note that all the settings here do NOT belong to a certain flame and are NOT saved when you save a flame. Currently, they can NOT be saved at all.");
+      txtrPleaseNoteThat.setBounds(108, 3, 226, 122);
+      panel_3.add(txtrPleaseNoteThat);
+
+      leapMotionClearButton = new JButton();
+      leapMotionClearButton.setToolTipText("Clear all motion listeners");
+      leapMotionClearButton.setText("Clear");
+      leapMotionClearButton.setPreferredSize(new Dimension(90, 24));
+      leapMotionClearButton.setFont(new Font("Dialog", Font.BOLD, 10));
+      leapMotionClearButton.setBounds(6, 106, 90, 24);
+      leapMotionClearButton.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+          tinaController.getLeapMotionMainEditorController().leapMotionClearButton_clicked();
+        }
+      });
+      panel_3.add(leapMotionClearButton);
+      panel_1.add(getPanel_111(), BorderLayout.CENTER);
+
       tinaSouthTabbedPane.addChangeListener(new ChangeListener() {
         public void stateChanged(ChangeEvent e) {
           if (tinaController != null) {
@@ -1661,13 +1755,12 @@ public class TinaInternalFrame extends JInternalFrame {
       bgTransparencyCBx = new JCheckBox("Background transparency");
       bgTransparencyCBx.addChangeListener(new ChangeListener() {
         public void stateChanged(ChangeEvent e) {
-          if (tinaController != null) {
-            tinaController.saveUndoPoint();
-            tinaController.flameTransparencyCbx_changed();
+          if (tinaController != null && tinaController.getFlameControls() != null) {
+            tinaController.getFlameControls().flameTransparencyCbx_changed();
           }
         }
       });
-      bgTransparencyCBx.setBounds(880, 28, 169, 18);
+      bgTransparencyCBx.setBounds(848, 5, 169, 18);
       tinaColoringPanel.add(bgTransparencyCBx);
       tinaColoringPanel.add(getBackgroundColorIndicatorBtn());
 
@@ -1827,7 +1920,7 @@ public class TinaInternalFrame extends JInternalFrame {
       backgroundSelectImageBtn.setText("Select image...");
       backgroundSelectImageBtn.setPreferredSize(new Dimension(190, 24));
       backgroundSelectImageBtn.setFont(new Font("Dialog", Font.BOLD, 10));
-      backgroundSelectImageBtn.setBounds(649, 4, 148, 24);
+      backgroundSelectImageBtn.setBounds(604, 3, 148, 24);
       tinaColoringPanel.add(backgroundSelectImageBtn);
 
       backgroundRemoveImageBtn = new JButton();
@@ -1835,13 +1928,76 @@ public class TinaInternalFrame extends JInternalFrame {
       backgroundRemoveImageBtn.setText("Remove image");
       backgroundRemoveImageBtn.setPreferredSize(new Dimension(190, 24));
       backgroundRemoveImageBtn.setFont(new Font("Dialog", Font.BOLD, 10));
-      backgroundRemoveImageBtn.setBounds(649, 28, 148, 24);
+      backgroundRemoveImageBtn.setBounds(604, 26, 148, 24);
       backgroundRemoveImageBtn.addActionListener(new ActionListener() {
         public void actionPerformed(ActionEvent e) {
           tinaController.removeBackgroundImageButton_actionPerformed(e);
         }
       });
       tinaColoringPanel.add(backgroundRemoveImageBtn);
+
+      foregroundOpacityField = new JWFNumberField();
+      foregroundOpacityField.setValueStep(0.05);
+      foregroundOpacityField.setText("");
+      foregroundOpacityField.setSize(new Dimension(100, 24));
+      foregroundOpacityField.setPreferredSize(new Dimension(100, 24));
+      foregroundOpacityField.setMaxValue(2.0);
+      foregroundOpacityField.setLocation(new Point(584, 2));
+      foregroundOpacityField.setLinkedMotionControlName("foregroundOpacitySlider");
+      foregroundOpacityField.setHasMinValue(true);
+      foregroundOpacityField.setHasMaxValue(true);
+      foregroundOpacityField.setFont(new Font("Dialog", Font.PLAIN, 10));
+      foregroundOpacityField.setEditable(true);
+      foregroundOpacityField.setBounds(848, 25, 100, 24);
+      foregroundOpacityField.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getFlameControls() != null) {
+            if (!foregroundOpacityField.isMouseAdjusting() || foregroundOpacityField.getMouseChangeCount() == 0) {
+              if (!foregroundOpacitySlider.getValueIsAdjusting()) {
+                tinaController.saveUndoPoint();
+              }
+            }
+            tinaController.getFlameControls().foregroundOpacityREd_changed();
+          }
+        }
+      });
+
+      tinaColoringPanel.add(foregroundOpacityField);
+
+      JLabel lblOpacity = new JLabel();
+      lblOpacity.setToolTipText("");
+      lblOpacity.setText("Opacity");
+      lblOpacity.setSize(new Dimension(94, 22));
+      lblOpacity.setPreferredSize(new Dimension(94, 22));
+      lblOpacity.setLocation(new Point(488, 2));
+      lblOpacity.setFont(new Font("Dialog", Font.BOLD, 10));
+      lblOpacity.setBounds(790, 25, 56, 22);
+      tinaColoringPanel.add(lblOpacity);
+
+      foregroundOpacitySlider = new JSlider();
+      foregroundOpacitySlider.setValue(0);
+      foregroundOpacitySlider.setSize(new Dimension(220, 19));
+      foregroundOpacitySlider.setPreferredSize(new Dimension(220, 19));
+      foregroundOpacitySlider.setName("foregroundOpacitySlider");
+      foregroundOpacitySlider.setMaximum(2000);
+      foregroundOpacitySlider.setLocation(new Point(686, 2));
+      foregroundOpacitySlider.setFont(new Font("Dialog", Font.BOLD, 10));
+      foregroundOpacitySlider.setBounds(950, 25, 220, 24);
+      foregroundOpacitySlider.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getFlameControls() != null) {
+            tinaController.getFlameControls().foregroundOpacitySlider_stateChanged(e);
+          }
+        }
+      });
+      foregroundOpacitySlider.addMouseListener(new MouseAdapter() {
+        @Override
+        public void mousePressed(MouseEvent e) {
+          tinaController.saveUndoPoint();
+        }
+      });
+
+      tinaColoringPanel.add(foregroundOpacitySlider);
     }
     return tinaColoringPanel;
   }
@@ -1971,7 +2127,6 @@ public class TinaInternalFrame extends JInternalFrame {
       tinaCameraPerspectiveREd.setLinkedMotionControlName("tinaCameraPerspectiveSlider");
       tinaCameraPerspectiveREd.setValueStep(0.01);
       tinaCameraPerspectiveREd.setMaxValue(1.0);
-      tinaCameraPerspectiveREd.setHasMinValue(true);
       tinaCameraPerspectiveREd.setHasMaxValue(true);
       tinaCameraPerspectiveREd.addChangeListener(new ChangeListener() {
         public void stateChanged(ChangeEvent e) {
@@ -3477,6 +3632,21 @@ public class TinaInternalFrame extends JInternalFrame {
       tinaAffineTransformationPanel.add(getAffineScaleXButton(), null);
       tinaAffineTransformationPanel.add(getAffineScaleYButton(), null);
 
+      affinePreserveZButton = new JToggleButton();
+      affinePreserveZButton.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+          tinaController.affinePreserveZButton_clicked();
+        }
+      });
+      affinePreserveZButton.setToolTipText("Preserve the Z-coordinate (applies only if 2D- and 3D-variations are mixed)");
+      affinePreserveZButton.setText("Preserve Z");
+      affinePreserveZButton.setSize(new Dimension(138, 24));
+      affinePreserveZButton.setPreferredSize(new Dimension(136, 24));
+      affinePreserveZButton.setLocation(new Point(4, 181));
+      affinePreserveZButton.setFont(new Font("Dialog", Font.BOLD, 10));
+      affinePreserveZButton.setBounds(218, 155, 104, 24);
+      tinaAffineTransformationPanel.add(affinePreserveZButton);
+
       affineRotateEditMotionCurveBtn = new JButton();
       affineRotateEditMotionCurveBtn.addActionListener(new ActionListener() {
         public void actionPerformed(ActionEvent e) {
@@ -4629,7 +4799,7 @@ public class TinaInternalFrame extends JInternalFrame {
         getRootTabbedPane(), getAffineFlipHorizontalButton(), getAffineFlipVerticalButton(), getShadingBlurRadiusREd(), getShadingBlurRadiusSlider(), getShadingBlurFadeREd(),
         getShadingBlurFadeSlider(), getShadingBlurFallOffREd(), getShadingBlurFallOffSlider(),
         getAffineScaleXButton(), getAffineScaleYButton(), gradientLibraryThumbnailPnl, getHelpPane(),
-        getToggleVariationsButton(), getToggleTransparencyButton(), getQualityProfileCmb(), getResolutionProfileCmb(),
+        getToggleVariationsButton(), getToggleTransparencyButton(), getAffinePreserveZButton(), getQualityProfileCmb(), getResolutionProfileCmb(),
         getBatchQualityProfileCmb(), getBatchResolutionProfileCmb(), getInteractiveResolutionProfileCmb(),
         getSwfAnimatorResolutionProfileCmb(), getTinaRenderFlameButton(), getRenderMainButton(), getTinaAppendToMovieButton(),
         getTransformationWeightREd(), getUndoButton(), getRedoButton(),
@@ -4715,13 +4885,22 @@ public class TinaInternalFrame extends JInternalFrame {
         getGradientColorMapHorizScaleSlider(), getGradientColorMapVertOffsetREd(), getGradientColorMapVertOffsetSlider(),
         getGradientColorMapVertScaleREd(), getGradientColorMapVertScaleSlider(), getGradientColorMapLocalColorAddREd(),
         getGradientColorMapLocalColorAddSlider(), getGradientColorMapLocalColorScaleREd(), getGradientColorMapLocalColorScaleSlider(),
-        getSwfAnimatorQualityProfileCmb(), getFlameFPSField());
+        getSwfAnimatorQualityProfileCmb(), getFlameFPSField(), getLeapMotionToggleButton(), getLeapMotionConfigTable(),
+        getLeapMotionHandCmb(), getLeapMotionInputChannelCmb(), getLeapMotionOutputChannelCmb(), getLeapMotionIndex1Field(),
+        getLeapMotionIndex2Field(), getLeapMotionIndex3Field(), getLeapMotionInvScaleField(),
+        getLeapMotionOffsetField(), getLeapMotionAddButton(), getLeapMotionDuplicateButton(),
+        getLeapMotionDeleteButton(), getLeapMotionClearButton(), getLeapMotionResetConfigButton(),
+        getFilterKernelPreviewRootPnl(), getTinaSpatialOversamplingREd(), getTinaSpatialOversamplingSlider(), getTinaColorOversamplingREd(),
+        getTinaColorOversamplingSlider(), getTinaSampleJitteringCheckBox(), getFilterKernelFlatPreviewBtn(),
+        getTinaPostNoiseFilterCheckBox(), getTinaPostNoiseThresholdField(), getTinaPostNoiseThresholdSlider(),
+        getForegroundOpacityField(), getForegroundOpacitySlider());
 
     tinaController = new TinaController(params);
     if (Prefs.getPrefs().isTinaIntegrationChaoticaDisabled()) {
       getChaoticaButtonSeparator().setVisible(false);
       getExportToChaoticaBtn().setVisible(false);
     }
+    getFilterKernelFlatPreviewBtn().setSelected(Prefs.getPrefs().isTinaDefaultFilterVisualisationFlat());
 
     VariationControlsDelegate[] variationControlsDelegates = new VariationControlsDelegate[12];
     for (int i = 0; i < variationControlsDelegates.length; i++) {
@@ -7251,7 +7430,7 @@ public class TinaInternalFrame extends JInternalFrame {
       previewEastDefaultPanel.add(editorFractalBrightnessSlider);
       editorFractalBrightnessSlider.setOrientation(SwingConstants.VERTICAL);
       editorFractalBrightnessSlider.setValue(100);
-      editorFractalBrightnessSlider.setPreferredSize(new Dimension(19, 48));
+      editorFractalBrightnessSlider.setPreferredSize(new Dimension(19, 42));
       editorFractalBrightnessSlider.setName("tinaCameraCentreXSlider");
       previewEastDefaultPanel.add(getExportToChaoticaBtn());
       previewEastDefaultPanel.add(getChaoticaButtonSeparator());
@@ -7543,7 +7722,7 @@ public class TinaInternalFrame extends JInternalFrame {
       randomStyleCmb.setMinimumSize(new Dimension(110, 24));
       randomStyleCmb.setPreferredSize(new Dimension(110, 24));
       randomStyleCmb.setFont(new Font("Dialog", Font.BOLD, 10));
-      randomStyleCmb.setMaximumRowCount(32);
+      randomStyleCmb.setMaximumRowCount(48);
     }
     return randomStyleCmb;
   }
@@ -10175,6 +10354,7 @@ public class TinaInternalFrame extends JInternalFrame {
   private JTextArea interactiveStatsTextArea;
   private JComboBox interactiveRandomStyleCmb;
   private JToggleButton interactiveHalfSizeButton;
+  private JToggleButton affinePreserveZButton;
   private JButton qualityProfileBtn;
   private JButton resolutionProfileBtn;
   private JComboBox interactiveResolutionProfileCmb;
@@ -10852,6 +11032,39 @@ public class TinaInternalFrame extends JInternalFrame {
   private JButton exportToChaosBtn;
   private JPanel panel_104;
   private JWFNumberField flameFPSField;
+  private JToggleButton leapMotionToggleButton;
+  private JPanel panel_111;
+  private JPanel panel_112;
+  private JTable leapMotionConfigTable;
+  private JComboBox leapMotionHandCmb;
+  private JComboBox leapMotionInputChannelCmb;
+  private JLabel lblInputChannel;
+  private JLabel lblFlameproperty;
+  private JComboBox leapMotionOutputChannelCmb;
+  private JLabel lblFlamepropertyindex;
+  private JLabel lblHand;
+  private JWFNumberField leapMotionIndex1Field;
+  private JWFNumberField leapMotionInvScaleField;
+  private JWFNumberField leapMotionOffsetField;
+  private JButton leapMotionAddButton;
+  private JButton leapMotionDuplicateButton;
+  private JButton leapMotionDeleteButton;
+  private JButton leapMotionClearButton;
+  private JWFNumberField leapMotionIndex2Field;
+  private JWFNumberField leapMotionIndex3Field;
+  private JButton leapMotionResetConfigButton;
+  private JWFNumberField tinaSpatialOversamplingREd;
+  private JSlider tinaSpatialOversamplingSlider;
+  private JPanel filterKernelPreviewRootPnl;
+  private JCheckBox tinaSampleJitteringCheckBox;
+  private JWFNumberField tinaColorOversamplingREd;
+  private JSlider tinaColorOversamplingSlider;
+  private JToggleButton filterKernelFlatPreviewBtn;
+  private JCheckBox tinaPostNoiseFilterCheckBox;
+  private JWFNumberField tinaPostNoiseThresholdField;
+  private JSlider tinaPostNoiseThresholdSlider;
+  private JWFNumberField foregroundOpacityField;
+  private JSlider foregroundOpacitySlider;
 
   /**
    * This method initializes renderBatchJobsScrollPane	
@@ -12385,6 +12598,10 @@ public class TinaInternalFrame extends JInternalFrame {
     return interactiveHalfSizeButton;
   }
 
+  public JToggleButton getAffinePreserveZButton() {
+    return affinePreserveZButton;
+  }
+
   private JButton getQualityProfileBtn() {
     if (qualityProfileBtn == null) {
       qualityProfileBtn = new JButton();
@@ -13017,6 +13234,7 @@ public class TinaInternalFrame extends JInternalFrame {
     if (antialiasPanel == null) {
       antialiasPanel = new JPanel();
       antialiasPanel.setLayout(null);
+
       antialiasPanel.add(getXFormAntialiasAmountREd());
       antialiasPanel.add(getXFormAntialiasAmountLbl());
       antialiasPanel.add(getXFormAntialiasAmountSlider());
@@ -13030,7 +13248,7 @@ public class TinaInternalFrame extends JInternalFrame {
       lblSpatialFilterRadius.setPreferredSize(new Dimension(94, 22));
       lblSpatialFilterRadius.setLocation(new Point(488, 2));
       lblSpatialFilterRadius.setFont(new Font("Dialog", Font.BOLD, 10));
-      lblSpatialFilterRadius.setBounds(450, 6, 94, 22);
+      lblSpatialFilterRadius.setBounds(6, 58, 107, 22);
       antialiasPanel.add(lblSpatialFilterRadius);
 
       tinaFilterRadiusREd = new JWFNumberField();
@@ -13057,7 +13275,7 @@ public class TinaInternalFrame extends JInternalFrame {
       tinaFilterRadiusREd.setHasMaxValue(true);
       tinaFilterRadiusREd.setFont(new Font("Dialog", Font.PLAIN, 10));
       tinaFilterRadiusREd.setEditable(true);
-      tinaFilterRadiusREd.setBounds(546, 6, 100, 24);
+      tinaFilterRadiusREd.setBounds(115, 58, 100, 24);
       antialiasPanel.add(tinaFilterRadiusREd);
 
       tinaFilterRadiusSlider = new JSlider();
@@ -13079,10 +13297,10 @@ public class TinaInternalFrame extends JInternalFrame {
       tinaFilterRadiusSlider.setSize(new Dimension(220, 19));
       tinaFilterRadiusSlider.setPreferredSize(new Dimension(220, 19));
       tinaFilterRadiusSlider.setMinimum(0);
-      tinaFilterRadiusSlider.setMaximum(500);
+      tinaFilterRadiusSlider.setMaximum(200);
       tinaFilterRadiusSlider.setLocation(new Point(686, 2));
       tinaFilterRadiusSlider.setFont(new Font("Dialog", Font.BOLD, 10));
-      tinaFilterRadiusSlider.setBounds(648, 6, 220, 24);
+      tinaFilterRadiusSlider.setBounds(217, 58, 220, 24);
       antialiasPanel.add(tinaFilterRadiusSlider);
 
       tinaFilterKernelCmb = new JComboBox();
@@ -13097,7 +13315,7 @@ public class TinaInternalFrame extends JInternalFrame {
       tinaFilterKernelCmb.setPreferredSize(new Dimension(125, 22));
       tinaFilterKernelCmb.setLocation(new Point(100, 4));
       tinaFilterKernelCmb.setFont(new Font("Dialog", Font.BOLD, 10));
-      tinaFilterKernelCmb.setBounds(546, 31, 100, 24);
+      tinaFilterKernelCmb.setBounds(115, 34, 322, 24);
       antialiasPanel.add(tinaFilterKernelCmb);
 
       JLabel lblSpatialFilterKernel = new JLabel();
@@ -13106,7 +13324,7 @@ public class TinaInternalFrame extends JInternalFrame {
       lblSpatialFilterKernel.setPreferredSize(new Dimension(94, 22));
       lblSpatialFilterKernel.setLocation(new Point(488, 2));
       lblSpatialFilterKernel.setFont(new Font("Dialog", Font.BOLD, 10));
-      lblSpatialFilterKernel.setBounds(450, 31, 94, 22);
+      lblSpatialFilterKernel.setBounds(6, 34, 107, 22);
       antialiasPanel.add(lblSpatialFilterKernel);
 
       resetAntialiasOptionsButton = new JButton();
@@ -13122,152 +13340,251 @@ public class TinaInternalFrame extends JInternalFrame {
       resetAntialiasOptionsButton.setMaximumSize(new Dimension(32000, 24));
       resetAntialiasOptionsButton.setIconTextGap(2);
       resetAntialiasOptionsButton.setFont(new Font("Dialog", Font.BOLD, 10));
-      resetAntialiasOptionsButton.setBounds(116, 49, 100, 24);
+      resetAntialiasOptionsButton.setBounds(1018, 6, 100, 24);
       resetAntialiasOptionsButton.setIcon(new ImageIcon(getClass().getResource("/org/jwildfire/swing/icons/new/edit-undo-6.png")));
       antialiasPanel.add(resetAntialiasOptionsButton);
 
+      JLabel lblSpatialOversampling = new JLabel();
+      lblSpatialOversampling.setToolTipText("");
+      lblSpatialOversampling.setText("Spatial oversampling");
+      lblSpatialOversampling.setSize(new Dimension(94, 22));
+      lblSpatialOversampling.setPreferredSize(new Dimension(94, 22));
+      lblSpatialOversampling.setLocation(new Point(488, 2));
+      lblSpatialOversampling.setFont(new Font("Dialog", Font.BOLD, 10));
+      lblSpatialOversampling.setBounds(6, 6, 107, 22);
+      antialiasPanel.add(lblSpatialOversampling);
+
+      tinaSpatialOversamplingREd = new JWFNumberField();
+      tinaSpatialOversamplingREd.setLinkedMotionControlName("tinaSpatialOversamplingSlider");
+      tinaSpatialOversamplingREd.setMinValue(1.0);
+      tinaSpatialOversamplingREd.setOnlyIntegers(true);
+      tinaSpatialOversamplingREd.setValueStep(1.0);
+      tinaSpatialOversamplingREd.setText("");
+      tinaSpatialOversamplingREd.setSize(new Dimension(100, 24));
+      tinaSpatialOversamplingREd.setPreferredSize(new Dimension(100, 24));
+      tinaSpatialOversamplingREd.setMaxValue(6.0);
+      tinaSpatialOversamplingREd.setLocation(new Point(584, 2));
+      tinaSpatialOversamplingREd.setHasMinValue(true);
+      tinaSpatialOversamplingREd.setHasMaxValue(true);
+      tinaSpatialOversamplingREd.setFont(new Font("Dialog", Font.PLAIN, 10));
+      tinaSpatialOversamplingREd.setEditable(true);
+      tinaSpatialOversamplingREd.setBounds(115, 6, 100, 24);
+      tinaSpatialOversamplingREd.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null) {
+            if (!tinaSpatialOversamplingREd.isMouseAdjusting() || tinaSpatialOversamplingREd.getMouseChangeCount() == 0) {
+              if (!tinaSpatialOversamplingSlider.getValueIsAdjusting()) {
+                tinaController.saveUndoPoint();
+              }
+            }
+            tinaController.getFlameControls().spatialOversamplingREd_changed();
+          }
+        }
+      });
+      antialiasPanel.add(tinaSpatialOversamplingREd);
+
+      tinaSpatialOversamplingSlider = new JSlider();
+      tinaSpatialOversamplingSlider.setValue(0);
+      tinaSpatialOversamplingSlider.setSize(new Dimension(220, 19));
+      tinaSpatialOversamplingSlider.setPreferredSize(new Dimension(220, 19));
+      tinaSpatialOversamplingSlider.setName("tinaSpatialOversamplingSlider");
+      tinaSpatialOversamplingSlider.setMinimum(1);
+      tinaSpatialOversamplingSlider.setMaximum(6);
+      tinaSpatialOversamplingSlider.setLocation(new Point(686, 2));
+      tinaSpatialOversamplingSlider.setFont(new Font("Dialog", Font.BOLD, 10));
+      tinaSpatialOversamplingSlider.setBounds(217, 6, 220, 24);
+      tinaSpatialOversamplingSlider.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null) {
+            tinaController.getFlameControls().spatialOversamplingSlider_stateChanged(e);
+          }
+        }
+      });
+      tinaSpatialOversamplingSlider.addMouseListener(new MouseAdapter() {
+        @Override
+        public void mousePressed(MouseEvent e) {
+          tinaController.saveUndoPoint();
+        }
+      });
+      antialiasPanel.add(tinaSpatialOversamplingSlider);
+
+      filterKernelPreviewRootPnl = new JPanel();
+      filterKernelPreviewRootPnl.setBounds(449, 6, 104, 104);
+      antialiasPanel.add(filterKernelPreviewRootPnl);
+      filterKernelPreviewRootPnl.setLayout(new BorderLayout(0, 0));
+
+      JLabel lblColorOversampling = new JLabel();
+      lblColorOversampling.setToolTipText("");
+      lblColorOversampling.setText("Color oversampling");
+      lblColorOversampling.setSize(new Dimension(94, 22));
+      lblColorOversampling.setPreferredSize(new Dimension(94, 22));
+      lblColorOversampling.setLocation(new Point(488, 2));
+      lblColorOversampling.setFont(new Font("Dialog", Font.BOLD, 10));
+      lblColorOversampling.setBounds(6, 111, 107, 22);
+      antialiasPanel.add(lblColorOversampling);
+
+      tinaColorOversamplingREd = new JWFNumberField();
+      tinaColorOversamplingREd.setLinkedMotionControlName("tinaColorOversamplingSlider");
+      tinaColorOversamplingREd.setValueStep(1.0);
+      tinaColorOversamplingREd.setText("");
+      tinaColorOversamplingREd.setSize(new Dimension(100, 24));
+      tinaColorOversamplingREd.setPreferredSize(new Dimension(100, 24));
+      tinaColorOversamplingREd.setOnlyIntegers(true);
+      tinaColorOversamplingREd.setMinValue(1.0);
+      tinaColorOversamplingREd.setMaxValue(Tools.MAX_COLOR_OVERSAMPLING);
+      tinaColorOversamplingREd.setLocation(new Point(584, 2));
+      tinaColorOversamplingREd.setHasMinValue(true);
+      tinaColorOversamplingREd.setHasMaxValue(true);
+      tinaColorOversamplingREd.setFont(new Font("Dialog", Font.PLAIN, 10));
+      tinaColorOversamplingREd.setEditable(true);
+      tinaColorOversamplingREd.setBounds(115, 111, 100, 24);
+      tinaColorOversamplingREd.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null) {
+            if (!tinaColorOversamplingREd.isMouseAdjusting() || tinaColorOversamplingREd.getMouseChangeCount() == 0) {
+              if (!tinaColorOversamplingSlider.getValueIsAdjusting()) {
+                tinaController.saveUndoPoint();
+              }
+            }
+            tinaController.getFlameControls().colorOversamplingREd_changed();
+          }
+        }
+      });
+      antialiasPanel.add(tinaColorOversamplingREd);
+
+      tinaColorOversamplingSlider = new JSlider();
+      tinaColorOversamplingSlider.setValue(0);
+      tinaColorOversamplingSlider.setSize(new Dimension(220, 19));
+      tinaColorOversamplingSlider.setPreferredSize(new Dimension(220, 19));
+      tinaColorOversamplingSlider.setName("tinaColorOversamplingSlider");
+      tinaColorOversamplingSlider.setMinimum(1);
+      tinaColorOversamplingSlider.setMaximum(Tools.MAX_COLOR_OVERSAMPLING);
+      tinaColorOversamplingSlider.setLocation(new Point(686, 2));
+      tinaColorOversamplingSlider.setFont(new Font("Dialog", Font.BOLD, 10));
+      tinaColorOversamplingSlider.setBounds(217, 111, 220, 24);
+      tinaColorOversamplingSlider.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null) {
+            tinaController.getFlameControls().colorOversamplingSlider_stateChanged(e);
+          }
+        }
+      });
+      tinaColorOversamplingSlider.addMouseListener(new MouseAdapter() {
+        @Override
+        public void mousePressed(MouseEvent e) {
+          tinaController.saveUndoPoint();
+        }
+      });
+
+      antialiasPanel.add(tinaColorOversamplingSlider);
+
+      tinaSampleJitteringCheckBox = new JCheckBox("Sample jittering");
+      tinaSampleJitteringCheckBox.setBounds(115, 90, 169, 18);
+      tinaSampleJitteringCheckBox.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getFlameControls() != null) {
+            tinaController.getFlameControls().sampleJitteringCbx_changed();
+          }
+        }
+      });
+
+      antialiasPanel.add(tinaSampleJitteringCheckBox);
+
+      filterKernelFlatPreviewBtn = new JToggleButton();
+      filterKernelFlatPreviewBtn.addItemListener(new ItemListener() {
+        public void itemStateChanged(ItemEvent e) {
+          if (tinaController != null) {
+            tinaController.filterKernelFlatPreviewBtn_clicked();
+          }
+        }
+      });
+      filterKernelFlatPreviewBtn.setToolTipText("Draw a flat (and faster) visualization of the filter kernel, red parts indicate negative values");
+      filterKernelFlatPreviewBtn.setText("Flat preview");
+      filterKernelFlatPreviewBtn.setSize(new Dimension(32, 24));
+      filterKernelFlatPreviewBtn.setPreferredSize(new Dimension(26, 24));
+      filterKernelFlatPreviewBtn.setMnemonic(KeyEvent.VK_P);
+      filterKernelFlatPreviewBtn.setLocation(new Point(92, 127));
+      filterKernelFlatPreviewBtn.setFont(new Font("Dialog", Font.BOLD, 10));
+      filterKernelFlatPreviewBtn.setBounds(449, 114, 107, 24);
+      antialiasPanel.add(filterKernelFlatPreviewBtn);
+
+      tinaPostNoiseFilterCheckBox = new JCheckBox("Post noise reduction");
+      tinaPostNoiseFilterCheckBox.setBounds(674, 69, 169, 18);
+      tinaPostNoiseFilterCheckBox.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getFlameControls() != null) {
+            tinaController.getFlameControls().postNoiseFilterCheckBox_changed();
+          }
+        }
+      });
+
+      antialiasPanel.add(tinaPostNoiseFilterCheckBox);
+
+      tinaPostNoiseThresholdField = new JWFNumberField();
+      tinaPostNoiseThresholdField.setMouseSpeed(0.1);
+      tinaPostNoiseThresholdField.setValueStep(0.05);
+      tinaPostNoiseThresholdField.setText("");
+      tinaPostNoiseThresholdField.setSize(new Dimension(100, 24));
+      tinaPostNoiseThresholdField.setPreferredSize(new Dimension(100, 24));
+      tinaPostNoiseThresholdField.setMaxValue(1.0);
+      tinaPostNoiseThresholdField.setLocation(new Point(584, 2));
+      tinaPostNoiseThresholdField.setLinkedMotionControlName("tinaPostNoiseThresholdSlider");
+      tinaPostNoiseThresholdField.setHasMinValue(true);
+      tinaPostNoiseThresholdField.setHasMaxValue(true);
+      tinaPostNoiseThresholdField.setFont(new Font("Dialog", Font.PLAIN, 10));
+      tinaPostNoiseThresholdField.setEditable(true);
+      tinaPostNoiseThresholdField.setBounds(674, 90, 100, 24);
+      tinaPostNoiseThresholdField.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getFlameControls() != null) {
+            if (!tinaPostNoiseThresholdField.isMouseAdjusting() || tinaPostNoiseThresholdField.getMouseChangeCount() == 0) {
+              if (!tinaPostNoiseThresholdSlider.getValueIsAdjusting()) {
+                tinaController.saveUndoPoint();
+              }
+            }
+            tinaController.getFlameControls().postNoiseFilterThresholdREd_changed();
+          }
+        }
+      });
+
+      antialiasPanel.add(tinaPostNoiseThresholdField);
+
+      JLabel lblNoiseThreshold = new JLabel();
+      lblNoiseThreshold.setToolTipText("");
+      lblNoiseThreshold.setText("Noise threshold");
+      lblNoiseThreshold.setSize(new Dimension(94, 22));
+      lblNoiseThreshold.setPreferredSize(new Dimension(94, 22));
+      lblNoiseThreshold.setLocation(new Point(488, 2));
+      lblNoiseThreshold.setFont(new Font("Dialog", Font.BOLD, 10));
+      lblNoiseThreshold.setBounds(565, 90, 107, 22);
+      antialiasPanel.add(lblNoiseThreshold);
+
+      tinaPostNoiseThresholdSlider = new JSlider();
+      tinaPostNoiseThresholdSlider.setMaximum(1000);
+      tinaPostNoiseThresholdSlider.setValue(0);
+      tinaPostNoiseThresholdSlider.setSize(new Dimension(220, 19));
+      tinaPostNoiseThresholdSlider.setPreferredSize(new Dimension(220, 19));
+      tinaPostNoiseThresholdSlider.setName("tinaPostNoiseThresholdSlider");
+      tinaPostNoiseThresholdSlider.setLocation(new Point(686, 2));
+      tinaPostNoiseThresholdSlider.setFont(new Font("Dialog", Font.BOLD, 10));
+      tinaPostNoiseThresholdSlider.setBounds(776, 90, 220, 24);
+      tinaPostNoiseThresholdSlider.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getFlameControls() != null) {
+            tinaController.getFlameControls().postNoiseFilterThresholdSlider_stateChanged(e);
+          }
+        }
+      });
+      tinaPostNoiseThresholdSlider.addMouseListener(new MouseAdapter() {
+        @Override
+        public void mousePressed(MouseEvent e) {
+          tinaController.saveUndoPoint();
+        }
+      });
+
+      antialiasPanel.add(tinaPostNoiseThresholdSlider);
     }
     return antialiasPanel;
-  }
-
-  private JWFNumberField getXFormAntialiasAmountREd() {
-    if (xFormAntialiasAmountREd == null) {
-      xFormAntialiasAmountREd = new JWFNumberField();
-      xFormAntialiasAmountREd.addChangeListener(new ChangeListener() {
-        public void stateChanged(ChangeEvent e) {
-          if (tinaController != null) {
-            if (!xFormAntialiasAmountREd.isMouseAdjusting() || xFormAntialiasAmountREd.getMouseChangeCount() == 0) {
-              if (!xFormAntialiasAmountSlider.getValueIsAdjusting()) {
-                tinaController.saveUndoPoint();
-              }
-            }
-            tinaController.getFlameControls().xFormAntialiasAmountREd_changed();
-          }
-        }
-      });
-      xFormAntialiasAmountREd.setValueStep(0.05);
-      xFormAntialiasAmountREd.setText("");
-      xFormAntialiasAmountREd.setSize(new Dimension(55, 22));
-      xFormAntialiasAmountREd.setPreferredSize(new Dimension(55, 22));
-      xFormAntialiasAmountREd.setMaxValue(1.0);
-      xFormAntialiasAmountREd.setLocation(new Point(68, 4));
-      xFormAntialiasAmountREd.setHasMinValue(true);
-      xFormAntialiasAmountREd.setHasMaxValue(true);
-      xFormAntialiasAmountREd.setFont(new Font("Dialog", Font.PLAIN, 10));
-      xFormAntialiasAmountREd.setBounds(116, 6, 100, 22);
-    }
-    return xFormAntialiasAmountREd;
-  }
-
-  private JLabel getXFormAntialiasAmountLbl() {
-    if (xFormAntialiasAmountLbl == null) {
-      xFormAntialiasAmountLbl = new JLabel();
-      xFormAntialiasAmountLbl.setText("Antialiasing amount");
-      xFormAntialiasAmountLbl.setSize(new Dimension(64, 22));
-      xFormAntialiasAmountLbl.setPreferredSize(new Dimension(64, 22));
-      xFormAntialiasAmountLbl.setLocation(new Point(4, 4));
-      xFormAntialiasAmountLbl.setFont(new Font("Dialog", Font.BOLD, 10));
-      xFormAntialiasAmountLbl.setBounds(6, 6, 113, 22);
-    }
-    return xFormAntialiasAmountLbl;
-  }
-
-  private JSlider getXFormAntialiasAmountSlider() {
-    if (xFormAntialiasAmountSlider == null) {
-      xFormAntialiasAmountSlider = new JSlider();
-      xFormAntialiasAmountSlider.addChangeListener(new ChangeListener() {
-        public void stateChanged(ChangeEvent e) {
-          if (tinaController != null) {
-            tinaController.getFlameControls().xFormAntialiasAmountSlider_changed();
-          }
-        }
-      });
-      xFormAntialiasAmountSlider.addMouseListener(new MouseAdapter() {
-        @Override
-        public void mousePressed(MouseEvent e) {
-          tinaController.saveUndoPoint();
-        }
-      });
-      xFormAntialiasAmountSlider.setValue(0);
-      xFormAntialiasAmountSlider.setSize(new Dimension(220, 19));
-      xFormAntialiasAmountSlider.setPreferredSize(new Dimension(220, 19));
-      xFormAntialiasAmountSlider.setMinimum(0);
-      xFormAntialiasAmountSlider.setMaximum(100);
-      xFormAntialiasAmountSlider.setLocation(new Point(123, 4));
-      xFormAntialiasAmountSlider.setFont(new Font("Dialog", Font.BOLD, 10));
-      xFormAntialiasAmountSlider.setBounds(218, 6, 220, 22);
-    }
-    return xFormAntialiasAmountSlider;
-  }
-
-  private JWFNumberField getXFormAntialiasRadiusREd() {
-    if (xFormAntialiasRadiusREd == null) {
-      xFormAntialiasRadiusREd = new JWFNumberField();
-      xFormAntialiasRadiusREd.addChangeListener(new ChangeListener() {
-        public void stateChanged(ChangeEvent e) {
-          if (tinaController != null) {
-            if (!xFormAntialiasRadiusREd.isMouseAdjusting() || xFormAntialiasRadiusREd.getMouseChangeCount() == 0) {
-              if (!xFormAntialiasRadiusSlider.getValueIsAdjusting()) {
-                tinaController.saveUndoPoint();
-              }
-            }
-            tinaController.getFlameControls().xFormAntialiasRadiusREd_changed();
-          }
-        }
-      });
-      xFormAntialiasRadiusREd.setValueStep(0.05);
-      xFormAntialiasRadiusREd.setText("");
-      xFormAntialiasRadiusREd.setSize(new Dimension(55, 22));
-      xFormAntialiasRadiusREd.setPreferredSize(new Dimension(55, 22));
-      xFormAntialiasRadiusREd.setMaxValue(2.0);
-      xFormAntialiasRadiusREd.setLocation(new Point(68, 4));
-      xFormAntialiasRadiusREd.setHasMinValue(true);
-      xFormAntialiasRadiusREd.setHasMaxValue(true);
-      xFormAntialiasRadiusREd.setFont(new Font("Dialog", Font.PLAIN, 10));
-      xFormAntialiasRadiusREd.setBounds(116, 28, 100, 22);
-    }
-    return xFormAntialiasRadiusREd;
-  }
-
-  private JLabel getXFormAntialiasRadiusLbl() {
-    if (xFormAntialiasRadiusLbl == null) {
-      xFormAntialiasRadiusLbl = new JLabel();
-      xFormAntialiasRadiusLbl.setText("Antialiasing radius");
-      xFormAntialiasRadiusLbl.setSize(new Dimension(64, 22));
-      xFormAntialiasRadiusLbl.setPreferredSize(new Dimension(64, 22));
-      xFormAntialiasRadiusLbl.setLocation(new Point(4, 4));
-      xFormAntialiasRadiusLbl.setFont(new Font("Dialog", Font.BOLD, 10));
-      xFormAntialiasRadiusLbl.setBounds(6, 28, 113, 22);
-    }
-    return xFormAntialiasRadiusLbl;
-  }
-
-  private JSlider getXFormAntialiasRadiusSlider() {
-    if (xFormAntialiasRadiusSlider == null) {
-      xFormAntialiasRadiusSlider = new JSlider();
-      xFormAntialiasRadiusSlider.addChangeListener(new ChangeListener() {
-        public void stateChanged(ChangeEvent e) {
-          if (tinaController != null) {
-            tinaController.getFlameControls().xFormAntialiasRadiusSlider_changed();
-          }
-        }
-      });
-      xFormAntialiasRadiusSlider.addMouseListener(new MouseAdapter() {
-        @Override
-        public void mousePressed(MouseEvent e) {
-          tinaController.saveUndoPoint();
-        }
-      });
-      xFormAntialiasRadiusSlider.setValue(0);
-      xFormAntialiasRadiusSlider.setSize(new Dimension(172, 22));
-      xFormAntialiasRadiusSlider.setPreferredSize(new Dimension(172, 22));
-      xFormAntialiasRadiusSlider.setMinimum(0);
-      xFormAntialiasRadiusSlider.setMaximum(200);
-      xFormAntialiasRadiusSlider.setLocation(new Point(123, 4));
-      xFormAntialiasRadiusSlider.setFont(new Font("Dialog", Font.BOLD, 10));
-      xFormAntialiasRadiusSlider.setBounds(218, 28, 220, 22);
-    }
-    return xFormAntialiasRadiusSlider;
   }
 
   private JPanel getPanel_6() {
@@ -17585,7 +17902,7 @@ public class TinaInternalFrame extends JInternalFrame {
       postSymmetryOrderREd.setText("");
       postSymmetryOrderREd.setSize(new Dimension(100, 24));
       postSymmetryOrderREd.setPreferredSize(new Dimension(100, 24));
-      postSymmetryOrderREd.setMaxValue(18.0);
+      postSymmetryOrderREd.setMaxValue(36.0);
       postSymmetryOrderREd.setLocation(new Point(584, 2));
       postSymmetryOrderREd.setLinkedMotionControlName("postSymmetryOrderSlider");
       postSymmetryOrderREd.setHasMinValue(true);
@@ -17658,7 +17975,7 @@ public class TinaInternalFrame extends JInternalFrame {
       postSymmetryOrderSlider.setPreferredSize(new Dimension(220, 19));
       postSymmetryOrderSlider.setName("postSymmetryOrderSlider");
       postSymmetryOrderSlider.setMinimum(2);
-      postSymmetryOrderSlider.setMaximum(18);
+      postSymmetryOrderSlider.setMaximum(36);
       postSymmetryOrderSlider.setLocation(new Point(686, 2));
       postSymmetryOrderSlider.setFont(new Font("Dialog", Font.BOLD, 10));
       postSymmetryOrderSlider.setBounds(634, 6, 220, 24);
@@ -23216,12 +23533,536 @@ public class TinaInternalFrame extends JInternalFrame {
   private JPanel getChaoticaButtonSeparator() {
     if (panel_104 == null) {
       panel_104 = new JPanel();
+      panel_104.setPreferredSize(new Dimension(10, 16));
     }
     return panel_104;
   }
 
   public JWFNumberField getFlameFPSField() {
     return flameFPSField;
+  }
+
+  private JToggleButton getLeapMotionToggleButton() {
+    if (leapMotionToggleButton == null) {
+      leapMotionToggleButton = new JToggleButton();
+      leapMotionToggleButton.setText("Record");
+      leapMotionToggleButton.setBounds(6, 6, 100, 42);
+      leapMotionToggleButton.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+          tinaController.getLeapMotionMainEditorController().toggleLeapMotionMode();
+        }
+      });
+      leapMotionToggleButton.setToolTipText("Control the current fractal by using the Leap Motion controller");
+      leapMotionToggleButton.setPreferredSize(new Dimension(72, 42));
+      leapMotionToggleButton.setIcon(new ImageIcon(getClass().getResource("/org/jwildfire/swing/icons/new/video-x-generic-2.png")));
+      leapMotionToggleButton.setFont(new Font("Dialog", Font.BOLD, 10));
+    }
+    return leapMotionToggleButton;
+  }
+
+  private JPanel getPanel_111() {
+    if (panel_111 == null) {
+      panel_111 = new JPanel();
+      panel_111.setLayout(new BorderLayout(0, 0));
+      panel_111.add(getPanel_112(), BorderLayout.NORTH);
+
+      JPanel panel_1 = new JPanel();
+      panel_1.setPreferredSize(new Dimension(10, 8));
+      panel_111.add(panel_1, BorderLayout.SOUTH);
+
+      JScrollPane scrollPane_1 = new JScrollPane();
+      panel_111.add(scrollPane_1, BorderLayout.CENTER);
+
+      leapMotionConfigTable = new JTable();
+      leapMotionConfigTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+
+        @Override
+        public void valueChanged(ListSelectionEvent e) {
+          if (!e.getValueIsAdjusting() && tinaController != null && tinaController.getLeapMotionMainEditorController() != null) {
+            tinaController.getLeapMotionMainEditorController().configTableClicked();
+          }
+        }
+
+      });
+
+      scrollPane_1.setViewportView(leapMotionConfigTable);
+    }
+    return panel_111;
+  }
+
+  private JPanel getPanel_112() {
+    if (panel_112 == null) {
+      panel_112 = new JPanel();
+      panel_112.setPreferredSize(new Dimension(10, 64));
+      panel_112.setLayout(null);
+
+      leapMotionIndex1Field = new JWFNumberField();
+      leapMotionIndex1Field.setHasMinValue(true);
+      leapMotionIndex1Field.setOnlyIntegers(true);
+      leapMotionIndex1Field.setValueStep(1.0);
+      leapMotionIndex1Field.setText("");
+      leapMotionIndex1Field.setSize(new Dimension(100, 24));
+      leapMotionIndex1Field.setPreferredSize(new Dimension(100, 24));
+      leapMotionIndex1Field.setLocation(new Point(584, 2));
+      leapMotionIndex1Field.setFont(new Font("Dialog", Font.PLAIN, 10));
+      leapMotionIndex1Field.setEditable(true);
+      leapMotionIndex1Field.setBounds(357, 34, 60, 24);
+      leapMotionIndex1Field.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getLeapMotionMainEditorController() != null) {
+            tinaController.getLeapMotionMainEditorController().leapMotionIndex1Field_changed();
+          }
+        }
+      });
+
+      panel_112.add(leapMotionIndex1Field);
+
+      leapMotionHandCmb = new JComboBox();
+      leapMotionHandCmb.addItemListener(new ItemListener() {
+        public void itemStateChanged(ItemEvent e) {
+          if (tinaController != null && tinaController.getLeapMotionMainEditorController() != null) {
+            tinaController.getLeapMotionMainEditorController().leapMotionHandCmb_changed();
+          }
+        }
+      });
+      leapMotionHandCmb.setSize(new Dimension(125, 22));
+      leapMotionHandCmb.setPreferredSize(new Dimension(125, 22));
+      leapMotionHandCmb.setLocation(new Point(100, 4));
+      leapMotionHandCmb.setFont(new Font("Dialog", Font.BOLD, 10));
+      leapMotionHandCmb.setBounds(96, 7, 135, 24);
+      panel_112.add(leapMotionHandCmb);
+      panel_112.add(getLeapMotionInputChannelCmb());
+      panel_112.add(getLblInputChannel());
+      panel_112.add(getLblFlameproperty());
+      panel_112.add(getLeapMotionOutputChannelCmb());
+      panel_112.add(getLblFlamepropertyindex());
+      panel_112.add(getLblHand());
+
+      leapMotionInvScaleField = new JWFNumberField();
+      leapMotionInvScaleField.setValueStep(10.0);
+      leapMotionInvScaleField.setText("");
+      leapMotionInvScaleField.setSize(new Dimension(100, 24));
+      leapMotionInvScaleField.setPreferredSize(new Dimension(100, 24));
+      leapMotionInvScaleField.setLocation(new Point(584, 2));
+      leapMotionInvScaleField.setFont(new Font("Dialog", Font.PLAIN, 10));
+      leapMotionInvScaleField.setEditable(true);
+      leapMotionInvScaleField.setBounds(616, 7, 100, 24);
+      leapMotionInvScaleField.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getLeapMotionMainEditorController() != null) {
+            tinaController.getLeapMotionMainEditorController().leapMotionInvScaleField_changed();
+          }
+        }
+      });
+      panel_112.add(leapMotionInvScaleField);
+
+      JLabel lblAmplitude = new JLabel();
+      lblAmplitude.setText("1/Intensity");
+      lblAmplitude.setSize(new Dimension(94, 22));
+      lblAmplitude.setPreferredSize(new Dimension(94, 22));
+      lblAmplitude.setLocation(new Point(488, 2));
+      lblAmplitude.setFont(new Font("Dialog", Font.BOLD, 10));
+      lblAmplitude.setBounds(555, 9, 60, 22);
+      panel_112.add(lblAmplitude);
+
+      JLabel lblBias = new JLabel();
+      lblBias.setVisible(false);
+      lblBias.setText("Bias");
+      lblBias.setSize(new Dimension(94, 22));
+      lblBias.setPreferredSize(new Dimension(94, 22));
+      lblBias.setLocation(new Point(488, 2));
+      lblBias.setFont(new Font("Dialog", Font.BOLD, 10));
+      lblBias.setBounds(555, 36, 60, 22);
+      panel_112.add(lblBias);
+
+      leapMotionOffsetField = new JWFNumberField();
+      leapMotionOffsetField.setVisible(false);
+      leapMotionOffsetField.setValueStep(0.05);
+      leapMotionOffsetField.setText("");
+      leapMotionOffsetField.setSize(new Dimension(100, 24));
+      leapMotionOffsetField.setPreferredSize(new Dimension(100, 24));
+      leapMotionOffsetField.setLocation(new Point(584, 2));
+      leapMotionOffsetField.setFont(new Font("Dialog", Font.PLAIN, 10));
+      leapMotionOffsetField.setEditable(true);
+      leapMotionOffsetField.setBounds(616, 34, 100, 24);
+      leapMotionOffsetField.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getLeapMotionMainEditorController() != null) {
+            tinaController.getLeapMotionMainEditorController().leapMotionOffsetField_changed();
+          }
+        }
+      });
+      panel_112.add(leapMotionOffsetField);
+
+      leapMotionIndex2Field = new JWFNumberField();
+      leapMotionIndex2Field.setValueStep(1.0);
+      leapMotionIndex2Field.setText("");
+      leapMotionIndex2Field.setSize(new Dimension(100, 24));
+      leapMotionIndex2Field.setPreferredSize(new Dimension(100, 24));
+      leapMotionIndex2Field.setOnlyIntegers(true);
+      leapMotionIndex2Field.setLocation(new Point(584, 2));
+      leapMotionIndex2Field.setHasMinValue(true);
+      leapMotionIndex2Field.setFont(new Font("Dialog", Font.PLAIN, 10));
+      leapMotionIndex2Field.setEditable(true);
+      leapMotionIndex2Field.setBounds(417, 34, 60, 24);
+      leapMotionIndex2Field.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getLeapMotionMainEditorController() != null) {
+            tinaController.getLeapMotionMainEditorController().leapMotionIndex2Field_changed();
+          }
+        }
+      });
+      panel_112.add(leapMotionIndex2Field);
+
+      leapMotionIndex3Field = new JWFNumberField();
+      leapMotionIndex3Field.setValueStep(1.0);
+      leapMotionIndex3Field.setText("");
+      leapMotionIndex3Field.setSize(new Dimension(100, 24));
+      leapMotionIndex3Field.setPreferredSize(new Dimension(100, 24));
+      leapMotionIndex3Field.setOnlyIntegers(true);
+      leapMotionIndex3Field.setLocation(new Point(584, 2));
+      leapMotionIndex3Field.setHasMinValue(true);
+      leapMotionIndex3Field.setFont(new Font("Dialog", Font.PLAIN, 10));
+      leapMotionIndex3Field.setEditable(true);
+      leapMotionIndex3Field.setBounds(477, 34, 60, 24);
+      leapMotionIndex3Field.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getLeapMotionMainEditorController() != null) {
+            tinaController.getLeapMotionMainEditorController().leapMotionIndex3Field_changed();
+          }
+        }
+      });
+      panel_112.add(leapMotionIndex3Field);
+    }
+    return panel_112;
+  }
+
+  public JTable getLeapMotionConfigTable() {
+    return leapMotionConfigTable;
+  }
+
+  public JComboBox getLeapMotionHandCmb() {
+    return leapMotionHandCmb;
+  }
+
+  private JComboBox getLeapMotionInputChannelCmb() {
+    if (leapMotionInputChannelCmb == null) {
+      leapMotionInputChannelCmb = new JComboBox();
+      leapMotionInputChannelCmb.setSize(new Dimension(125, 22));
+      leapMotionInputChannelCmb.setPreferredSize(new Dimension(125, 22));
+      leapMotionInputChannelCmb.setLocation(new Point(100, 4));
+      leapMotionInputChannelCmb.setFont(new Font("Dialog", Font.BOLD, 10));
+      leapMotionInputChannelCmb.setBounds(96, 34, 135, 24);
+      leapMotionInputChannelCmb.addItemListener(new ItemListener() {
+        public void itemStateChanged(ItemEvent e) {
+          if (tinaController != null && tinaController.getLeapMotionMainEditorController() != null) {
+            tinaController.getLeapMotionMainEditorController().leapMotionInputChannelCmb_changed();
+          }
+        }
+      });
+    }
+    return leapMotionInputChannelCmb;
+  }
+
+  private JLabel getLblInputChannel() {
+    if (lblInputChannel == null) {
+      lblInputChannel = new JLabel();
+      lblInputChannel.setText("Motion-property");
+      lblInputChannel.setSize(new Dimension(94, 22));
+      lblInputChannel.setPreferredSize(new Dimension(94, 22));
+      lblInputChannel.setLocation(new Point(488, 2));
+      lblInputChannel.setFont(new Font("Dialog", Font.BOLD, 10));
+      lblInputChannel.setBounds(4, 36, 86, 22);
+    }
+    return lblInputChannel;
+  }
+
+  private JLabel getLblFlameproperty() {
+    if (lblFlameproperty == null) {
+      lblFlameproperty = new JLabel();
+      lblFlameproperty.setText("Linked Flame-property");
+      lblFlameproperty.setSize(new Dimension(94, 22));
+      lblFlameproperty.setPreferredSize(new Dimension(94, 22));
+      lblFlameproperty.setLocation(new Point(488, 2));
+      lblFlameproperty.setFont(new Font("Dialog", Font.BOLD, 10));
+      lblFlameproperty.setBounds(242, 9, 114, 22);
+    }
+    return lblFlameproperty;
+  }
+
+  private JComboBox getLeapMotionOutputChannelCmb() {
+    if (leapMotionOutputChannelCmb == null) {
+      leapMotionOutputChannelCmb = new JComboBox();
+      leapMotionOutputChannelCmb.setSize(new Dimension(125, 22));
+      leapMotionOutputChannelCmb.setPreferredSize(new Dimension(125, 22));
+      leapMotionOutputChannelCmb.setLocation(new Point(100, 4));
+      leapMotionOutputChannelCmb.setFont(new Font("Dialog", Font.BOLD, 10));
+      leapMotionOutputChannelCmb.setBounds(357, 7, 180, 24);
+      leapMotionOutputChannelCmb.addItemListener(new ItemListener() {
+        public void itemStateChanged(ItemEvent e) {
+          if (tinaController != null && tinaController.getLeapMotionMainEditorController() != null) {
+            tinaController.getLeapMotionMainEditorController().leapMotionOutputChannelCmb_changed();
+          }
+        }
+      });
+    }
+    return leapMotionOutputChannelCmb;
+  }
+
+  private JLabel getLblFlamepropertyindex() {
+    if (lblFlamepropertyindex == null) {
+      lblFlamepropertyindex = new JLabel();
+      lblFlamepropertyindex.setText("Flame-property-index");
+      lblFlamepropertyindex.setSize(new Dimension(94, 22));
+      lblFlamepropertyindex.setPreferredSize(new Dimension(94, 22));
+      lblFlamepropertyindex.setLocation(new Point(488, 2));
+      lblFlamepropertyindex.setFont(new Font("Dialog", Font.BOLD, 10));
+      lblFlamepropertyindex.setBounds(242, 36, 114, 22);
+    }
+    return lblFlamepropertyindex;
+  }
+
+  private JLabel getLblHand() {
+    if (lblHand == null) {
+      lblHand = new JLabel();
+      lblHand.setText("Hand");
+      lblHand.setSize(new Dimension(94, 22));
+      lblHand.setPreferredSize(new Dimension(94, 22));
+      lblHand.setLocation(new Point(488, 2));
+      lblHand.setFont(new Font("Dialog", Font.BOLD, 10));
+      lblHand.setBounds(4, 8, 86, 22);
+    }
+    return lblHand;
+  }
+
+  public JWFNumberField getLeapMotionIndex1Field() {
+    return leapMotionIndex1Field;
+  }
+
+  public JWFNumberField getLeapMotionInvScaleField() {
+    return leapMotionInvScaleField;
+  }
+
+  public JWFNumberField getLeapMotionOffsetField() {
+    return leapMotionOffsetField;
+  }
+
+  public JButton getLeapMotionAddButton() {
+    return leapMotionAddButton;
+  }
+
+  public JButton getLeapMotionDuplicateButton() {
+    return leapMotionDuplicateButton;
+  }
+
+  public JButton getLeapMotionDeleteButton() {
+    return leapMotionDeleteButton;
+  }
+
+  public JButton getLeapMotionClearButton() {
+    return leapMotionClearButton;
+  }
+
+  public JWFNumberField getLeapMotionIndex2Field() {
+    return leapMotionIndex2Field;
+  }
+
+  public JWFNumberField getLeapMotionIndex3Field() {
+    return leapMotionIndex3Field;
+  }
+
+  public JButton getLeapMotionResetConfigButton() {
+    return leapMotionResetConfigButton;
+  }
+
+  public JWFNumberField getTinaSpatialOversamplingREd() {
+    return tinaSpatialOversamplingREd;
+  }
+
+  public JSlider getTinaSpatialOversamplingSlider() {
+    return tinaSpatialOversamplingSlider;
+  }
+
+  public JPanel getFilterKernelPreviewRootPnl() {
+    return filterKernelPreviewRootPnl;
+  }
+
+  public JCheckBox getTinaSampleJitteringCheckBox() {
+    return tinaSampleJitteringCheckBox;
+  }
+
+  public JWFNumberField getTinaColorOversamplingREd() {
+    return tinaColorOversamplingREd;
+  }
+
+  public JSlider getTinaColorOversamplingSlider() {
+    return tinaColorOversamplingSlider;
+  }
+
+  public JToggleButton getFilterKernelFlatPreviewBtn() {
+    return filterKernelFlatPreviewBtn;
+  }
+
+  public JCheckBox getTinaPostNoiseFilterCheckBox() {
+    return tinaPostNoiseFilterCheckBox;
+  }
+
+  public JWFNumberField getTinaPostNoiseThresholdField() {
+    return tinaPostNoiseThresholdField;
+  }
+
+  public JSlider getTinaPostNoiseThresholdSlider() {
+    return tinaPostNoiseThresholdSlider;
+  }
+
+  public JWFNumberField getForegroundOpacityField() {
+    return foregroundOpacityField;
+  }
+
+  public JSlider getForegroundOpacitySlider() {
+    return foregroundOpacitySlider;
+  }
+
+  private JWFNumberField getXFormAntialiasAmountREd() {
+    if (xFormAntialiasAmountREd == null) {
+      xFormAntialiasAmountREd = new JWFNumberField();
+      xFormAntialiasAmountREd.setMouseSpeed(0.1);
+      xFormAntialiasAmountREd.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null) {
+            if (!xFormAntialiasAmountREd.isMouseAdjusting() || xFormAntialiasAmountREd.getMouseChangeCount() == 0) {
+              if (!xFormAntialiasAmountSlider.getValueIsAdjusting()) {
+                tinaController.saveUndoPoint();
+              }
+            }
+            tinaController.getFlameControls().xFormAntialiasAmountREd_changed();
+          }
+        }
+      });
+      xFormAntialiasAmountREd.setValueStep(0.05);
+      xFormAntialiasAmountREd.setText("");
+      xFormAntialiasAmountREd.setSize(new Dimension(55, 22));
+      xFormAntialiasAmountREd.setPreferredSize(new Dimension(55, 22));
+      xFormAntialiasAmountREd.setMaxValue(1.0);
+      xFormAntialiasAmountREd.setLocation(new Point(68, 4));
+      xFormAntialiasAmountREd.setHasMinValue(true);
+      xFormAntialiasAmountREd.setHasMaxValue(true);
+      xFormAntialiasAmountREd.setFont(new Font("Dialog", Font.PLAIN, 10));
+      xFormAntialiasAmountREd.setBounds(675, 6, 100, 22);
+    }
+    return xFormAntialiasAmountREd;
+  }
+
+  private JLabel getXFormAntialiasAmountLbl() {
+    if (xFormAntialiasAmountLbl == null) {
+      xFormAntialiasAmountLbl = new JLabel();
+      xFormAntialiasAmountLbl.setText("Antialiasing amount");
+      xFormAntialiasAmountLbl.setSize(new Dimension(64, 22));
+      xFormAntialiasAmountLbl.setPreferredSize(new Dimension(64, 22));
+      xFormAntialiasAmountLbl.setLocation(new Point(4, 4));
+      xFormAntialiasAmountLbl.setFont(new Font("Dialog", Font.BOLD, 10));
+      xFormAntialiasAmountLbl.setBounds(565, 6, 113, 22);
+    }
+    return xFormAntialiasAmountLbl;
+  }
+
+  private JSlider getXFormAntialiasAmountSlider() {
+    if (xFormAntialiasAmountSlider == null) {
+      xFormAntialiasAmountSlider = new JSlider();
+      xFormAntialiasAmountSlider.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null) {
+            tinaController.getFlameControls().xFormAntialiasAmountSlider_changed();
+          }
+        }
+      });
+      xFormAntialiasAmountSlider.addMouseListener(new MouseAdapter() {
+        @Override
+        public void mousePressed(MouseEvent e) {
+          tinaController.saveUndoPoint();
+        }
+      });
+      xFormAntialiasAmountSlider.setValue(0);
+      xFormAntialiasAmountSlider.setSize(new Dimension(220, 19));
+      xFormAntialiasAmountSlider.setPreferredSize(new Dimension(220, 19));
+      xFormAntialiasAmountSlider.setMinimum(0);
+      xFormAntialiasAmountSlider.setMaximum(100);
+      xFormAntialiasAmountSlider.setLocation(new Point(123, 4));
+      xFormAntialiasAmountSlider.setFont(new Font("Dialog", Font.BOLD, 10));
+      xFormAntialiasAmountSlider.setBounds(777, 6, 220, 22);
+    }
+    return xFormAntialiasAmountSlider;
+  }
+
+  private JWFNumberField getXFormAntialiasRadiusREd() {
+    if (xFormAntialiasRadiusREd == null) {
+      xFormAntialiasRadiusREd = new JWFNumberField();
+      xFormAntialiasRadiusREd.setMouseSpeed(0.1);
+      xFormAntialiasRadiusREd.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null) {
+            if (!xFormAntialiasRadiusREd.isMouseAdjusting() || xFormAntialiasRadiusREd.getMouseChangeCount() == 0) {
+              if (!xFormAntialiasRadiusSlider.getValueIsAdjusting()) {
+                tinaController.saveUndoPoint();
+              }
+            }
+            tinaController.getFlameControls().xFormAntialiasRadiusREd_changed();
+          }
+        }
+      });
+      xFormAntialiasRadiusREd.setValueStep(0.05);
+      xFormAntialiasRadiusREd.setText("");
+      xFormAntialiasRadiusREd.setSize(new Dimension(55, 22));
+      xFormAntialiasRadiusREd.setPreferredSize(new Dimension(55, 22));
+      xFormAntialiasRadiusREd.setMaxValue(2.0);
+      xFormAntialiasRadiusREd.setLocation(new Point(68, 4));
+      xFormAntialiasRadiusREd.setHasMinValue(true);
+      xFormAntialiasRadiusREd.setHasMaxValue(true);
+      xFormAntialiasRadiusREd.setFont(new Font("Dialog", Font.PLAIN, 10));
+      xFormAntialiasRadiusREd.setBounds(675, 28, 100, 22);
+    }
+    return xFormAntialiasRadiusREd;
+  }
+
+  private JLabel getXFormAntialiasRadiusLbl() {
+    if (xFormAntialiasRadiusLbl == null) {
+      xFormAntialiasRadiusLbl = new JLabel();
+      xFormAntialiasRadiusLbl.setText("Antialiasing radius");
+      xFormAntialiasRadiusLbl.setSize(new Dimension(64, 22));
+      xFormAntialiasRadiusLbl.setPreferredSize(new Dimension(64, 22));
+      xFormAntialiasRadiusLbl.setLocation(new Point(4, 4));
+      xFormAntialiasRadiusLbl.setFont(new Font("Dialog", Font.BOLD, 10));
+      xFormAntialiasRadiusLbl.setBounds(565, 28, 113, 22);
+    }
+    return xFormAntialiasRadiusLbl;
+  }
+
+  private JSlider getXFormAntialiasRadiusSlider() {
+    if (xFormAntialiasRadiusSlider == null) {
+      xFormAntialiasRadiusSlider = new JSlider();
+      xFormAntialiasRadiusSlider.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null) {
+            tinaController.getFlameControls().xFormAntialiasRadiusSlider_changed();
+          }
+        }
+      });
+      xFormAntialiasRadiusSlider.addMouseListener(new MouseAdapter() {
+        @Override
+        public void mousePressed(MouseEvent e) {
+          tinaController.saveUndoPoint();
+        }
+      });
+      xFormAntialiasRadiusSlider.setValue(0);
+      xFormAntialiasRadiusSlider.setSize(new Dimension(172, 22));
+      xFormAntialiasRadiusSlider.setPreferredSize(new Dimension(172, 22));
+      xFormAntialiasRadiusSlider.setMinimum(0);
+      xFormAntialiasRadiusSlider.setMaximum(200);
+      xFormAntialiasRadiusSlider.setLocation(new Point(123, 4));
+      xFormAntialiasRadiusSlider.setFont(new Font("Dialog", Font.BOLD, 10));
+      xFormAntialiasRadiusSlider.setBounds(777, 28, 220, 22);
+    }
+    return xFormAntialiasRadiusSlider;
   }
 } //  @jve:decl-index=0:visual-constraint="10,10"
 

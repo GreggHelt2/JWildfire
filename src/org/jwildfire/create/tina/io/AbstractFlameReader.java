@@ -48,6 +48,11 @@ public class AbstractFlameReader {
   public static final String ATTR_SCALE = "scale";
   public static final String ATTR_ROTATE = "rotate";
   public static final String ATTR_FILTER = "filter";
+  public static final String ATTR_SPATIAL_OVERSAMPLE = "oversample";
+  public static final String ATTR_COLOR_OVERSAMPLE = "color_oversample";
+  public static final String ATTR_SAMPLE_JITTERING = "sample_jittering";
+  public static final String ATTR_POST_NOISE_FILTER = "post_noise_filter";
+  public static final String ATTR_POST_NOISE_FILTER_THRESHOLD = "post_noise_filter_threshold";
   public static final String ATTR_FILTER_KERNEL = "filter_kernel";
   public static final String ATTR_QUALITY = "quality";
   public static final String ATTR_BACKGROUND = "background";
@@ -88,6 +93,7 @@ public class AbstractFlameReader {
   public static final String ATTR_CAM_DOF_PARAM5 = "cam_dof_param5";
   public static final String ATTR_CAM_DOF_PARAM6 = "cam_dof_param6";
   public static final String ATTR_CAM_ZOOM = "cam_zoom";
+  public static final String ATTR_NEW_LINEAR = "new_linear";
   public static final String ATTR_SHADING_SHADING = "shading_shading";
   public static final String ATTR_SHADING_AMBIENT = "shading_ambient";
   public static final String ATTR_SHADING_DIFFUSE = "shading_diffuse";
@@ -219,6 +225,21 @@ public class AbstractFlameReader {
         ex.printStackTrace();
       }
     }
+    if ((hs = atts.get(ATTR_SPATIAL_OVERSAMPLE)) != null) {
+      pFlame.setSpatialOversampling(Integer.parseInt(hs));
+    }
+    if ((hs = atts.get(ATTR_COLOR_OVERSAMPLE)) != null) {
+      pFlame.setColorOversampling(Integer.parseInt(hs));
+    }
+    if ((hs = atts.get(ATTR_SAMPLE_JITTERING)) != null) {
+      pFlame.setSampleJittering(Integer.parseInt(hs) == 1);
+    }
+    if ((hs = atts.get(ATTR_POST_NOISE_FILTER)) != null) {
+      pFlame.setPostNoiseFilter(Integer.parseInt(hs) == 1);
+    }
+    if ((hs = atts.get(ATTR_POST_NOISE_FILTER_THRESHOLD)) != null) {
+      pFlame.setPostNoiseFilterThreshold(Double.parseDouble(hs));
+    }
     if ((hs = atts.get(ATTR_QUALITY)) != null) {
       pFlame.setSampleDensity(Double.parseDouble(hs));
     }
@@ -348,6 +369,10 @@ public class AbstractFlameReader {
     if ((hs = atts.get(ATTR_NEW_DOF)) != null) {
       pFlame.setNewCamDOF("1".equals(hs));
     }
+    // preserve-z
+    if ((hs = atts.get(ATTR_PRESERVE_Z)) != null) {
+      pFlame.setPreserveZ("1".equals(hs));
+    }
     // profiles
     if ((hs = atts.get(ATTR_RESOLUTION_PROFILE)) != null) {
       pFlame.setResolutionProfile(hs);
@@ -413,6 +438,9 @@ public class AbstractFlameReader {
     if ((hs = atts.get(ATTR_SHADING_BLUR_FALLOFF)) != null) {
       pFlame.getShadingInfo().setBlurFallOff(Double.parseDouble(hs));
     }
+    if ((hs = atts.get(ATTR_NEW_LINEAR)) != null) {
+      pFlame.setPreserveZ(hs.length() > 0 && Integer.parseInt(hs) == 1);
+    }
 
     if ((hs = atts.get(ATTR_ANTIALIAS_AMOUNT)) != null) {
       pFlame.setAntialiasAmount(Double.parseDouble(hs));
@@ -423,16 +451,10 @@ public class AbstractFlameReader {
 
     if ((hs = atts.get(ATTR_MOTIONBLUR_LENGTH)) != null) {
       int blurLen = Integer.parseInt(hs);
-      if (blurLen > 0 && prefs.getTinaOverwriteMotionBlurLength() > 0) {
-        blurLen = prefs.getTinaOverwriteMotionBlurLength();
-      }
       pFlame.setMotionBlurLength(blurLen);
     }
     if ((hs = atts.get(ATTR_MOTIONBLUR_TIMESTEP)) != null) {
       double timestep = Double.parseDouble(hs);
-      if (timestep > MathLib.EPSILON && prefs.getTinaOverwriteMotionBlurTimeStep() > MathLib.EPSILON) {
-        timestep = prefs.getTinaOverwriteMotionBlurTimeStep();
-      }
       pFlame.setMotionBlurTimeStep(timestep);
     }
     if ((hs = atts.get(ATTR_MOTIONBLUR_DECAY)) != null) {
@@ -659,6 +681,7 @@ public class AbstractFlameReader {
       if (value > 0)
         pFlame.setAntialiasRadius(value);
     }
+
     if ((hs = atts.get(ATTR_OPACITY)) != null) {
       double opacity = Double.parseDouble(hs);
       pXForm.setOpacity(opacity);

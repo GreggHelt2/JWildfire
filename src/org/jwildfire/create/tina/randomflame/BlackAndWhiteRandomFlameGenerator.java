@@ -49,6 +49,7 @@ public class BlackAndWhiteRandomFlameGenerator extends RandomFlameGenerator {
     generators.add(new DualityRandomFlameGenerator());
     generators.add(new Gnarl3DRandomFlameGenerator());
     generators.add(new JulianDiscRandomFlameGenerator());
+    generators.add(new JuliansRandomFlameGenerator());
     generators.add(new LayerzRandomFlameGenerator());
     generators.add(new LinearRandomFlameGenerator());
     generators.add(new MandelbrotRandomFlameGenerator());
@@ -63,6 +64,7 @@ public class BlackAndWhiteRandomFlameGenerator extends RandomFlameGenerator {
     generators.add(new SubFlameRandomFlameGenerator());
     generators.add(new SynthRandomFlameGenerator());
     generators.add(new TentacleRandomFlameGenerator());
+    generators.add(new TileBallRandomFlameGenerator());
     generators.add(new DualityRandomFlameGenerator());
     generators.add(new XenomorphRandomFlameGenerator());
   }
@@ -82,7 +84,7 @@ public class BlackAndWhiteRandomFlameGenerator extends RandomFlameGenerator {
     RandomFlameGenerator generator = createRandGen(pState);
     RandomFlameGeneratorState subState = generator.initState(pState.getPrefs(), pState.getGradientGenerator());
     Flame flame = generator.prepareFlame(subState);
-    flame.setName(generator.getName() + " - " + flame.hashCode());
+    flame.setName(getName() + " - " + flame.hashCode());
     return flame;
   }
 

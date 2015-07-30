@@ -21,7 +21,7 @@ import java.util.List;
 
 import org.jwildfire.base.Prefs;
 import org.jwildfire.create.tina.base.Flame;
-import org.jwildfire.create.tina.integration.chaotica.ChaoticaExporterRandomFlameGenerator;
+import org.jwildfire.create.tina.integration.chaotica.ChaoticaBridgeRandomFlameGenerator;
 import org.jwildfire.create.tina.randomgradient.RandomGradientGenerator;
 
 public class AllRandomFlameGenerator extends RandomFlameGenerator {
@@ -37,7 +37,7 @@ public class AllRandomFlameGenerator extends RandomFlameGenerator {
     allGenerators.add(new Brokat3DRandomFlameGenerator());
     allGenerators.add(new BubblesRandomFlameGenerator());
     allGenerators.add(new Bubbles3DRandomFlameGenerator());
-    allGenerators.add(new ChaoticaExporterRandomFlameGenerator());
+    allGenerators.add(new ChaoticaBridgeRandomFlameGenerator());
     allGenerators.add(new CrossRandomFlameGenerator());
     allGenerators.add(new DualityRandomFlameGenerator());
     allGenerators.add(new DuckiesRandomFlameGenerator());
@@ -49,9 +49,10 @@ public class AllRandomFlameGenerator extends RandomFlameGenerator {
     allGenerators.add(new GnarlRandomFlameGenerator());
     allGenerators.add(new Gnarl3DRandomFlameGenerator());
     allGenerators.add(new JulianDiscRandomFlameGenerator());
-    allGenerators.add(new LayerzRandomFlameGenerator());
+    allGenerators.add(new JuliansRandomFlameGenerator());
     allGenerators.add(new LinearRandomFlameGenerator());
     allGenerators.add(new MandelbrotRandomFlameGenerator());
+    allGenerators.add(new Pseudo3DRandomFlameGenerator());
     allGenerators.add(new RaysRandomFlameGenerator());
     allGenerators.add(new SimpleRandomFlameGenerator());
     allGenerators.add(new SimpleTilingRandomFlameGenerator());
@@ -62,9 +63,8 @@ public class AllRandomFlameGenerator extends RandomFlameGenerator {
     allGenerators.add(new SubFlameRandomFlameGenerator());
     allGenerators.add(new SynthRandomFlameGenerator());
     allGenerators.add(new TentacleRandomFlameGenerator());
+    allGenerators.add(new TileBallRandomFlameGenerator());
     allGenerators.add(new XenomorphRandomFlameGenerator());
-    //    allGenerators.add(new ColorMapRandomFlameGenerator());
-    // allGenerators.add(new WikimediaCommonsRandomFlameGenerator());
 
     simpleGenerators = new ArrayList<RandomFlameGenerator>();
     simpleGenerators.addAll(allGenerators);

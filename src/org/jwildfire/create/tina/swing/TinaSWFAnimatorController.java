@@ -305,17 +305,24 @@ public class TinaSWFAnimatorController implements SWFAnimationRenderThreadContro
 
   private void addFlame(Flame pFlame) {
     boolean firstPart = currMovie.getParts().size() == 0;
+    int frameCount, frameMorphCount;
     if (firstPart) {
       if (pFlame.getMotionBlurLength() > 0) {
         swfAnimatorMotionBlurLengthREd.setValue(pFlame.getMotionBlurLength());
         swfAnimatorMotionBlurTimeStepREd.setValue(pFlame.getMotionBlurTimeStep());
       }
-
+      frameCount = 120;
+      frameMorphCount = 60;
+    }
+    else {
+      FlameMoviePart prevPart = currMovie.getParts().get(currMovie.getParts().size() - 1);
+      frameCount = prevPart.getFrameCount();
+      frameMorphCount = prevPart.getFrameMorphCount();
     }
     FlameMoviePart part = new FlameMoviePart();
     part.setFlame(pFlame);
-    part.setFrameCount(120);
-    part.setFrameMorphCount(60);
+    part.setFrameCount(frameCount);
+    part.setFrameMorphCount(frameMorphCount);
     addFlameToFlamePanel(part);
     currMovie.addPart(part);
     refreshFrameCount();
@@ -1175,16 +1182,28 @@ public class TinaSWFAnimatorController implements SWFAnimationRenderThreadContro
   }
 
   private void setXFormScriptToUI(XFormScript pScript, JComboBox pCmb, JWFNumberField pAmountField) {
-    pCmb.setSelectedItem(pScript != null && pScript.getScriptType() != null ? pScript.getScriptType() : XFormScriptType.NONE);
-    pAmountField.setValue(pScript != null ? pScript.getAmplitude() : 1.0);
-    curves.get(pAmountField.getMotionPropertyName()).getCurve().assign(pScript.getAmplitudeCurve());
+    if(pScript != null){
+    	pCmb.setSelectedItem(pScript.getScriptType() != null ? pScript.getScriptType() : XFormScriptType.NONE);
+    	pAmountField.setValue(pScript.getAmplitude());
+    	curves.get(pAmountField.getMotionPropertyName()).getCurve().assign(pScript.getAmplitudeCurve());
+    }
+    else{
+    	pCmb.setSelectedItem(XFormScriptType.NONE);
+    	pAmountField.setValue(1.0);
+    }
     new MotionControlsDelegate(parentCtrl, null, parentCtrl.getRootTabbedPane()).enableControl(pAmountField, false);
   }
 
   private void setGlobalScriptToUI(GlobalScript pScript, JComboBox pCmb, JWFNumberField pAmountField) {
-    pCmb.setSelectedItem(pScript != null && pScript.getScriptType() != null ? pScript.getScriptType() : GlobalScriptType.NONE);
-    pAmountField.setValue(pScript != null ? pScript.getAmplitude() : 1.0);
-    curves.get(pAmountField.getMotionPropertyName()).getCurve().assign(pScript.getAmplitudeCurve());
+    if(pScript != null){
+    	pCmb.setSelectedItem(pScript.getScriptType() != null ? pScript.getScriptType() : GlobalScriptType.NONE);
+    	pAmountField.setValue(pScript.getAmplitude());
+    	curves.get(pAmountField.getMotionPropertyName()).getCurve().assign(pScript.getAmplitudeCurve());
+    }
+    else{
+    	pCmb.setSelectedItem(GlobalScriptType.NONE);
+    	pAmountField.setValue(1.0);
+    }
     new MotionControlsDelegate(parentCtrl, null, parentCtrl.getRootTabbedPane()).enableControl(pAmountField, false);
   }
 

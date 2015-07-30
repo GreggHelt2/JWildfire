@@ -27,8 +27,8 @@ import org.jwildfire.create.tina.render.RenderMode;
 import org.jwildfire.create.tina.render.SliceRenderInfo;
 
 public class RenderSlicesThread implements Runnable {
-  public static final double DFLT_ANTIALIAS_RADIUS = 0.36;
-  public static final double DFLT_ANTIALIAS_AMOUNT = 0.75;
+  public static final double DFLT_ANTIALIAS_RADIUS = 0.16;
+  public static final double DFLT_ANTIALIAS_AMOUNT = 0.5;
   private final Prefs prefs;
   private final Flame flame;
   private final String outFilePattern;
@@ -81,9 +81,8 @@ public class RenderSlicesThread implements Runnable {
       flame.setWidth(info.getImageWidth());
       flame.setHeight(info.getImageHeight());
       flame.setSampleDensity(quality);
-
-      flame.setAntialiasRadius(DFLT_ANTIALIAS_RADIUS);
-      flame.setAntialiasAmount(DFLT_ANTIALIAS_AMOUNT);
+      // TODO XXX
+      //flame.setAntialiasRadius(DFLT_ANTIALIAS_RADIUS);
 
       renderer.setProgressUpdater(progressUpdater);
       SliceRenderInfo renderInfo = new SliceRenderInfo(renderWidth, renderHeight, RenderMode.PRODUCTION, slicesCount, zmin, zmax, slicesPerRender);

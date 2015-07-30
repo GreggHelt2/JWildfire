@@ -155,6 +155,7 @@ public class TinaControllerData {
   public JPanel colorChooserPaletteImgPanel;
   public ImagePanel palettePanel;
   public ImagePanel colorChooserPalettePanel;
+  public ImagePanel filterKernelPreviewPanel;
   public JWFNumberField paletteShiftREd;
   public JSlider paletteShiftSlider;
   public JWFNumberField paletteRedREd;
@@ -219,6 +220,7 @@ public class TinaControllerData {
   public JButton affineScaleEditMotionCurveBtn;
   public JToggleButton affineEditPostTransformButton;
   public JToggleButton affineEditPostTransformSmallButton;
+  public JToggleButton affinePreserveZButton;
   public JButton randomizeButton;
   public JToggleButton toggleVariationsButton;
   public JToggleButton toggleTransparencyButton;
@@ -419,5 +421,16 @@ public class TinaControllerData {
   public JWFNumberField gradientColorMapLocalColorScaleREd;
   public JSlider gradientColorMapLocalColorScaleSlider;
   public JWFNumberField flameFPSField;
-
+  public JPanel filterKernelPreviewRootPnl;
+  public JWFNumberField tinaSpatialOversamplingREd;
+  public JSlider tinaSpatialOversamplingSlider;
+  public JWFNumberField tinaColorOversamplingREd;
+  public JSlider tinaColorOversamplingSlider;
+  public JCheckBox tinaSampleJitteringCheckBox;
+  public JToggleButton filterKernelFlatPreviewBtn;
+  public JCheckBox tinaPostNoiseFilterCheckBox;
+  public JWFNumberField tinaPostNoiseThresholdField;
+  public JSlider tinaPostNoiseThresholdSlider;
+  public JWFNumberField foregroundOpacityField;
+  public JSlider foregroundOpacitySlider;
 }

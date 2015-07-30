@@ -1,6 +1,6 @@
 /*
   JWildfire - an image and animation processor written in Java 
-  Copyright (C) 1995-2014 Andreas Maschke
+  Copyright (C) 1995-2015 Andreas Maschke
 
   This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser 
   General Public License as published by the Free Software Foundation; either version 2.1 of the 
@@ -34,6 +34,7 @@ import javax.swing.JToggleButton;
 import javax.swing.JTree;
 
 import org.jwildfire.base.Prefs;
+import org.jwildfire.create.tina.mutagen.MutationType;
 import org.jwildfire.create.tina.render.ProgressUpdater;
 import org.jwildfire.swing.ErrorHandler;
 
@@ -256,6 +257,7 @@ public class TinaControllerParameter {
   public JTextPane apophysisHintsPane;
   public JToggleButton pToggleVariationsButton;
   public JToggleButton pToggleTransparencyButton;
+  public JToggleButton pAffinePreserveZButton;
   public JComboBox pQualityProfileCmb;
   public JComboBox pResolutionProfileCmb;
   public JComboBox pBatchQualityProfileCmb;
@@ -337,10 +339,10 @@ public class TinaControllerParameter {
   public JButton mutaGenLoadFlameFromFileBtn;
   public JProgressBar mutaGenProgressBar;
   public JWFNumberField mutaGenAmountREd;
-  public JComboBox mutaGenHorizontalTrend1Cmb;
-  public JComboBox mutaGenHorizontalTrend2Cmb;
-  public JComboBox mutaGenVerticalTrend1Cmb;
-  public JComboBox mutaGenVerticalTrend2Cmb;
+  public JComboBox<MutationType> mutaGenHorizontalTrend1Cmb;
+  public JComboBox<MutationType> mutaGenHorizontalTrend2Cmb;
+  public JComboBox<MutationType> mutaGenVerticalTrend1Cmb;
+  public JComboBox<MutationType> mutaGenVerticalTrend2Cmb;
   public JButton mutaGenBackBtn;
   public JButton mutaGenForwardBtn;
   public JTextPane mutaGenHintPane;
@@ -585,6 +587,33 @@ public class TinaControllerParameter {
   public JWFNumberField gradientColorMapLocalColorScaleREd;
   public JSlider gradientColorMapLocalColorScaleSlider;
   public JWFNumberField flameFPSField;
+  public JToggleButton leapMotionToggleButton;
+  public JTable leapMotionConfigTable;
+  public JComboBox leapMotionHandCmb;
+  public JComboBox leapMotionInputChannelCmb;
+  public JComboBox leapMotionOutputChannelCmb;
+  public JWFNumberField leapMotionIndex1Field;
+  public JWFNumberField leapMotionIndex2Field;
+  public JWFNumberField leapMotionIndex3Field;
+  public JWFNumberField leapMotionInvScaleField;
+  public JWFNumberField leapMotionOffsetField;
+  public JButton leapMotionAddButton;
+  public JButton leapMotionDuplicateButton;
+  public JButton leapMotionDeleteButton;
+  public JButton leapMotionClearButton;
+  public JButton leapMotionResetConfigButton;
+  public JPanel filterKernelPreviewRootPnl;
+  public JWFNumberField tinaSpatialOversamplingREd;
+  public JSlider tinaSpatialOversamplingSlider;
+  public JWFNumberField tinaColorOversamplingREd;
+  public JSlider tinaColorOversamplingSlider;
+  public JCheckBox tinaSampleJitteringCheckBox;
+  public JToggleButton filterKernelFlatPreviewBtn;
+  public JCheckBox tinaPostNoiseFilterCheckBox;
+  public JWFNumberField tinaPostNoiseThresholdField;
+  public JSlider tinaPostNoiseThresholdSlider;
+  public JWFNumberField foregroundOpacityField;
+  public JSlider foregroundOpacitySlider;
 
   public void setParams1(TinaInternalFrame pTinaFrame, ErrorHandler pErrorHandler, Prefs pPrefs, JPanel pCenterPanel, JWFNumberField pCameraRollREd, JSlider pCameraRollSlider, JWFNumberField pCameraPitchREd, JSlider pCameraPitchSlider, JWFNumberField pCameraYawREd, JSlider pCameraYawSlider, JWFNumberField pCameraPerspectiveREd, JSlider pCameraPerspectiveSlider, JWFNumberField pCameraCentreXREd, JSlider pCameraCentreXSlider, JWFNumberField pCameraCentreYREd, JSlider pCameraCentreYSlider, JWFNumberField pCameraZoomREd, JSlider pCameraZoomSlider, JCheckBox pNewDOFCBx, JWFNumberField pFocusXREd, JSlider pFocusXSlider, JWFNumberField pFocusYREd, JSlider pFocusYSlider, JWFNumberField pFocusZREd, JSlider pFocusZSlider, JWFNumberField pDimishZREd, JSlider pDimishZSlider,
       JWFNumberField pCameraDOFREd, JSlider pCameraDOFSlider, JWFNumberField pCameraDOFAreaREd, JSlider pCameraDOFAreaSlider, JWFNumberField pCameraDOFExponentREd, JSlider pCameraDOFExponentSlider, JWFNumberField pCamZREd, JSlider pCamZSlider, JWFNumberField pPixelsPerUnitREd, JSlider pPixelsPerUnitSlider, JWFNumberField pBrightnessREd, JSlider pBrightnessSlider, JWFNumberField pContrastREd, JSlider pContrastSlider, JWFNumberField pGammaREd, JSlider pGammaSlider, JWFNumberField pVibrancyREd, JSlider pVibrancySlider, JWFNumberField pFilterRadiusREd, JSlider pFilterRadiusSlider, JComboBox pFilterKernelCmb,
@@ -595,7 +624,7 @@ public class TinaControllerParameter {
       JComboBox pXFormDrawModeCmb, JTable pRelWeightsTable, JButton pRelWeightsZeroButton, JButton pRelWeightsOneButton, JWFNumberField pRelWeightREd, JToggleButton pMouseTransformMoveButton, JToggleButton pMouseTransformScaleButton, JToggleButton pMouseTransformShearButton, JToggleButton pMouseTransformViewButton, JToggleButton pAffineEditPostTransformButton, JToggleButton pAffineEditPostTransformSmallButton, JButton pAffineResetTransformButton, JTable pCreatePaletteColorsTable, JComboBox pShadingCmb, JWFNumberField pShadingAmbientREd, JSlider pShadingAmbientSlider, JWFNumberField pShadingDiffuseREd, JSlider pShadingDiffuseSlider, JWFNumberField pShadingPhongREd,
       JSlider pShadingPhongSlider, JWFNumberField pShadingPhongSizeREd, JSlider pShadingPhongSizeSlider, JComboBox pShadingLightCmb, JWFNumberField pShadingLightXREd, JSlider pShadingLightXSlider, JWFNumberField pShadingLightYREd, JSlider pShadingLightYSlider, JWFNumberField pShadingLightZREd, JSlider pShadingLightZSlider, JWFNumberField pShadingLightRedREd, JSlider pShadingLightRedSlider, JWFNumberField pShadingLightGreenREd, JSlider pShadingLightGreenSlider, JWFNumberField pShadingLightBlueREd, JSlider pShadingLightBlueSlider, JWFNumberField pShadingDistanceColorRadiusREd, JSlider pShadingDistanceColorRadiusSlider, JWFNumberField pShadingDistanceColorScaleREd, JSlider pShadingDistanceColorScaleSlider, JWFNumberField pShadingDistanceColorExponentREd,
       JSlider pShadingDistanceColorExponentSlider, JWFNumberField pShadingDistanceColorOffsetXREd, JSlider pShadingDistanceColorOffsetXSlider, JWFNumberField pShadingDistanceColorOffsetYREd, JSlider pShadingDistanceColorOffsetYSlider, JWFNumberField pShadingDistanceColorOffsetZREd, JSlider pShadingDistanceColorOffsetZSlider, JToggleButton pMouseTransformSlowButton, JTable pRenderBatchJobsTable, JPanel pBatchPreviewRootPanel, JProgressBar pBatchRenderJobProgressBar, JProgressBar pBatchRenderTotalProgressBar, ProgressUpdater pJobProgressUpdater, JButton pBatchRenderAddFilesButton, JButton pBatchRenderFilesMoveDownButton, JButton pBatchRenderFilesMoveUpButton, JButton pBatchRenderFilesRemoveButton, JButton pBatchRenderFilesRemoveAllButton, JButton pBatchRenderStartButton,
-      JTabbedPane pRootTabbedPane, JButton pAffineFlipHorizontalButton, JButton pAffineFlipVerticalButton, JWFNumberField pShadingBlurRadiusREd, JSlider pShadingBlurRadiusSlider, JWFNumberField pShadingBlurFadeREd, JSlider pShadingBlurFadeSlider, JWFNumberField pShadingBlurFallOffREd, JSlider pShadingBlurFallOffSlider, JToggleButton pAffineScaleXButton, JToggleButton pAffineScaleYButton, JPanel pGradientLibraryPanel, JTextPane pHelpPane, JToggleButton pToggleVariationsButton, JToggleButton pToggleTransparencyButton, JComboBox pQualityProfileCmb, JComboBox pResolutionProfileCmb, JComboBox pBatchQualityProfileCmb,
+      JTabbedPane pRootTabbedPane, JButton pAffineFlipHorizontalButton, JButton pAffineFlipVerticalButton, JWFNumberField pShadingBlurRadiusREd, JSlider pShadingBlurRadiusSlider, JWFNumberField pShadingBlurFadeREd, JSlider pShadingBlurFadeSlider, JWFNumberField pShadingBlurFallOffREd, JSlider pShadingBlurFallOffSlider, JToggleButton pAffineScaleXButton, JToggleButton pAffineScaleYButton, JPanel pGradientLibraryPanel, JTextPane pHelpPane, JToggleButton pToggleVariationsButton, JToggleButton pToggleTransparencyButton, JToggleButton pAffinePreserveZButton, JComboBox pQualityProfileCmb, JComboBox pResolutionProfileCmb, JComboBox pBatchQualityProfileCmb,
       JComboBox pBatchResolutionProfileCmb, JComboBox pInteractiveResolutionProfileCmb, JComboBox pSWFAnimatorResolutionProfileCmb, JButton pRenderFlameButton, JButton pRenderMainButton, JButton pAppendToMovieButton, JWFNumberField pTransformationWeightREd, JButton pUndoButton, JButton pRedoButton, JWFNumberField pXFormAntialiasAmountREd, JSlider pXFormAntialiasAmountSlider, JWFNumberField pXFormAntialiasRadiusREd, JSlider pXFormAntialiasRadiusSlider, JPanel pDancingFlamesFlamePnl, JPanel pDancingFlamesGraph1Pnl, JButton pDancingFlamesLoadSoundBtn, JButton pDancingFlamesAddFromClipboardBtn, JButton pDancingFlamesAddFromEditorBtn, JButton pDancingFlamesAddFromDiscBtn,
       JWFNumberField pDancingFlamesRandomCountIEd, JButton pDancingFlamesGenRandFlamesBtn, JComboBox pDancingFlamesRandomGenCmb, JPanel pDancingFlamesPoolFlamePreviewPnl, JSlider pDancingFlamesBorderSizeSlider, JButton pDancingFlamesFlameToEditorBtn, JButton pDancingFlamesDeleteFlameBtn, JTextField pDancingFlamesFramesPerSecondIEd, JTextField pDancingFlamesMorphFrameCountIEd, JButton pDancingFlamesStartShowButton, JButton pDancingFlamesStopShowButton, JCheckBox pDancingFlamesDoRecordCBx, JComboBox pDancingFlamesFlamesCmb, JCheckBox pDancingFlamesDrawTrianglesCBx, JCheckBox pDancingFlamesDrawFFTCBx, JCheckBox pDancingFlamesDrawFPSCBx, JTree pDancingFlamesFlamePropertiesTree, JPanel pDancingFlamesMotionPropertyPnl, JTable pDancingFlamesMotionTable, JComboBox pDancingFlamesAddMotionCmb,
       JButton pDancingFlamesAddMotionBtn, JButton pDancingFlamesDeleteMotionBtn) {
@@ -784,6 +813,7 @@ public class TinaControllerParameter {
     this.pHelpPane = pHelpPane;
     this.pToggleVariationsButton = pToggleVariationsButton;
     this.pToggleTransparencyButton = pToggleTransparencyButton;
+    this.pAffinePreserveZButton = pAffinePreserveZButton;
     this.pQualityProfileCmb = pQualityProfileCmb;
     this.pResolutionProfileCmb = pResolutionProfileCmb;
     this.pBatchQualityProfileCmb = pBatchQualityProfileCmb;
@@ -1091,7 +1121,16 @@ public class TinaControllerParameter {
       JSlider pGradientColorMapHorizScaleSlider, JWFNumberField pGradientColorMapVertOffsetREd, JSlider pGradientColorMapVertOffsetSlider,
       JWFNumberField pGradientColorMapVertScaleREd, JSlider pGradientColorMapVertScaleSlider, JWFNumberField pGradientColorMapLocalColorAddREd,
       JSlider pGradientColorMapLocalColorAddSlider, JWFNumberField pGradientColorMapLocalColorScaleREd, JSlider pGradientColorMapLocalColorScaleSlider,
-      JComboBox pSWFAnimatorQualityProfileCmb, JWFNumberField pFlameFPSField) {
+      JComboBox pSWFAnimatorQualityProfileCmb, JWFNumberField pFlameFPSField, JToggleButton pLeapMotionToggleButton,
+      JTable pLeapMotionConfigTable, JComboBox pLeapMotionHandCmb, JComboBox pLeapMotionInputChannelCmb,
+      JComboBox pLeapMotionOutputChannelCmb, JWFNumberField pLeapMotionIndex1Field, JWFNumberField pLeapMotionIndex2Field,
+      JWFNumberField pLeapMotionIndex3Field, JWFNumberField pLeapMotionInvScaleField,
+      JWFNumberField pLeapMotionOffsetField, JButton pLeapMotionAddButton, JButton pLeapMotionDuplicateButton,
+      JButton pLeapMotionDeleteButton, JButton pLeapMotionClearButton, JButton pLeapMotionResetConfigButton,
+      JPanel pFilterKernelPreviewRootPnl, JWFNumberField pTinaSpatialOversamplingREd, JSlider pTinaSpatialOversamplingSlider,
+      JWFNumberField pTinaColorOversamplingREd, JSlider pTinaColorOversamplingSlider, JCheckBox pTinaSampleJitteringCheckBox,
+      JToggleButton pFilterKernelFlatPreviewBtn, JCheckBox pTinaPostNoiseFilterCheckBox, JWFNumberField pTinaPostNoiseThresholdField,
+      JSlider pTinaPostNoiseThresholdSlider, JWFNumberField pForegroundOpacityField, JSlider pForegroundOpacitySlider) {
     meshGenFromEditorBtn = pMeshGenFromEditorBtn;
     meshGenFromClipboardBtn = pMeshGenFromClipboardBtn;
     meshGenLoadFlameBtn = pMeshGenLoadFlameBtn;
@@ -1233,5 +1272,32 @@ public class TinaControllerParameter {
     gradientColorMapLocalColorScaleSlider = pGradientColorMapLocalColorScaleSlider;
     swfAnimatorQualityProfileCmb = pSWFAnimatorQualityProfileCmb;
     flameFPSField = pFlameFPSField;
+    leapMotionToggleButton = pLeapMotionToggleButton;
+    leapMotionConfigTable = pLeapMotionConfigTable;
+    leapMotionHandCmb = pLeapMotionHandCmb;
+    leapMotionInputChannelCmb = pLeapMotionInputChannelCmb;
+    leapMotionOutputChannelCmb = pLeapMotionOutputChannelCmb;
+    leapMotionIndex1Field = pLeapMotionIndex1Field;
+    leapMotionIndex2Field = pLeapMotionIndex2Field;
+    leapMotionIndex3Field = pLeapMotionIndex3Field;
+    leapMotionInvScaleField = pLeapMotionInvScaleField;
+    leapMotionOffsetField = pLeapMotionOffsetField;
+    leapMotionAddButton = pLeapMotionAddButton;
+    leapMotionDuplicateButton = pLeapMotionDuplicateButton;
+    leapMotionDeleteButton = pLeapMotionDeleteButton;
+    leapMotionClearButton = pLeapMotionClearButton;
+    leapMotionResetConfigButton = pLeapMotionResetConfigButton;
+    filterKernelPreviewRootPnl = pFilterKernelPreviewRootPnl;
+    tinaSpatialOversamplingREd = pTinaSpatialOversamplingREd;
+    tinaSpatialOversamplingSlider = pTinaSpatialOversamplingSlider;
+    tinaColorOversamplingREd = pTinaColorOversamplingREd;
+    tinaColorOversamplingSlider = pTinaColorOversamplingSlider;
+    tinaSampleJitteringCheckBox = pTinaSampleJitteringCheckBox;
+    filterKernelFlatPreviewBtn = pFilterKernelFlatPreviewBtn;
+    tinaPostNoiseFilterCheckBox = pTinaPostNoiseFilterCheckBox;
+    tinaPostNoiseThresholdField = pTinaPostNoiseThresholdField;
+    tinaPostNoiseThresholdSlider = pTinaPostNoiseThresholdSlider;
+    foregroundOpacityField = pForegroundOpacityField;
+    foregroundOpacitySlider = pForegroundOpacitySlider;
   }
 }

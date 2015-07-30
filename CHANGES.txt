@@ -1,3 +1,96 @@
+V2.56 (21.07.2015):
+- new spatial-oversampling-option for improved render-quality. The default value is 2, this may be set in the Preferences
+- visualisation of filter-kernels for better understanding/easier customizing of the spatial filtering process, both a nice-looking 3d-mode and a fast 2d-mode are available  
+- new sample-jittering- and color-oversampling-option for improved render-quality. The default value is off, this may be set in the Preferences.
+- new post-noise-filtering-option for redusing noise of the final noise by using an adaptive gaussian filter. The default value is off, this may be set in the Preferences.
+- added a brief description of all of this options in the official Wiki: http://wiki.jwildfire.org/index.php?title=Manual_RenderQualityFlameFractals
+
+- changed the memory management/layout of the iteration buffer (rendering should now take significantly less memory, and initialisation of rendering runs substantly faster, comes to a cost of only slightly degraded render time)
+
+- the final image-generating-process now works fully multi-threaded and should be faster
+- added a new experimental option "Opacity" to control the opacity of the foreground when rendering an image with background (often those renders caused the loss of too many details)
+
+- new "Pseudo3D"-random-flame-generator
+- improved the "Xenomorph"-random-flame-generator
+- improved the "Cross"-random-flame-generator
+
+- some more useful statistics in the interactive renderer, e.g. absolute render-speed-indicator to make it easier to compare different settings (render speed means the quality level the renderer can reach in one hour)
+
+- the windows-launcher (JWildfire.exe) should now be much smarter to find a valid Java-install
+- completely removed the izpack-installer (until now there were always two files: a *.zip for users who just wanted to unzip, or an izpack-based installer which caused too many problems)
+- there are now two packages available: platform-independant without jdk and any dll's, and windows64 with jdk and certain dll's   
+- removed the applet from the distribution
+
+- the Chaotica-integration is now disabled by default (in order to hide the export-button which may occupy important space for some users)
+- changed the animation-playback in the main-editor to full-window-size
+
+- made the detached renderer and the interactive renderer to behave more smooth
+- progressbar-update should be much smoother now, i.e. use less ressources
+- negative "perspective"-values are allowed now (again)
+- when using post-symmetry, the maximum of symmetry-order of point-symmetry was increased from 18 to 36
+- new ouputchannel to change param-values of plugins via the Leap Motion controller
+- added a new option tinaIntegrationChaoticaAnimationExport to the preferences. This option controls if the flames which are exchanged over the Chaotica-bridge are animated flames or static flames. In case you export them as static flames and have not a Studio licence for Chaotica you may render in higher resolutions.
+- fixed a bug in the crop-like variations
+- fixed a bug regarding autoimatically saving the current flame in the iteractive renderer
+- some refactoring of the structure synthesizer
+- completely removed all experimental opencl-code
+
+V2.50 R2 (27.05.2015):
+ - Added a new option tinaIntegrationChaoticaAnimationExport to the preferences. This option controls if the 
+   flames which are exchanged over the Chaotica-bridge are animated flames or static flames.
+   In case you export them as static flames and have not a Studio licence for Chaotica you may render in higher resolutions.
+   Per default this option is set to off, i.e. exported flames are static.
+ - Fixed a problem with the launcher regarding installation-path containing spaces    
+ 
+V2.50 R1 (25.05.2015):
+ - fixed a bug with the "Linear3D"-variation
+ - New ouputchannel to change param-values of plugins via the Leap Motion controller
+
+V2.50 (24.05.2015):
+ - support for Chaotica as additional rendering-solution for the high-end-user, please see the official documentation at http://wiki.jwildfire.org/index.php?title=Manual_ChaoticaIntegration for details
+
+ - support for the Leap Motion Controller for animating flame-fractals, please see the official documentation at http://wiki.jwildfire.org/index.php?title=Manual_LeapMotionIntegration for details  
+
+ - new random-flame-generators:
+    - "Tile Ball"-, inspired by the 3D Tile Ball Script made by Shortgreenpigg
+    - "Julians"-random-flame-generator, based on a script created by Steven Brodhead
+ - new variations/plugins :
+    - "custom_wf_full" by Gregg Helt to allow to generate and test complete Variations at runtime
+    - "w" by Michael Faber
+    - "y" by Michael Faber
+    - "x" by Michael Faber
+    - "z" by Michael Faber
+    - "trade" by Michael Faber
+    - "wdisc" by Michael Faber
+    - "deltaA" by Michael Faber
+    - "idisc" by Michael Faber
+    - "CircleTrans1" by eralex
+    - "CircleRand" by eralex
+    - "CircleLinear" by eralex
+    - "blur_pixelize" by Xyrus02
+    - "blur_circle" by Xyrus02
+    - "rhodonea" by Gregg Helt
+    - "butterfly_fay" by Gregg Helt
+    - "flower_db" by Darkbeam and Gregg Helt
+    - "rosoni" by Darkbeam and Gregg Helt
+    - "stwin" transcribed by Gregg Helt    
+  
+ - additions the Motion-Curves-Editor:
+    - smoothing-function
+    - import/export of raw motion-data
+    - new editing-mode for motion-curves (drag curve horizontal/vertical), some changes in the UI of the motion-curve-editor, smoothing for motion-curves
+
+ - additions to the Scripting-interface:
+    - API for managing persistent settings for scripts, see ScriptRunnerEnvironment::getScriptProperty, examples to come
+    - API for generating rich user-interfaces for scripts, examples to come
+
+ - changed the default antialiasing-settings in order to create images with more details
+ - inherit the settings of "Duration" and "Morph"-count in the Easy Movie Maker from the previous movie part
+ - new "Ziggurat"-random-generator, added by boleslaw, which is the new default
+ - new FPS-setting for flames, with customizable default-value in the Prefs
+ 
+ - renamed the main-menu-item "Script" into "Operators Script" to avoid confusions with flame-scripts    
+
 V2.40 (14.03.2015):
  - now with offical documentation-Wiki! See the "Documentation"-button at the Welcome-window or just visit it directly: http://wiki.jwildfire.org/
  - 4 new beginners tutorials in the Wiki (Basic flame-editing, Basic color-editing, Basic formula-editing, More on formula-editing)

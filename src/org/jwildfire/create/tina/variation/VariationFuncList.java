@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.jwildfire.create.tina.variation.iflames.IFlamesFunc;
 
@@ -30,7 +31,7 @@ public class VariationFuncList {
   private static List<String> unfilteredNameList = null;
   private static List<String> filteredNameList = null;
   private static Map<Class<? extends VariationFunc>, String> aliasMap = new HashMap<Class<? extends VariationFunc>, String>();
-  private static Map<String, String> resolvedAliasMap = null;
+  private static final Map<String, String> resolvedAliasMap;
 
   static {
     // define alias for renamed variations to allow loading of old flame
@@ -456,14 +457,21 @@ public class VariationFuncList {
     registerVariationFunc(DeltaAFunc.class);
     registerVariationFunc(WDiscFunc.class);
     registerVariationFunc(TradeFunc.class);
-    
+
     registerVariationFunc(WFunc.class);
     registerVariationFunc(XFunc.class);
     registerVariationFunc(YFunc.class);
     registerVariationFunc(ZFunc.class);
 
     registerVariationFunc(CustomFullVariationWrapperFunc.class);
-    registerVariationFunc(EpitrochoidFunc.class);
+    
+    resolvedAliasMap = new HashMap<>();
+    for (Entry<Class<? extends VariationFunc>, String> funcCls : aliasMap.entrySet()) {
+      String vName = getVariationName(funcCls.getKey(), false);
+      if (vName != null) {
+        resolvedAliasMap.put(funcCls.getValue(), vName);
+      }
+    }
 
   }
 
@@ -526,15 +534,6 @@ public class VariationFuncList {
   }
 
   public static Map<String, String> getAliasMap() {
-    if (resolvedAliasMap == null) {
-      resolvedAliasMap = new HashMap<String, String>();
-      for (Class<? extends VariationFunc> funcCls : aliasMap.keySet()) {
-        String vName = getVariationName(funcCls, false);
-        if (vName != null) {
-          resolvedAliasMap.put(aliasMap.get(funcCls), vName);
-        }
-      }
-    }
     return resolvedAliasMap;
   }
 
@@ -542,7 +541,7 @@ public class VariationFuncList {
     while (true) {
       int idx = (int) (Math.random() * getNameList().size());
       String name = getNameList().get(idx);
-      if (!(name.indexOf("inflate") == 0) && !name.equals("svg_wf") && !(name.indexOf("post_") == 0) && !(name.indexOf("pre_") == 0) && !(name.indexOf("iflames_wf") > 0)) {
+      if (!(name.indexOf("inflate") == 0) && !name.equals("svg_wf") && !(name.indexOf("post_") == 0) && !(name.indexOf("pre_") == 0) && !name.equals("iflames_wf")) {
         return name;
       }
     }
@@ -574,7 +573,5 @@ public class VariationFuncList {
   public static List<Class<? extends VariationFunc>> getVariationClasses() {
     return items;
   }
-
-
 
 }

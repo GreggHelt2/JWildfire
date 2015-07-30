@@ -1,6 +1,6 @@
 /*
   JWildfire - an image and animation processor written in Java 
-  Copyright (C) 1995-2014 Andreas Maschke
+  Copyright (C) 1995-2015 Andreas Maschke
 
   This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser 
   General Public License as published by the Free Software Foundation; either version 2.1 of the 
@@ -17,13 +17,20 @@
 package org.jwildfire.base;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
@@ -45,13 +52,16 @@ import org.jwildfire.image.Pixel;
 
 public class Tools {
   public static final String APP_TITLE = "JWildfire";
-  public static final String APP_VERSION = "2.50 ALPHA (01.05.2015)";
+  public static final String APP_VERSION = "2.56 (21.07.2015)";
 
   public static boolean SPECIAL_VERSION = false;
 
+  public static final int MAX_SPATIAL_OVERSAMPLING = 6;
+  public static final int MAX_COLOR_OVERSAMPLING = 20;
+
   public static final int VPREC = 1024;
   public static final int SPREC = 10;
-  public static final int PLOT_BUFFER_SIZE = 512;
+  public static final int PLOT_BUFFER_SIZE = 1024;
 
   private static final Pixel toolPixel = new Pixel();
   public static final String FILE_ENCODING = "utf-8";
@@ -77,6 +87,7 @@ public class Tools {
   public static final String FILEEXT_SUNFLOW_SCENE = "sc";
   public static final String FILEEXT_SVG = "svg";
   public static final String FILEEXT_TXT = "txt";
+  public static final String FILEEXT_TEXT = "text";
   public static final String FILEEXT_UGR = "ugr";
   public static final String FILEEXT_WAV = "wav";
   public static final String FILEEXT_XML = "xml";
@@ -162,7 +173,7 @@ public class Tools {
   }
 
   public static void writeUTF8Textfile(String pTextFileName, String pContent) throws Exception {
-    String line, lineFeed = new String("\r\n");
+    String line, lineFeed = "\r\n";
     BufferedReader in = new BufferedReader(new StringReader(pContent));
     Writer w = new OutputStreamWriter(new FileOutputStream(pTextFileName), "utf-8");
     BufferedWriter out = new BufferedWriter(w);
@@ -537,4 +548,28 @@ public class Tools {
     return lerp(lerp(c00, c10, tx), lerp(c01, c11, tx), ty);
   }
 
+  public static void writeObjectToFile(Object pObject, String pFilename) {
+    try (
+        OutputStream file = new FileOutputStream(pFilename);
+        OutputStream buffer = new BufferedOutputStream(file);
+        ObjectOutput output = new ObjectOutputStream(buffer);) {
+      output.writeObject(pObject);
+    }
+    catch (IOException ex) {
+      Unchecker.rethrow(ex);
+    }
+  }
+
+  public static Object readObjectFromFile(String pFilename) {
+    try (
+        InputStream file = new FileInputStream(pFilename);
+        InputStream buffer = new BufferedInputStream(file);
+        ObjectInput input = new ObjectInputStream(buffer);) {
+      return input.readObject();
+    }
+    catch (Exception ex) {
+      Unchecker.rethrow(ex);
+      return null;
+    }
+  }
 }
