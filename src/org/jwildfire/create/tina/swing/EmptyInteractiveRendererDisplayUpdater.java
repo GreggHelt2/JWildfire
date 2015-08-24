@@ -34,15 +34,15 @@ public class EmptyInteractiveRendererDisplayUpdater implements InteractiveRender
   }
 
   @Override
-  public void setSampleCount(long pSampleCount) {
-  }
-
-  @Override
   public void setShowPreview(boolean pShowPreview) {
   }
 
   @Override
   public void initImage(int pBGRed, int pBGGreen, int pBGBlue, String pBGImagefile) {
+  }
+
+  @Override
+  public void initRender(int pThreadGroupSize) {
   }
 
 }

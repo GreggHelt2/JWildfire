@@ -1,6 +1,6 @@
 /*
   JWildfire - an image and animation processor written in Java 
-  Copyright (C) 1995-2014 Andreas Maschke
+  Copyright (C) 1995-2015 Andreas Maschke
 
   This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser 
   General Public License as published by the Free Software Foundation; either version 2.1 of the 
@@ -66,9 +66,6 @@ public class DetachedPreviewController implements IterationObserver {
   private RenderThreads threads;
   private Thread updateDisplayExecuteThread;
   private FlameRenderer renderer;
-  private long sampleCount = 0;
-  private long renderStartTime = 0;
-  private long pausedRenderTime = 0;
   private ImagePanel imagePanel;
   private final JToggleButton toggleDetachedPreviewButton;
   private SimpleImage image;
@@ -116,13 +113,9 @@ public class DetachedPreviewController implements IterationObserver {
     }
     renderer = new FlameRenderer(flame, prefs, flame.isBGTransparency(), false);
     renderer.registerIterationObserver(this);
-    sampleCount = 0;
-    renderStartTime = System.currentTimeMillis();
-    pausedRenderTime = 0;
 
     displayUpdater = createDisplayUpdater();
-    displayUpdater.setSampleCount(0);
-
+    displayUpdater.initRender(prefs.getTinaRenderThreads());
     threads = renderer.startRenderFlame(info);
     for (Thread thread : threads.getExecutingThreads()) {
       thread.setPriority(Thread.MIN_PRIORITY);
