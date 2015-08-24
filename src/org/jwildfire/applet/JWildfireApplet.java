@@ -70,10 +70,10 @@ public class JWildfireApplet extends JApplet implements IterationObserver {
   private Flame currFlame;
   private JScrollPane imageScrollPane;
   private SimpleImage image;
-  private long sampleCount = 0;
   private long renderStartTime = 0;
   private long pausedRenderTime = 0;
   private JPanel imgMainPnl;
+  private long[] iterationCount;
 
   public JWildfireApplet() {
 
@@ -191,9 +191,9 @@ public class JWildfireApplet extends JApplet implements IterationObserver {
     if (flame.getBGColorRed() > 0 || flame.getBGColorGreen() > 0 || flame.getBGColorBlue() > 0) {
       image.fillBackground(flame.getBGColorRed(), flame.getBGColorGreen(), flame.getBGColorBlue());
     }
+    initRender(prefs.getTinaRenderThreads());
     renderer = new FlameRenderer(flame, prefs, flame.isBGTransparency(), false);
     renderer.registerIterationObserver(this);
-    sampleCount = 0;
     renderStartTime = System.currentTimeMillis();
     pausedRenderTime = 0;
     threads = renderer.startRenderFlame(info);
@@ -255,24 +255,21 @@ public class JWildfireApplet extends JApplet implements IterationObserver {
 
   @Override
   public void notifyIterationFinished(AbstractRenderThread pEventSource, int pX, int pY) {
-    incSampleCount();
     int x = pX / pEventSource.getOversample();
     int y = pY / pEventSource.getOversample();
+    iterationCount[pEventSource.getThreadId()] = pEventSource.getCurrSample();
+    long iteration = calculateSampleCount();
     if (x >= 0 && x < image.getImageWidth() && y >= 0 && y < image.getImageHeight()) {
       image.setARGB(x, y, pEventSource.getTonemapper().tonemapSample(x, y));
-      if (sampleCount % 2000 == 0) {
+      if (iteration % 2000 == 0) {
         updateImage();
       }
-      if (sampleCount % 10000 == 0) {
-        double quality = pEventSource.getTonemapper().calcDensity(sampleCount);
+      if (iteration % 10000 == 0) {
+        double quality = pEventSource.getTonemapper().calcDensity(iteration);
         updateStats(pEventSource, quality);
         pEventSource.getTonemapper().setDensity(quality);
       }
     }
-  }
-
-  private synchronized void incSampleCount() {
-    sampleCount++;
   }
 
   private synchronized void updateImage() {
@@ -319,5 +316,17 @@ public class JWildfireApplet extends JApplet implements IterationObserver {
 
     });
 
+  }
+
+  private long calculateSampleCount() {
+    long res = 0;
+    for (int i = 0; i < iterationCount.length; i++) {
+      res += iterationCount[i];
+    }
+    return res;
+  }
+
+  public void initRender(int pThreadGroupSize) {
+    iterationCount = new long[pThreadGroupSize];
   }
 }

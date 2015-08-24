@@ -1,6 +1,6 @@
 /*
   JWildfire - an image and animation processor written in Java 
-  Copyright (C) 1995-2014 Andreas Maschke
+  Copyright (C) 1995-2015 Andreas Maschke
 
   This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser 
   General Public License as published by the Free Software Foundation; either version 2.1 of the 
@@ -29,6 +29,7 @@ public class DefaultInteractiveRendererDisplayUpdater implements InteractiveRend
   private final int imageWidth;
   private final int imageHeight;
   private boolean showPreview;
+  private long[] iterationCount;
 
   public DefaultInteractiveRendererDisplayUpdater(JPanel pImageRootPanel, SimpleImage pImage, boolean pShowPreview) {
     imageRootPanel = pImageRootPanel;
@@ -42,7 +43,8 @@ public class DefaultInteractiveRendererDisplayUpdater implements InteractiveRend
   public void iterationFinished(AbstractRenderThread pEventSource, int pX, int pY) {
     int x = pX / pEventSource.getOversample();
     int y = pY / pEventSource.getOversample();
-    sampleCount++;
+    iterationCount[pEventSource.getThreadId()] = pEventSource.getCurrSample();
+    sampleCount = calculateSampleCount();
     if (showPreview && x >= 0 && x < image.getImageWidth() && y >= 0 && y < image.getImageHeight()) {
       image.setARGB(x, y, pEventSource.getTonemapper().tonemapSample(x, y));
     }
@@ -58,11 +60,6 @@ public class DefaultInteractiveRendererDisplayUpdater implements InteractiveRend
   @Override
   public long getSampleCount() {
     return sampleCount;
-  }
-
-  @Override
-  public void setSampleCount(long pSampleCount) {
-    sampleCount = pSampleCount;
   }
 
   @Override
@@ -86,5 +83,18 @@ public class DefaultInteractiveRendererDisplayUpdater implements InteractiveRend
         ex.printStackTrace();
       }
     }
+  }
+
+  private long calculateSampleCount() {
+    long res = 0;
+    for (int i = 0; i < iterationCount.length; i++) {
+      res += iterationCount[i];
+    }
+    return res;
+  }
+
+  @Override
+  public void initRender(int pThreadGroupSize) {
+    iterationCount = new long[pThreadGroupSize];
   }
 }

@@ -1,6 +1,6 @@
 /*
   JWildfire - an image and animation processor written in Java 
-  Copyright (C) 1995-2014 Andreas Maschke
+  Copyright (C) 1995-2015 Andreas Maschke
 
   This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser 
   General Public License as published by the Free Software Foundation; either version 2.1 of the 
@@ -413,8 +413,8 @@ public class Flame implements Assignable<Flame>, Serializable {
     return whiteLevel;
   }
 
-  public void setWhiteLevel(double whiteLevel) {
-    this.whiteLevel = whiteLevel;
+  public void setWhiteLevel(double pWhiteLevel) {
+    whiteLevel = pWhiteLevel;
   }
 
   public double getContrast() {
@@ -805,7 +805,7 @@ public class Flame implements Assignable<Flame>, Serializable {
         (frame != pFlame.frame) || (frameCount != pFlame.frameCount) ||
         (postSymmetryType != pFlame.postSymmetryType) || (postSymmetryOrder != pFlame.postSymmetryOrder) ||
         (fabs(postSymmetryCentreX - pFlame.postSymmetryCentreX) > EPSILON) || (fabs(postSymmetryCentreY - pFlame.postSymmetryCentreY) > EPSILON) ||
-        (fabs(postSymmetryDistance - pFlame.postSymmetryDistance) > EPSILON) || (fabs(postSymmetryDistance - pFlame.postSymmetryDistance) > EPSILON) ||
+        (fabs(postSymmetryDistance - pFlame.postSymmetryDistance) > EPSILON) ||
         (stereo3dMode != pFlame.stereo3dMode) || (fabs(stereo3dAngle - pFlame.stereo3dAngle) > EPSILON) ||
         (fabs(stereo3dEyeDist - pFlame.stereo3dEyeDist) > EPSILON) || (stereo3dLeftEyeColor != pFlame.stereo3dLeftEyeColor) ||
         (stereo3dRightEyeColor != pFlame.stereo3dRightEyeColor) || (stereo3dInterpolatedImageCount != pFlame.stereo3dInterpolatedImageCount) ||
@@ -1445,6 +1445,15 @@ public class Flame implements Assignable<Flame>, Serializable {
     setColorOversampling(1);
     setSampleJittering(false);
     setPostNoiseFilter(false);
+  }
+
+  public void applyDefaultOversamplingSettings() {
+    Prefs prefs = Prefs.getPrefs();
+    setSpatialFilterRadius(prefs.getTinaDefaultSpatialFilterRadius());
+    setSpatialOversampling(prefs.getTinaDefaultSpatialOversampling());
+    setColorOversampling(prefs.getTinaDefaultColorOversampling());
+    setSampleJittering(prefs.isTinaDefaultSampleJittering());
+    setPostNoiseFilter(prefs.isTinaDefaultPostNoiseFilter());
   }
 
   public boolean isPostNoiseFilter() {

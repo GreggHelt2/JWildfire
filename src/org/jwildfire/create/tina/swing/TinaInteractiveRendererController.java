@@ -311,12 +311,12 @@ public class TinaInteractiveRendererController implements IterationObserver {
       renderer = new FlameRenderer(flame, prefs, flame.isBGTransparency(), false);
       renderer.registerIterationObserver(this);
       displayUpdater = createDisplayUpdater();
-      displayUpdater.setSampleCount(0);
       renderStartTime = System.currentTimeMillis();
       pausedRenderTime = 0;
       lastQuality = 0.0;
       lastQualitySpeed = 0.0;
       lastQualityTime = 0;
+      displayUpdater.initRender(prefs.getTinaRenderThreads());
       threads = renderer.startRenderFlame(info);
       for (Thread t : threads.getExecutingThreads()) {
         t.setPriority(Thread.MIN_PRIORITY);
@@ -406,24 +406,46 @@ public class TinaInteractiveRendererController implements IterationObserver {
           ex.printStackTrace();
         }
       }
-      if (chooser.showSaveDialog(imageRootPanel) == JFileChooser.APPROVE_OPTION) {
-        File file = chooser.getSelectedFile();
-        prefs.setLastOutputImageFile(file);
-        RenderedFlame res = renderer.finishRenderFlame(displayUpdater.getSampleCount());
-        new ImageWriter().saveImage(res.getImage(), file.getAbsolutePath());
-        if (res.getHDRImage() != null) {
-          new ImageWriter().saveImage(res.getHDRImage(), file.getAbsolutePath() + ".hdr");
+      pauseRenderThreads();
+      try {
+        if (chooser.showSaveDialog(imageRootPanel) == JFileChooser.APPROVE_OPTION) {
+          File file = chooser.getSelectedFile();
+          prefs.setLastOutputImageFile(file);
+          RenderedFlame res = renderer.finishRenderFlame(displayUpdater.getSampleCount());
+          new ImageWriter().saveImage(res.getImage(), file.getAbsolutePath());
+          if (res.getHDRImage() != null) {
+            new ImageWriter().saveImage(res.getHDRImage(), file.getAbsolutePath() + ".hdr");
+          }
+          if (res.getHDRIntensityMap() != null) {
+            new ImageWriter().saveImage(res.getHDRIntensityMap(), file.getAbsolutePath() + ".intensity.hdr");
+          }
+          if (prefs.isTinaSaveFlamesWhenImageIsSaved()) {
+            new FlameWriter().writeFlame(getCurrFlame(), file.getParentFile().getAbsolutePath() + File.separator + Tools.trimFileExt(file.getName()) + ".flame");
+          }
         }
-        if (res.getHDRIntensityMap() != null) {
-          new ImageWriter().saveImage(res.getHDRIntensityMap(), file.getAbsolutePath() + ".intensity.hdr");
-        }
-        if (prefs.isTinaSaveFlamesWhenImageIsSaved()) {
-          new FlameWriter().writeFlame(getCurrFlame(), file.getParentFile().getAbsolutePath() + File.separator + Tools.trimFileExt(file.getName()) + ".flame");
-        }
+      }
+      finally {
+        resumeRenderThreads();
       }
     }
     catch (Throwable ex) {
       errorHandler.handleError(ex);
+    }
+  }
+
+  private void resumeRenderThreads() {
+    if (threads != null && state == State.RENDER) {
+      for (Thread t : threads.getExecutingThreads()) {
+        t.resume();
+      }
+    }
+  }
+
+  private void pauseRenderThreads() {
+    if (threads != null && state == State.RENDER) {
+      for (Thread t : threads.getExecutingThreads()) {
+        t.suspend();
+      }
     }
   }
 
@@ -734,7 +756,8 @@ public class TinaInteractiveRendererController implements IterationObserver {
         }
         renderer.registerIterationObserver(this);
         displayUpdater = createDisplayUpdater();
-        displayUpdater.setSampleCount(renderer.calcSampleCount());
+        displayUpdater.initRender(threads.getRenderThreads().size());
+
         pausedRenderTime = resumedRender.getHeader().getElapsedMilliseconds();
         renderStartTime = System.currentTimeMillis();
         lastQuality = 0.0;
