@@ -19,14 +19,13 @@ package org.jwildfire.create.tina.swing;
 import org.jwildfire.create.tina.render.AbstractRenderThread;
 
 public interface InteractiveRendererDisplayUpdater {
+  void initRender(int pThreadGroupSize);
 
   void iterationFinished(AbstractRenderThread pEventSource, int pX, int pY);
 
   void updateImage();
 
   long getSampleCount();
-
-  void setSampleCount(long pSampleCount);
 
   void setShowPreview(boolean pShowPreview);
 
