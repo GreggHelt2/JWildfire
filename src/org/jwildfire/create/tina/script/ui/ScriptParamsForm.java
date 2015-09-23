@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JInternalFrame;
@@ -115,7 +116,8 @@ public class ScriptParamsForm implements ScriptRunnerEnvironment {
   public JPanel addContainer(String pCaption) {
     JPanel panel = new JPanel();
     dialog.getRootTabbedPane().addTab(pCaption, null, panel, null);
-    panel.setLayout(null);
+    // panel.setLayout(null);
+    panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
     return panel;
   }
 
