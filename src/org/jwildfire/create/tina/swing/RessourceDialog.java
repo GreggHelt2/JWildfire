@@ -32,16 +32,35 @@ import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
+
+import jsyntaxpane.DefaultSyntaxKit;
 
 import org.jwildfire.base.Prefs;
 import org.jwildfire.base.Tools;
 import org.jwildfire.swing.ErrorHandler;
 
 public class RessourceDialog extends JDialog {
+
+  public enum ContentType {
+    JAVA {
+      @Override
+      public String getContentType() {
+        return "text/java";
+      }
+    },
+    TEXT {
+      @Override
+      public String getContentType() {
+        return "text/plain";
+      }
+    };
+
+    public abstract String getContentType();
+  }
 
   private static final long serialVersionUID = 1L;
   private JPanel jContentPane = null;
@@ -51,7 +70,7 @@ public class RessourceDialog extends JDialog {
   private JButton okButton = null;
   private JButton cancelButton = null;
   private JScrollPane editrScrollPane = null;
-  private JTextArea editorTextArea = null;
+  private JEditorPane editorTextArea = null;
   private boolean confirmed = false;
   private final Prefs prefs;
   private final ErrorHandler errorHandler;
@@ -259,9 +278,18 @@ public class RessourceDialog extends JDialog {
    * 	
    * @return javax.swing.JTextArea	
    */
-  private JTextArea getEditorTextArea() {
+  private JEditorPane getEditorTextArea() {
     if (editorTextArea == null) {
-      editorTextArea = new JTextArea();
+      if (Prefs.getPrefs().isTinaAdvancedCodeEditor()) {
+        try {
+          DefaultSyntaxKit.initKit();
+        }
+        catch (Exception ex) {
+          ex.printStackTrace();
+        }
+      }
+      editorTextArea = new JEditorPane();
+      editorTextArea.setText("");
     }
     return editorTextArea;
   }
@@ -270,8 +298,15 @@ public class RessourceDialog extends JDialog {
     return editorTextArea.getText();
   }
 
-  public void setRessourceValue(String pRessourceValue) {
+  public void setRessourceValue(ContentType pContentType, String pRessourceValue) {
+    try {
+      editorTextArea.setContentType(pContentType.getContentType());
+    }
+    catch (Exception ex) {
+      ex.printStackTrace();
+    }
     editorTextArea.setText(pRessourceValue);
+    editorTextArea.setCaretPosition(0);
   }
 
   public void setRessourceName(String pRessourceName) {
