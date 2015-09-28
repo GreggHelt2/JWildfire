@@ -17,6 +17,7 @@
 package org.jwildfire.create.tina.swing;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagLayout;
@@ -32,16 +33,38 @@ import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
+import javax.swing.LookAndFeel;
+import javax.swing.UIManager;
+
+import jsyntaxpane.DefaultSyntaxKit;
+import jsyntaxpane.util.Configuration;
 
 import org.jwildfire.base.Prefs;
 import org.jwildfire.base.Tools;
 import org.jwildfire.swing.ErrorHandler;
 
 public class RessourceDialog extends JDialog {
+
+  public enum ContentType {
+    JAVA {
+      @Override
+      public String getContentType() {
+        return "text/java";
+      }
+    },
+    TEXT {
+      @Override
+      public String getContentType() {
+        return "text/plain";
+      }
+    };
+
+    public abstract String getContentType();
+  }
 
   private static final long serialVersionUID = 1L;
   private JPanel jContentPane = null;
@@ -51,7 +74,7 @@ public class RessourceDialog extends JDialog {
   private JButton okButton = null;
   private JButton cancelButton = null;
   private JScrollPane editrScrollPane = null;
-  private JTextArea editorTextArea = null;
+  private JEditorPane editorTextArea = null;
   private boolean confirmed = false;
   private final Prefs prefs;
   private final ErrorHandler errorHandler;
@@ -259,9 +282,32 @@ public class RessourceDialog extends JDialog {
    * 	
    * @return javax.swing.JTextArea	
    */
-  private JTextArea getEditorTextArea() {
+  private JEditorPane getEditorTextArea() {
     if (editorTextArea == null) {
-      editorTextArea = new JTextArea();
+      if (Prefs.getPrefs().isTinaAdvancedCodeEditor()) {
+        try {
+          DefaultSyntaxKit.initKit();
+          // setting JSyntaxPane font, see comment in org.jwildfire.create.tina.swing.ScriptEditDialog for explanation
+          Configuration config = DefaultSyntaxKit.getConfig(DefaultSyntaxKit.class);
+          config.put("DefaultFont","monospaced " + Integer.toString(Prefs.getPrefs().getTinaAdvancedCodeEditorFontSize()));
+        }
+        catch (Exception ex) {
+          ex.printStackTrace();
+        }
+      }
+      editorTextArea = new JEditorPane();
+      // if using advanced editor color fix, and one of JWildfire's dark look and feels (HiFi or Noire), 
+      //   override look and feel to set scriptEditor background to white, 
+      //   to work better with JSyntaxPane text colors
+      LookAndFeel laf = UIManager.getLookAndFeel();
+      String laf_name = laf.getName();
+      boolean using_dark_theme = laf_name.equalsIgnoreCase("HiFi") || laf_name.equalsIgnoreCase("Noire");
+      if (using_dark_theme && 
+              Prefs.getPrefs().isTinaAdvancedCodeEditor() && 
+              Prefs.getPrefs().isTinaAdvancedCodeEditorColorFix()) {
+          editorTextArea.setBackground(Color.white);
+      }
+      editorTextArea.setText("");
     }
     return editorTextArea;
   }
@@ -270,8 +316,15 @@ public class RessourceDialog extends JDialog {
     return editorTextArea.getText();
   }
 
-  public void setRessourceValue(String pRessourceValue) {
+  public void setRessourceValue(ContentType pContentType, String pRessourceValue) {
+    try {
+      editorTextArea.setContentType(pContentType.getContentType());
+    }
+    catch (Exception ex) {
+      ex.printStackTrace();
+    }
     editorTextArea.setText(pRessourceValue);
+    editorTextArea.setCaretPosition(0);
   }
 
   public void setRessourceName(String pRessourceName) {

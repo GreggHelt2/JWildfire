@@ -1,6 +1,6 @@
 /*
   JWildfire - an image and animation processor written in Java 
-  Copyright (C) 1995-2014 Andreas Maschke
+  Copyright (C) 1995-2015 Andreas Maschke
 
   This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser 
   General Public License as published by the Free Software Foundation; either version 2.1 of the 
@@ -20,6 +20,8 @@ import org.jwildfire.create.tina.variation.FlameTransformationContext;
 import org.jwildfire.create.tina.variation.Variation;
 
 public class PreVariationTransformationStep extends AbstractTransformationStep {
+  private static final long serialVersionUID = 1L;
+
   private final Variation variation;
 
   public PreVariationTransformationStep(XForm pXForm, Variation pVariation) {

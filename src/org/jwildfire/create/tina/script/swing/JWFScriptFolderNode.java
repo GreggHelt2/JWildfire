@@ -14,24 +14,32 @@
   if not, write to the Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 */
-package org.jwildfire.create.tina.base;
+package org.jwildfire.create.tina.script.swing;
 
-import org.jwildfire.create.tina.variation.FlameTransformationContext;
-import org.jwildfire.create.tina.variation.Variation;
+import javax.swing.tree.DefaultMutableTreeNode;
 
-public final class VariationTransformationStep extends AbstractTransformationStep {
+public class JWFScriptFolderNode extends DefaultMutableTreeNode {
   private static final long serialVersionUID = 1L;
+  private final boolean userDir;
+  private final String directory;
 
-  private final Variation variation;
-
-  public VariationTransformationStep(XForm pXForm, Variation pVariation) {
-    super(pXForm);
-    variation = pVariation;
+  public JWFScriptFolderNode(String pCaption, String pDirectory, boolean pUserDir) {
+    super(pCaption, true);
+    userDir = pUserDir;
+    directory = pDirectory;
   }
 
   @Override
-  public void transform(FlameTransformationContext pContext, XYZPoint pAffineT, XYZPoint pVarT, XYZPoint pSrcPoint, XYZPoint pDstPoint) {
-    variation.transform(pContext, xform, pAffineT, pVarT);
+  public boolean isLeaf() {
+    return false;
+  }
+
+  public boolean isUserDir() {
+    return userDir;
+  }
+
+  public String getDirectory() {
+    return directory;
   }
 
 }
