@@ -17,41 +17,39 @@
 package org.jwildfire.create.tina.randomflame;
 
 import org.jwildfire.create.tina.base.Flame;
+import org.jwildfire.create.tina.base.Layer;
 
-public class Brokat3DRandomFlameGenerator extends AbstractAffine3DRandomFlameGenerator {
+public class Spirals3DRandomFlameGenerator extends AbstractAffine3DRandomFlameGenerator {
 
   @Override
   public String getName() {
-    return "Brokat3D";
+    return "Spirals3D";
   }
 
   @Override
   protected RandomFlameGenerator selectRandGen() {
-    return new BrokatRandomFlameGenerator();
+    return new SpiralsRandomFlameGenerator();
   }
 
   @Override
   protected Flame preProcessFlame(Flame pFlame) {
+    Layer layer = pFlame.getFirstLayer();
+    while (layer.getXForms().size() > 2) {
+      layer.getXForms().remove(layer.getXForms().size() - 1);
+    }
     return pFlame;
   }
 
   @Override
   protected Flame postProcessFlame(Flame pFlame) {
-    pFlame.setCamZoom(2.0 * pFlame.getCamZoom());
     pFlame.setCamYaw((0.5 - Math.random()) * 75.0 + pFlame.getCamYaw());
     pFlame.setCamPitch((0.5 - Math.random()) * 135.0 + pFlame.getCamPitch());
     pFlame.setCamPerspective(0.1 + Math.random() * 0.4);
-    final double amp0 = 33.0;
-    final double amp1 = 15.0;
-    rotateXForm(pFlame, 0, amp0);
-    for (int i = 1; i <= 3; i++) {
-      if (Math.random() > 0.5) {
-        rotateXForm(pFlame, 1, amp1);
-        if (Math.random() > 0.67) {
-          addFlatten(pFlame, 1);
-        }
-      }
-    }
+    pFlame.setCamZoom(2.0);
+    rotateXForm(pFlame, 0, 30.0);
+    scaleXForm(pFlame, 0, 0.97, 0.01);
+    rotateXForm(pFlame, 1, 10.0);
+    scaleXForm(pFlame, 1, 0.97, 0.01);
     return pFlame;
   }
 
@@ -59,5 +57,4 @@ public class Brokat3DRandomFlameGenerator extends AbstractAffine3DRandomFlameGen
   protected Flame postProcessFlame(RandomFlameGeneratorState pState, Flame pFlame) {
     return pFlame;
   }
-
 }

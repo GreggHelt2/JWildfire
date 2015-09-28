@@ -18,10 +18,8 @@ package org.jwildfire.create.tina.randomflame;
 
 import org.jwildfire.create.tina.base.Flame;
 import org.jwildfire.create.tina.base.Layer;
-import org.jwildfire.create.tina.variation.PostDCZTranslFunc;
-import org.jwildfire.create.tina.variation.Variation;
 
-public class Gnarl3DRandomFlameGenerator extends AbstractExtrude3DRandomFlameGenerator {
+public class Gnarl3DRandomFlameGenerator extends AbstractAffine3DRandomFlameGenerator {
 
   @Override
   public String getName() {
@@ -44,15 +42,8 @@ public class Gnarl3DRandomFlameGenerator extends AbstractExtrude3DRandomFlameGen
 
   @Override
   protected Flame postProcessFlame(Flame pFlame) {
-    Layer layer = pFlame.getFirstLayer();
-    if (Math.random() > 0.33) {
-      for (Variation var : layer.getFinalXForms().get(0).getVariations()) {
-        if (var.getFunc().getName().equalsIgnoreCase(PostDCZTranslFunc.VAR_NAME)) {
-          double factor = (Double) var.getFunc().getParameter("factor");
-          var.getFunc().setParameter("factor", factor * 2.0);
-        }
-      }
-    }
+    rotateXForm(pFlame, 0, 3.0);
+    scaleXForm(pFlame, 0, 0.95, 0.01);
     return pFlame;
   }
 
