@@ -34,7 +34,7 @@ import org.jwildfire.create.tina.randomflame.ExperimentalGnarlRandomFlameGenerat
 import org.jwildfire.create.tina.randomflame.ExperimentalSimpleRandomFlameGenerator;
 import org.jwildfire.create.tina.randomflame.FilledFlowers3DRandomFlameGenerator;
 import org.jwildfire.create.tina.randomflame.Flowers3DRandomFlameGenerator;
-import org.jwildfire.create.tina.randomflame.Gnarl3DRandomFlameGenerator;
+import org.jwildfire.create.tina.randomflame.GhostsRandomFlameGenerator;
 import org.jwildfire.create.tina.randomflame.GnarlRandomFlameGenerator;
 import org.jwildfire.create.tina.randomflame.JulianDiscRandomFlameGenerator;
 import org.jwildfire.create.tina.randomflame.JuliansRandomFlameGenerator;
@@ -78,7 +78,6 @@ public class ChaoticaBridgeRandomFlameGenerator extends RandomFlameGenerator {
     generators.add(new GnarlRandomFlameGenerator());
     generators.add(new JuliansRandomFlameGenerator());
     generators.add(new DualityRandomFlameGenerator());
-    generators.add(new Gnarl3DRandomFlameGenerator());
     generators.add(new MandelbrotRandomFlameGenerator());
     generators.add(new JulianDiscRandomFlameGenerator());
     generators.add(new LayerzRandomFlameGenerator());
@@ -90,6 +89,7 @@ public class ChaoticaBridgeRandomFlameGenerator extends RandomFlameGenerator {
     generators.add(new DualityRandomFlameGenerator());
     generators.add(new SphericalRandomFlameGenerator());
     generators.add(new Spherical3DRandomFlameGenerator());
+    generators.add(new GhostsRandomFlameGenerator());
     generators.add(new SplitsRandomFlameGenerator());
     generators.add(new SynthRandomFlameGenerator());
     generators.add(new TentacleRandomFlameGenerator());
