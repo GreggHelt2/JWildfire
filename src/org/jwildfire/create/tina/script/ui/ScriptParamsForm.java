@@ -16,6 +16,7 @@
 */
 package org.jwildfire.create.tina.script.ui;
 
+import java.awt.Component;
 import java.awt.Dialog.ModalityType;
 import java.awt.Rectangle;
 import java.awt.Window;
@@ -124,6 +125,17 @@ public class ScriptParamsForm implements ScriptRunnerEnvironment {
       namedControls.add(pField);
     }
   }
+  
+  public Object getNamedControl(String name) {
+    for (Object control : namedControls) {
+      if (control instanceof Component) {
+        String cname = ((Component)control).getName();
+        if (cname.equals(name)) { return control; }
+      }
+    }
+    return null;
+  }
+          
 
   @Override
   public Flame getCurrFlame() {
