@@ -459,6 +459,8 @@ public class VariationFuncList {
     registerVariationFunc(ZFunc.class);
     registerVariationFunc(CustomFullVariationWrapperFunc.class);
     
+    registerVariationFunc(CircleFlowFunc.class);
+    
     resolvedAliasMap = new HashMap<>();
     for (Entry<Class<? extends VariationFunc>, String> funcCls : aliasMap.entrySet()) {
       String vName = getVariationName(funcCls.getKey(), false);
