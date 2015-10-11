@@ -89,11 +89,12 @@ public class EpitrochoidSimpleFunc extends VariationFunc {
   private static final String PARAM_INNER_SPREAD_RATIO = "inner_spread_ratio";
   private static final String PARAM_OUTER_SPREAD_RATIO = "outer_spread_ratio";
   private static final String PARAM_SPREAD_SPLIT = "spread_split";
+  private static final String PARAM_DIFF_MODE = "diff mode";
 
   private static final String[] paramNames = { PARAM_RADIUS, PARAM_CUSPS, PARAM_CUSP_SIZE, PARAM_CUSP_DIVISOR, 
                                                PARAM_INNER_MODE, PARAM_OUTER_MODE, 
                                                PARAM_INNER_SPREAD, PARAM_OUTER_SPREAD, 
-                                               PARAM_INNER_SPREAD_RATIO, PARAM_OUTER_SPREAD_RATIO, PARAM_SPREAD_SPLIT };
+                                               PARAM_INNER_SPREAD_RATIO, PARAM_OUTER_SPREAD_RATIO, PARAM_SPREAD_SPLIT, PARAM_DIFF_MODE };
   private static int MIN_MODE = 0;
   private static int MAX_MODE = 8;
   private static int DEFAULT_MODE = MIN_MODE;
@@ -124,6 +125,7 @@ public class EpitrochoidSimpleFunc extends VariationFunc {
   private double cycles_to_close = 0; // 0 indicates unknown, -1 indicates curve will never close
 
   private boolean DEBUG = false;
+  private boolean diff_mode = false;
 
   @Override
   public void init(FlameTransformationContext pContext, Layer pLayer, XForm pXForm, double pAmount) {
@@ -188,120 +190,130 @@ public class EpitrochoidSimpleFunc extends VariationFunc {
 
     double xin, yin;
     double rinx, riny;
+    double xout, yout;
 
     if (abs(rin) > abs(r))  { // incoming point lies "outside" of curve
       switch(outer_mode) {
         case 0: // no spread
-          pVarTP.x += pAmount * x;
-          pVarTP.y += pAmount * y;
+          xout = x;
+          yout = y;
           break;
         case 1:
           rinx = (rin * outer_spread * outer_spread_ratio) - (outer_spread * outer_spread_ratio) + 1;
           riny = (rin * outer_spread) - outer_spread + 1;
-          pVarTP.x += pAmount * rinx * x;
-          pVarTP.y += pAmount * riny * y;
+          xout = rinx * x;
+          yout = riny * y;
           break;
         case 2:
           xin = Math.abs(pAffineTP.x);
           yin = Math.abs(pAffineTP.y);
           if (x<0) { xin = xin * -1; }
           if (y<0) { yin = yin * -1; }
-          pVarTP.x += pAmount * (x + (outer_spread * outer_spread_ratio * (xin-x)));
-          pVarTP.y += pAmount * (y + (outer_spread * (yin-y)));
+          xout = (x + (outer_spread * outer_spread_ratio * (xin-x)));
+          yout = (y + (outer_spread * (yin-y)));
           break;
         case 3:
           xin = Math.abs(pAffineTP.x);
           yin = Math.abs(pAffineTP.y);
           if (x<0) { xin = xin * -1; }
           if (y<0) { yin = yin * -1; }
-          pVarTP.x += pAmount * (x + (outer_spread * outer_spread_ratio * xin));
-          pVarTP.y += pAmount * (y + (outer_spread * yin));
+          xout = (x + (outer_spread * outer_spread_ratio * xin));
+          yout = (y + (outer_spread * yin));
           break;
         case 4:
           rinx = (0.5 * rin) + (outer_spread * outer_spread_ratio);
           riny = (0.5 * rin) + outer_spread;
-          pVarTP.x += pAmount * rinx * x;
-          pVarTP.y += pAmount * riny * y;
+          xout = rinx * x;
+          yout = riny * y;
           break;
         case 5: // same as outer_mode 3, but without the sign modifications
-          pVarTP.x += pAmount * (x + (outer_spread * outer_spread_ratio * pAffineTP.x));
-          pVarTP.y += pAmount * (y + (outer_spread * pAffineTP.y));
+          xout = (x + (outer_spread * outer_spread_ratio * pAffineTP.x));
+          yout = (y + (outer_spread * pAffineTP.y));
           break;
         case 6: 
-          pVarTP.x += pAmount * pAffineTP.x;
-          pVarTP.y += pAmount * pAffineTP.y;
+          xout = pAffineTP.x;
+          yout = pAffineTP.y;
           break;
         case 7:
-          pVarTP.x += pAmount * rin * cos(t) * outer_spread * outer_spread_ratio;
-          pVarTP.y += pAmount * rin * sin(t) * outer_spread;
+          xout = rin * cos(t) * outer_spread * outer_spread_ratio;
+          yout = rin * sin(t) * outer_spread;
           break;
         case 8: 
           double rout = r + ((rin-r) * outer_spread);
-          pVarTP.x += pAmount * rout * cos(t);
-          pVarTP.y += pAmount * rout * sin(t);
+          xout = rout * cos(t);
+          yout = rout * sin(t);
           break;
         default:
-          pVarTP.x += pAmount * x;
-          pVarTP.y += pAmount * y;
+          xout = x;
+          yout = y;
           break;
       }
     }
     else  { // incoming point lies "inside" or "on" curve
       switch(inner_mode) {
         case 0: // no spread
-          pVarTP.x += pAmount * x;
-          pVarTP.y += pAmount * y;
+          xout = x;
+          yout = y;
           break;
         case 1:
           rinx = (rin * inner_spread * inner_spread_ratio) - (inner_spread * inner_spread_ratio) + 1;
           riny = (rin * inner_spread) - inner_spread + 1;
-          pVarTP.x += pAmount * rinx * x;
-          pVarTP.y += pAmount * riny * y;
+          xout = rinx * x;
+          yout = riny * y;
           break;
         case 2:
           xin = Math.abs(pAffineTP.x);
           yin = Math.abs(pAffineTP.y);
           if (x<0) { xin = xin * -1; }
           if (y<0) { yin = yin * -1; }
-          pVarTP.x += pAmount * (x - (inner_spread * inner_spread_ratio * (x-xin)));
-          pVarTP.y += pAmount * (y - (inner_spread * (y-yin)));
+          xout = (x - (inner_spread * inner_spread_ratio * (x-xin)));
+          yout = (y - (inner_spread * (y-yin)));
           break;
         case 3:
           xin = Math.abs(pAffineTP.x);
           yin = Math.abs(pAffineTP.y);
           if (x<0) { xin = xin * -1; }
           if (y<0) { yin = yin * -1; }
-          pVarTP.x += pAmount * (x - (inner_spread * inner_spread_ratio * xin));
-          pVarTP.y += pAmount * (y - (inner_spread * yin));
+          xout = (x - (inner_spread * inner_spread_ratio * xin));
+          yout = (y - (inner_spread * yin));
           break;
         case 4:
           rinx = (0.5 * rin) + (inner_spread * inner_spread_ratio);
           riny = (0.5 * rin) + inner_spread;
-          pVarTP.x += pAmount * rinx * x;
-          pVarTP.y += pAmount * riny * y;
+          xout = rinx * x;
+          yout = riny * y;
           break;
         case 5: // same as inner_mode 3, but without the sign modifications
-          pVarTP.x += pAmount * (x + (inner_spread * inner_spread_ratio * pAffineTP.x));
-          pVarTP.y += pAmount * (y + (inner_spread * pAffineTP.y));
+          xout = (x + (inner_spread * inner_spread_ratio * pAffineTP.x));
+          yout = (y + (inner_spread * pAffineTP.y));
           break;
         case 6: 
-          pVarTP.x += pAmount * pAffineTP.x;
-          pVarTP.y += pAmount * pAffineTP.y;
+          xout = pAffineTP.x;
+          yout = pAffineTP.y;
           break;
         case 7:
-          pVarTP.x += pAmount * rin * cos(t) * (inner_spread * inner_spread_ratio);
-          pVarTP.y += pAmount * rin * sin(t) * inner_spread;
+          xout = rin * cos(t) * (inner_spread * inner_spread_ratio);
+          yout = rin * sin(t) * inner_spread;
           break;
         case 8: 
           double rout = r + ((rin - r) * inner_spread);
-          pVarTP.x += pAmount * rout * cos(t);
-          pVarTP.y += pAmount * rout * sin(t);
+          xout = rout * cos(t);
+          yout = rout * sin(t);
           break;
         default:
-          pVarTP.x += pAmount * x;
-          pVarTP.y += pAmount * y;
+          xout = x;
+          yout = y;
           break;
       }
+    }
+    // Add final values in to variations totals
+    if (diff_mode) {
+      pVarTP.x = pAffineTP.x + (pAmount * (xout - pAffineTP.x));
+      pVarTP.y = pAffineTP.y + (pAmount * (yout - pAffineTP.y));
+    }
+    else {
+      pVarTP.x += pAmount * xout;
+      pVarTP.y += pAmount * yout;
     }
     pVarTP.z += pAmount * pAffineTP.z;
   }
@@ -315,7 +327,7 @@ public class EpitrochoidSimpleFunc extends VariationFunc {
   public Object[] getParameterValues() {
     return new Object[] { radius, cusps, cusp_size, cusp_divisor, 
                           inner_mode, outer_mode, inner_spread, outer_spread,
-                          inner_spread_ratio, outer_spread_ratio, spread_split };
+                          inner_spread_ratio, outer_spread_ratio, spread_split,  (diff_mode ? 1 : 0)  };
   }
 
   @Override
@@ -346,6 +358,9 @@ public class EpitrochoidSimpleFunc extends VariationFunc {
       inner_spread_ratio = pValue;    
     else if (PARAM_SPREAD_SPLIT.equalsIgnoreCase(pName))
       spread_split = pValue;
+    else if (PARAM_DIFF_MODE.equalsIgnoreCase(pName)) {
+      diff_mode = (pValue >= 1);
+    }
     else
       throw new IllegalArgumentException(pName);
   }
