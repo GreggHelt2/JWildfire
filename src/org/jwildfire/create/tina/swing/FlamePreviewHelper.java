@@ -79,7 +79,11 @@ public class FlamePreviewHelper implements IterationObserver {
     imgPanel.repaint();
   }
 
-  public void refreshFlameImage(boolean pQuickRender, boolean pMouseDown, int pDownScale) {
+  private boolean isProgressivePreviewEnabled(FlamePanelConfig cfg) {
+    return !isTransparencyEnabled() && !isDrawFocusPointEnabled(cfg) && cfg.isProgressivePreview();
+  }
+
+  public void refreshFlameImage(boolean pQuickRender, boolean pMouseDown, int pDownScale, boolean pReRender) {
     cancelBackgroundRender();
     if (pQuickRender && detachedPreviewProvider != null && detachedPreviewProvider.getDetachedPreviewController() != null && pDownScale == 1) {
       detachedPreviewProvider.getDetachedPreviewController().setFlame(flameHolder.getFlame());
@@ -88,10 +92,12 @@ public class FlamePreviewHelper implements IterationObserver {
     FlamePanel imgPanel = flamePanelProvider.getFlamePanel();
     FlamePanelConfig cfg = flamePanelProvider.getFlamePanelConfig();
 
-    if (!pQuickRender || !cfg.isProgressivePreview()) {
-      SimpleImage img = renderFlameImage(pQuickRender, pMouseDown, pDownScale);
-      if (img != null) {
-        imgPanel.setImage(img);
+    if (pReRender) {
+      if (!pQuickRender || !isProgressivePreviewEnabled(cfg)) {
+        SimpleImage img = renderFlameImage(pQuickRender, pMouseDown, pDownScale);
+        if (img != null) {
+          imgPanel.setImage(img);
+        }
       }
     }
 
@@ -104,7 +110,7 @@ public class FlamePreviewHelper implements IterationObserver {
       imgPanel.repaint();
     }
 
-    if (cfg.isProgressivePreview() && pQuickRender) {
+    if (pReRender && isProgressivePreviewEnabled(cfg) && pQuickRender) {
       startBackgroundRender(imgPanel);
     }
 
@@ -175,11 +181,11 @@ public class FlamePreviewHelper implements IterationObserver {
               flame.setSampleDensity(prefs.getTinaRenderPreviewQuality());
             }
 
-            if (!cfg.isNoControls() && imgPanel.getConfig().getMouseDragOperation() == MouseDragOperation.FOCUS) {
-              renderer = new DrawFocusPointFlameRenderer(flame, prefs, toggleTransparencyButton != null && toggleTransparencyButton.isSelected());
+            if (isDrawFocusPointEnabled(cfg)) {
+              renderer = new DrawFocusPointFlameRenderer(flame, prefs, isTransparencyEnabled());
             }
             else {
-              renderer = new FlameRenderer(flame, prefs, toggleTransparencyButton != null && toggleTransparencyButton.isSelected(), false);
+              renderer = new FlameRenderer(flame, prefs, isTransparencyEnabled(), false);
             }
 
             if (pQuickRender) {
@@ -197,98 +203,11 @@ public class FlamePreviewHelper implements IterationObserver {
             img.getBufferedImg().setAccelerationPriority(1.0f);
 
             if (layerAppendBtn != null && layerAppendBtn.isSelected() && !pMouseDown) {
-              TextTransformer txt = new TextTransformer();
-              txt.setText1("layer-append-mode active");
-              txt.setAntialiasing(true);
-              txt.setColor(Color.RED);
-              txt.setMode(Mode.NORMAL);
-              txt.setFontStyle(FontStyle.BOLD);
-              txt.setFontName("Arial");
-              txt.setFontSize(16);
-              txt.setHAlign(HAlignment.RIGHT);
-              txt.setVAlign(VAlignment.BOTTOM);
-              txt.transformImage(img);
+              showLayerAppendModeIndicator(img);
             }
 
             if (layerPreviewBtn != null && layerPreviewBtn.isSelected() && layerHolder != null) {
-              Layer onlyVisibleLayer = null;
-              for (Layer layer : flameHolder.getFlame().getLayers()) {
-                if (layer.isVisible()) {
-                  if (onlyVisibleLayer == null) {
-                    onlyVisibleLayer = layer;
-                  }
-                  else {
-                    onlyVisibleLayer = null;
-                    break;
-                  }
-                }
-              }
-              boolean drawSubLayer = flame.getLayers().size() > 1 && layerHolder.getLayer() != null && layerHolder.getLayer() != onlyVisibleLayer && !cfg.isNoControls();
-
-              if (drawSubLayer) {
-                Flame singleLayerFlame = new Flame();
-                singleLayerFlame.assign(flame);
-                singleLayerFlame.getLayers().clear();
-                singleLayerFlame.getLayers().add(layerHolder.getLayer().makeCopy());
-                singleLayerFlame.getFirstLayer().setVisible(true);
-                singleLayerFlame.getFirstLayer().setWeight(1.0);
-                RenderInfo lInfo = new RenderInfo(width / 4 * renderScale, height / 4 * renderScale, RenderMode.PREVIEW);
-                double lWScl = (double) lInfo.getImageWidth() / (double) singleLayerFlame.getWidth();
-                double lHScl = (double) lInfo.getImageHeight() / (double) singleLayerFlame.getHeight();
-                singleLayerFlame.setPixelsPerUnit((lWScl + lHScl) * 0.5 * singleLayerFlame.getPixelsPerUnit() * 0.5);
-                singleLayerFlame.setWidth(lInfo.getImageWidth());
-                singleLayerFlame.setHeight(lInfo.getImageHeight());
-                FlameRenderer lRenderer = new FlameRenderer(singleLayerFlame, prefs, false, false);
-                RenderedFlame lRes = lRenderer.renderFlame(lInfo);
-                SimpleImage layerImg = lRes.getImage();
-
-                boolean drawLayerNumber = true;
-                if (drawLayerNumber) {
-                  RectangleTransformer rT = new RectangleTransformer();
-                  int textWidth = 28;
-                  int textHeight = 22;
-                  int margin = 2;
-
-                  rT.setColor(new java.awt.Color(0, 0, 0));
-                  rT.setLeft(layerImg.getImageWidth() - textWidth - 2 * margin);
-                  rT.setTop(layerImg.getImageHeight() - textHeight - 2 * margin);
-                  rT.setThickness(textHeight / 2 + 1);
-                  rT.setWidth(textWidth);
-                  rT.setHeight(textHeight);
-                  rT.transformImage(layerImg);
-
-                  TextTransformer txt = new TextTransformer();
-                  txt.setText1("  " + (flame.getLayers().indexOf(layerHolder.getLayer()) + 1) + "  ");
-                  txt.setAntialiasing(true);
-                  txt.setColor(new java.awt.Color(200, 200, 200));
-                  txt.setMode(Mode.NORMAL);
-                  txt.setFontStyle(FontStyle.BOLD);
-                  txt.setFontName("Arial");
-                  txt.setFontSize(16);
-                  txt.setHAlign(HAlignment.NONE);
-                  txt.setPosX(layerImg.getImageWidth() - textWidth - margin);
-                  txt.setPosY(layerImg.getImageHeight() - textHeight - margin);
-                  txt.setVAlign(VAlignment.NONE);
-                  txt.transformImage(layerImg);
-                }
-
-                RectangleTransformer rT = new RectangleTransformer();
-                rT.setColor(new java.awt.Color(200, 200, 200));
-                rT.setLeft(0);
-                rT.setTop(0);
-                rT.setThickness(3);
-                rT.setWidth(lInfo.getImageWidth());
-                rT.setHeight(lInfo.getImageHeight());
-                rT.transformImage(layerImg);
-
-                ComposeTransformer cT = new ComposeTransformer();
-                cT.setHAlign(ComposeTransformer.HAlignment.LEFT);
-                cT.setVAlign(ComposeTransformer.VAlignment.BOTTOM);
-                cT.setTop(10);
-                cT.setLeft(10);
-                cT.setForegroundImage(layerImg);
-                cT.transformImage(img);
-              }
+              showLayerPreview(img, renderScale, width, height);
             }
 
             if (pDownScale != 1) {
@@ -322,6 +241,112 @@ public class FlamePreviewHelper implements IterationObserver {
       }
     }
     return null;
+  }
+
+  private void showLayerPreview(SimpleImage img, int renderScale, int width, int height) {
+    FlamePanelConfig cfg = flamePanelProvider.getFlamePanelConfig();
+    Flame flame = flameHolder.getFlame();
+
+    Layer onlyVisibleLayer = null;
+    for (Layer layer : flameHolder.getFlame().getLayers()) {
+      if (layer.isVisible()) {
+        if (onlyVisibleLayer == null) {
+          onlyVisibleLayer = layer;
+        }
+        else {
+          onlyVisibleLayer = null;
+          break;
+        }
+      }
+    }
+    boolean drawSubLayer = flame.getLayers().size() > 1 && layerHolder.getLayer() != null && layerHolder.getLayer() != onlyVisibleLayer && !cfg.isNoControls();
+
+    if (drawSubLayer) {
+      Flame singleLayerFlame = new Flame();
+      singleLayerFlame.assign(flame);
+      singleLayerFlame.getLayers().clear();
+      singleLayerFlame.getLayers().add(layerHolder.getLayer().makeCopy());
+      singleLayerFlame.getFirstLayer().setVisible(true);
+      singleLayerFlame.getFirstLayer().setWeight(1.0);
+      RenderInfo lInfo = new RenderInfo(width / 4 * renderScale, height / 4 * renderScale, RenderMode.PREVIEW);
+      double lWScl = (double) lInfo.getImageWidth() / (double) singleLayerFlame.getWidth();
+      double lHScl = (double) lInfo.getImageHeight() / (double) singleLayerFlame.getHeight();
+      singleLayerFlame.setPixelsPerUnit((lWScl + lHScl) * 0.5 * singleLayerFlame.getPixelsPerUnit() * 0.5);
+      singleLayerFlame.setWidth(lInfo.getImageWidth());
+      singleLayerFlame.setHeight(lInfo.getImageHeight());
+      FlameRenderer lRenderer = new FlameRenderer(singleLayerFlame, prefs, false, false);
+      RenderedFlame lRes = lRenderer.renderFlame(lInfo);
+      SimpleImage layerImg = lRes.getImage();
+
+      boolean drawLayerNumber = true;
+      if (drawLayerNumber) {
+        RectangleTransformer rT = new RectangleTransformer();
+        int textWidth = 28;
+        int textHeight = 22;
+        int margin = 2;
+
+        rT.setColor(new java.awt.Color(0, 0, 0));
+        rT.setLeft(layerImg.getImageWidth() - textWidth - 2 * margin);
+        rT.setTop(layerImg.getImageHeight() - textHeight - 2 * margin);
+        rT.setThickness(textHeight / 2 + 1);
+        rT.setWidth(textWidth);
+        rT.setHeight(textHeight);
+        rT.transformImage(layerImg);
+
+        TextTransformer txt = new TextTransformer();
+        txt.setText1("  " + (flame.getLayers().indexOf(layerHolder.getLayer()) + 1) + "  ");
+        txt.setAntialiasing(true);
+        txt.setColor(new java.awt.Color(200, 200, 200));
+        txt.setMode(Mode.NORMAL);
+        txt.setFontStyle(FontStyle.BOLD);
+        txt.setFontName("Arial");
+        txt.setFontSize(16);
+        txt.setHAlign(HAlignment.NONE);
+        txt.setPosX(layerImg.getImageWidth() - textWidth - margin);
+        txt.setPosY(layerImg.getImageHeight() - textHeight - margin);
+        txt.setVAlign(VAlignment.NONE);
+        txt.transformImage(layerImg);
+      }
+
+      RectangleTransformer rT = new RectangleTransformer();
+      rT.setColor(new java.awt.Color(200, 200, 200));
+      rT.setLeft(0);
+      rT.setTop(0);
+      rT.setThickness(3);
+      rT.setWidth(lInfo.getImageWidth());
+      rT.setHeight(lInfo.getImageHeight());
+      rT.transformImage(layerImg);
+
+      ComposeTransformer cT = new ComposeTransformer();
+      cT.setHAlign(ComposeTransformer.HAlignment.LEFT);
+      cT.setVAlign(ComposeTransformer.VAlignment.BOTTOM);
+      cT.setTop(10);
+      cT.setLeft(10);
+      cT.setForegroundImage(layerImg);
+      cT.transformImage(img);
+    }
+  }
+
+  private void showLayerAppendModeIndicator(SimpleImage img) {
+    TextTransformer txt = new TextTransformer();
+    txt.setText1("layer-append-mode active");
+    txt.setAntialiasing(true);
+    txt.setColor(Color.RED);
+    txt.setMode(Mode.NORMAL);
+    txt.setFontStyle(FontStyle.BOLD);
+    txt.setFontName("Arial");
+    txt.setFontSize(16);
+    txt.setHAlign(HAlignment.RIGHT);
+    txt.setVAlign(VAlignment.BOTTOM);
+    txt.transformImage(img);
+  }
+
+  private boolean isDrawFocusPointEnabled(FlamePanelConfig cfg) {
+    return !cfg.isNoControls() && cfg.getMouseDragOperation() == MouseDragOperation.FOCUS;
+  }
+
+  private boolean isTransparencyEnabled() {
+    return toggleTransparencyButton != null && toggleTransparencyButton.isSelected();
   }
 
   public SimpleImage fastRenderFlameImage(boolean pQuickRender, boolean pMouseDown, int pDownScale) {
@@ -358,11 +383,11 @@ public class FlamePreviewHelper implements IterationObserver {
           flame.setHeight(info.getImageHeight());
           try {
             FlameRenderer renderer;
-            if (!cfg.isNoControls() && imgPanel.getConfig().getMouseDragOperation() == MouseDragOperation.FOCUS) {
-              renderer = new DrawFocusPointFlameRenderer(flame, prefs, toggleTransparencyButton != null && toggleTransparencyButton.isSelected());
+            if (isDrawFocusPointEnabled(cfg)) {
+              renderer = new DrawFocusPointFlameRenderer(flame, prefs, isTransparencyEnabled());
             }
             else {
-              renderer = new FlameRenderer(flame, prefs, toggleTransparencyButton != null && toggleTransparencyButton.isSelected(), false);
+              renderer = new FlameRenderer(flame, prefs, isTransparencyEnabled(), false);
             }
             renderer.setProgressUpdater(null);
             flame.setSampleDensity(prefs.getTinaRenderRealtimeQuality());
@@ -530,7 +555,7 @@ public class FlamePreviewHelper implements IterationObserver {
   private final static int IMAGE_UPDATE_INC_INTERVAL = 10;
   private final static int MAX_UPDATE_INC_INTERVAL = 100;
 
-  private class UpdateDisplayThread implements Runnable {
+  private class UpdateDisplayThread implements Runnable, InteractiveRendererImagePostProcessor {
     private int nextImageUpdate;
     private int lastImageUpdateInterval;
     private boolean cancelSignalled;
@@ -594,14 +619,16 @@ public class FlamePreviewHelper implements IterationObserver {
                 replaceImageFlag = true;
               }
               currQuality = threads.getRenderThreads().get(0).getTonemapper().calcDensity(displayUpdater.getSampleCount());
-              if (currQuality < 0.5)
-                currQuality *= 10;
-              else if (currQuality < 1.0)
-                currQuality *= 5;
-              for (AbstractRenderThread thread : threads.getRenderThreads()) {
-                thread.getTonemapper().setDensity(currQuality);
+              if (currQuality > 0.25) {
+                if (currQuality < 0.5)
+                  currQuality *= 10;
+                else if (currQuality < 1.0)
+                  currQuality *= 5;
+                for (AbstractRenderThread thread : threads.getRenderThreads()) {
+                  thread.getTonemapper().setDensity(currQuality);
+                }
+                displayUpdater.updateImage(this);
               }
-              displayUpdater.updateImage();
               nextImageUpdate = lastImageUpdateInterval;
             }
             else {
@@ -624,6 +651,17 @@ public class FlamePreviewHelper implements IterationObserver {
 
     public boolean isFinished() {
       return finished;
+    }
+
+    @Override
+    public void postProcessImage(SimpleImage pImage) {
+      if (layerAppendBtn != null && layerAppendBtn.isSelected()) {
+        showLayerAppendModeIndicator(image);
+      }
+      if (layerPreviewBtn != null && layerPreviewBtn.isSelected() && layerHolder != null) {
+        Rectangle panelBounds = flamePanelProvider.getFlamePanel().getParentImageBounds();
+        showLayerPreview(image, 1, panelBounds.width, panelBounds.height);
+      }
     }
 
   }
