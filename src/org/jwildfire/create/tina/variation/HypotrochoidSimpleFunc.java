@@ -88,7 +88,7 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
   private static final String PARAM_INNER_SPREAD_RATIO = "inner_spread_ratio";
   private static final String PARAM_OUTER_SPREAD_RATIO = "outer_spread_ratio";
   private static final String PARAM_SPREAD_SPLIT = "spread_split";
-  private static final String PARAM_DIFF_MODE = "diff mode";
+  private static final String PARAM_DIFF_MODE = "diff_mode";
 
   private static final String[] paramNames = { PARAM_RADIUS, PARAM_CUSPS, PARAM_CUSP_SIZE, PARAM_CUSP_DIVISOR, 
                                                PARAM_INNER_MODE, PARAM_OUTER_MODE, 
@@ -176,9 +176,11 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
 
   @Override
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
-    double tin = atan2(pAffineTP.y, pAffineTP.x);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
+    double xin = pAffineTP.x;
+    double yin = pAffineTP.y;
+    double tin = atan2(yin, xin);  // atan2 range is [-PI, PI], so covers 2PI, or 1 cycle
     double theta = cycles * tin;
-    double raw_rin = sqrt((pAffineTP.x  * pAffineTP.x) + (pAffineTP.y * pAffineTP.y));
+    double raw_rin = sqrt((xin  * xin) + (yin * yin));
     double rin = spread_split * raw_rin;
         
     double x = ((a_radius - b_radius) * cos(theta)) + (c_radius * cos(((a_radius - b_radius)/b_radius) * theta));
@@ -186,7 +188,6 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
     double r = sqrt(x*x + y*y);
     double t = atan2(y, x);
 
-    double xin, yin;
     double rinx, riny;
     double xout, yout;
 
@@ -203,16 +204,16 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
           yout = riny * y;
           break;
         case 2:
-          xin = Math.abs(pAffineTP.x);
-          yin = Math.abs(pAffineTP.y);
+          xin = Math.abs(xin);
+          yin = Math.abs(yin);
           if (x<0) { xin = xin * -1; }
           if (y<0) { yin = yin * -1; }
           xout = (x + (outer_spread * outer_spread_ratio * (xin-x)));
           yout = (y + (outer_spread * (yin-y)));
           break;
         case 3:
-          xin = Math.abs(pAffineTP.x);
-          yin = Math.abs(pAffineTP.y);
+          xin = Math.abs(xin);
+          yin = Math.abs(yin);
           if (x<0) { xin = xin * -1; }
           if (y<0) { yin = yin * -1; }
           xout = (x + (outer_spread * outer_spread_ratio * xin));
@@ -225,12 +226,12 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
           yout = riny * y;
           break;
         case 5: // same as outer_mode 3, but without the sign modifications
-          xout = (x + (outer_spread * outer_spread_ratio * pAffineTP.x));
-          yout = (y + (outer_spread * pAffineTP.y));
+          xout = (x + (outer_spread * outer_spread_ratio * xin));
+          yout = (y + (outer_spread * yin));
           break;
         case 6: 
-          xout = pAffineTP.x;
-          yout = pAffineTP.y;
+          xout = xin;
+          yout = yin;
           break;
         case 7:
           xout = rin * cos(t) * outer_spread * outer_spread_ratio;
@@ -260,16 +261,16 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
           yout = riny * y;
           break;
         case 2:
-          xin = Math.abs(pAffineTP.x);
-          yin = Math.abs(pAffineTP.y);
+          xin = Math.abs(xin);
+          yin = Math.abs(yin);
           if (x<0) { xin = xin * -1; }
           if (y<0) { yin = yin * -1; }
           xout = (x - (inner_spread * inner_spread_ratio * (x-xin)));
           yout = (y - (inner_spread * (y-yin)));
           break;
         case 3:
-          xin = Math.abs(pAffineTP.x);
-          yin = Math.abs(pAffineTP.y);
+          xin = Math.abs(xin);
+          yin = Math.abs(yin);
           if (x<0) { xin = xin * -1; }
           if (y<0) { yin = yin * -1; }
           xout = (x - (inner_spread * inner_spread_ratio * xin));
@@ -282,12 +283,12 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
           yout = riny * y;
           break;
         case 5: // same as inner_mode 3, but without the sign modifications
-          xout = (x + (inner_spread * inner_spread_ratio * pAffineTP.x));
-          yout = (y + (inner_spread * pAffineTP.y));
+          xout = (x + (inner_spread * inner_spread_ratio * xin));
+          yout = (y + (inner_spread * yin));
           break;
         case 6: 
-          xout = pAffineTP.x;
-          yout = pAffineTP.y;
+          xout = xin;
+          yout = yin;
           break;
         case 7:
           xout = rin * cos(t) * (inner_spread * inner_spread_ratio);
@@ -313,8 +314,10 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
     else {
       pVarTP.x += pAmount * xout;
       pVarTP.y += pAmount * yout;
-    }    
-    pVarTP.z += pAmount * pAffineTP.z;
+    }
+    if (pContext.isPreserveZCoordinate()) {
+      pVarTP.z += pAmount * pAffineTP.z;
+    }
   }
 
   @Override
@@ -357,7 +360,7 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
       inner_spread_ratio = pValue;    
     else if (PARAM_SPREAD_SPLIT.equalsIgnoreCase(pName))
       spread_split = pValue;
-    else if (PARAM_DIFF_MODE.equalsIgnoreCase(pName)) {
+    else if (PARAM_DIFF_MODE.equalsIgnoreCase(pName) || pName.equalsIgnoreCase("diff mode")) {
       diff_mode = (pValue >= 1);
     }    
     else
