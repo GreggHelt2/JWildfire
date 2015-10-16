@@ -130,12 +130,12 @@ public class FlamePanel extends ImagePanel {
       }
       return;
     }
+    super.paintComponent(g);
     Graphics2D g2d = (Graphics2D) g;
     if (prefs.isTinaEditorControlsWithAntialiasing()) {
       g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
       g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
     }
-    super.paintComponent(g);
     fillBackground(g);
     initTriangleView(g2d);
     if (withImage) {
@@ -196,6 +196,22 @@ public class FlamePanel extends ImagePanel {
 
   public Rectangle getImageBounds() {
     Rectangle bounds = this.getBounds();
+    double aspect = (double) bounds.width / (double) bounds.height;
+    int imageWidth, imageHeight;
+    if (aspect <= renderAspect) {
+      imageWidth = bounds.width;
+      imageHeight = Tools.FTOI((double) imageWidth / renderAspect);
+    }
+    else {
+      imageHeight = bounds.height;
+      imageWidth = Tools.FTOI((double) imageHeight * renderAspect);
+    }
+    //    System.out.println(bounds.width + "x" + bounds.height + "->" + imageWidth + "x" + imageHeight);
+    return new Rectangle(0, 0, imageWidth, imageHeight);
+  }
+
+  public Rectangle getParentImageBounds() {
+    Rectangle bounds = this.getParent().getBounds();
     double aspect = (double) bounds.width / (double) bounds.height;
     int imageWidth, imageHeight;
     if (aspect <= renderAspect) {
@@ -1028,6 +1044,7 @@ public class FlamePanel extends ImagePanel {
       fineMovement = pFlamePanel.fineMovement;
       allowScaleX = pFlamePanel.allowScaleX;
       allowScaleY = pFlamePanel.allowScaleY;
+
       withShowTransparency = pFlamePanel.withShowTransparency;
       config.setWithColoredTransforms(pFlamePanel.config.isWithColoredTransforms());
       config.setMouseDragOperation(pFlamePanel.config.getMouseDragOperation());
