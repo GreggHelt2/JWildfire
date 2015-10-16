@@ -478,6 +478,7 @@ public class VariationFuncList {
     registerVariationFunc(EpitrochoidSimpleFunc.class);
     registerVariationFunc(HypotrochoidSimpleFunc.class);
     registerVariationFunc(RhodoneaSimpleFunc.class);
+    registerVariationFunc(BipolarCirclesFunc.class);
     
     resolvedAliasMap = new HashMap<>();
     for (Entry<Class<? extends VariationFunc>, String> funcCls : aliasMap.entrySet()) {
