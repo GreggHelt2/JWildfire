@@ -88,12 +88,13 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
   private static final String PARAM_INNER_SPREAD_RATIO = "inner_spread_ratio";
   private static final String PARAM_OUTER_SPREAD_RATIO = "outer_spread_ratio";
   private static final String PARAM_SPREAD_SPLIT = "spread_split";
+  private static final String PARAM_THICKNESS = "thickness";
   private static final String PARAM_DIFF_MODE = "diff_mode";
 
   private static final String[] paramNames = { PARAM_RADIUS, PARAM_CUSPS, PARAM_CUSP_SIZE, PARAM_CUSP_DIVISOR, 
                                                PARAM_INNER_MODE, PARAM_OUTER_MODE, 
                                                PARAM_INNER_SPREAD, PARAM_OUTER_SPREAD, 
-                                               PARAM_INNER_SPREAD_RATIO, PARAM_OUTER_SPREAD_RATIO, PARAM_SPREAD_SPLIT, PARAM_DIFF_MODE };
+                                               PARAM_INNER_SPREAD_RATIO, PARAM_OUTER_SPREAD_RATIO, PARAM_SPREAD_SPLIT, PARAM_THICKNESS, PARAM_DIFF_MODE };
   private static int MIN_MODE = 0;
   private static int MAX_MODE = 8;
   private static int DEFAULT_MODE = MIN_MODE;
@@ -117,6 +118,7 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
   private double inner_spread_ratio = 1; // how much outer_spread applies to x relative to y
   private double outer_spread_ratio = 1; // how much outer_spread applies to x relative to y
   private double spread_split = 1;
+  private double thickness = 0; // amount to thicken curve by randomizing input
   private double cycles;  // 1 cycle = 2*PI
   private double radians; // = 2*PI*cycles
 
@@ -189,13 +191,20 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
     double t = atan2(y, x);
 
     double rinx, riny;
-    double xout, yout;
+    double xout, yout, rout;
 
     if (abs(rin) > abs(r))  { // incoming point lies "outside" of curve 
       switch(outer_mode) {
         case 0: // no spread
-          xout = x;
-          yout = y;
+          if (thickness == 0) {
+            xout = x;
+            yout = y;
+          }
+          else {
+            rout = r + (thickness * (pContext.random() - 0.5));
+            xout = rout * cos(t);
+            yout = rout * sin(t);
+          }
           break;
         case 1:
           rinx = (rin * outer_spread * outer_spread_ratio) - (outer_spread * outer_spread_ratio) + 1;
@@ -238,7 +247,7 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
           yout = rin * sin(t) * outer_spread;
           break;
         case 8: 
-          double rout = r + ((rin-r) * outer_spread);
+          rout = r + ((rin-r) * outer_spread);
           xout = rout * cos(t);
           yout = rout * sin(t);
           break;
@@ -251,9 +260,16 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
     else  { // incoming point lies "inside" or "on" curve
       switch(inner_mode) {
         case 0: // no spread
-          xout = x;
-          yout = y;
-          break;
+          if (thickness == 0) {
+            xout = x;
+            yout = y;
+          }
+          else {
+            rout = r + (thickness * (pContext.random() - 0.5));
+            xout = rout * cos(t);
+            yout = rout * sin(t);
+          }
+          break;          
         case 1:
           rinx = (rin * inner_spread * inner_spread_ratio) - (inner_spread * inner_spread_ratio) + 1;
           riny = (rin * inner_spread) - inner_spread + 1;
@@ -296,7 +312,7 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
           break;
         case 8: 
           // double rout = (rin * inner_spread) + (r * (1 - inner_spread));
-          double rout = r + ((rin - r) * inner_spread);
+          rout = r + ((rin - r) * inner_spread);
           xout = rout * cos(t);
           yout = rout * sin(t);
           break;
@@ -329,7 +345,7 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
   public Object[] getParameterValues() {
     return new Object[] { radius, cusps, cusp_size, cusp_divisor, 
                           inner_mode, outer_mode, inner_spread, outer_spread,
-                          inner_spread_ratio, outer_spread_ratio, spread_split, (diff_mode ? 1 : 0) };
+                          inner_spread_ratio, outer_spread_ratio, spread_split, thickness, (diff_mode ? 1 : 0) };
   }
 
   @Override
@@ -360,6 +376,8 @@ public class HypotrochoidSimpleFunc extends VariationFunc {
       inner_spread_ratio = pValue;    
     else if (PARAM_SPREAD_SPLIT.equalsIgnoreCase(pName))
       spread_split = pValue;
+    else if (PARAM_THICKNESS.equalsIgnoreCase(pName) || pName.equalsIgnoreCase("fill"))
+      thickness = pValue;
     else if (PARAM_DIFF_MODE.equalsIgnoreCase(pName) || pName.equalsIgnoreCase("diff mode")) {
       diff_mode = (pValue >= 1);
     }    
