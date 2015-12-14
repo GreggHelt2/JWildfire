@@ -480,6 +480,7 @@ public class IFlamesController implements FlameHolder, FlamePanelProvider, Rende
       flamePanel = new FlamePanel(prefs, img, 0, 0, centerPanel.getWidth(), this, null);
       flamePanel.getConfig().setWithColoredTransforms(prefs.isTinaEditorControlsWithColor());
       flamePanel.setFlamePanelTriangleMode(prefs.getTinaEditorControlsStyle());
+      flamePanel.getConfig().setProgressivePreview(prefs.isTinaEditorProgressivePreview());
       flamePanel.importOptions(prevFlamePanel);
       prevFlamePanel = null;
       ResolutionProfile resProfile = getResolutionProfile();
@@ -588,7 +589,7 @@ public class IFlamesController implements FlameHolder, FlamePanelProvider, Rende
           return;
         }
       }
-      flamePreviewHelper.refreshFlameImage(true, false, 1);
+      flamePreviewHelper.refreshFlameImage(true, false, 1, true);
     }
     finally {
       unprepareIFlame(renderId);
@@ -822,7 +823,7 @@ public class IFlamesController implements FlameHolder, FlamePanelProvider, Rende
   }
 
   public void renderFlameButton_clicked() {
-    flamePreviewHelper.refreshFlameImage(false, false, 1);
+    flamePreviewHelper.refreshFlameImage(false, false, 1, true);
   }
 
   public void loadImagesButton_clicked() {

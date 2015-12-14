@@ -26,6 +26,7 @@ import java.awt.datatransfer.Transferable;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
@@ -707,7 +708,7 @@ public class TinaInteractiveRendererController implements IterationObserver {
         FlameRenderer newRenderer = new FlameRenderer(newFlame, prefs, newFlame.isBGTransparency(), false);
 
         ResumedFlameRender resumedRender = newRenderer.resumeRenderFlame(file.getAbsolutePath());
-        threads = new RenderThreads(resumedRender.getThreads(), null);
+        threads = new RenderThreads(resumedRender.getThreads(), new ArrayList<Thread>());
         Flame flame = currFlame = newRenderer.getFlame();
         // setup size profile
         {
@@ -763,8 +764,10 @@ public class TinaInteractiveRendererController implements IterationObserver {
         lastQuality = 0.0;
         lastQualitySpeed = 0.0;
         lastQualityTime = 0;
-        for (AbstractRenderThread thread : threads.getRenderThreads()) {
-          startRenderThread(thread);
+        for (int i = 0; i < threads.getRenderThreads().size(); i++) {
+          AbstractRenderThread rThread = threads.getRenderThreads().get(i);
+          Thread eThread = startRenderThread(rThread);
+          threads.getExecutingThreads().add(eThread);
         }
         updateDisplayThread = new UpdateDisplayThread();
         startDisplayThread(updateDisplayThread);
@@ -818,7 +821,7 @@ public class TinaInteractiveRendererController implements IterationObserver {
   }
 
   private void updateImage() {
-    displayUpdater.updateImage();
+    displayUpdater.updateImage(null);
   }
 
   private void initImage(int pBGRed, int pBGGreen, int pBGBlue, String pBGImagefile) {
