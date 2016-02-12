@@ -107,6 +107,8 @@ public class MaurerLinesFunc extends VariationFunc {
   private static final int FAY_BUTTERFLY = 12;
   private static final int RIGGE1 = 13;
   private static final int RIGGE2 = 14;
+  private static final int HEARTS1 = 15;
+  private static final int HEARTS2 = 16;
   
   // color mode
   // 0 NORMAL --> normal (no direct coloring)
@@ -545,6 +547,18 @@ public class MaurerLinesFunc extends VariationFunc {
       double r = (1 - cos(a * theta)) - (1 - cos(a * b * theta));
       point.x = r * cos(theta);
       point.y = r * sin(theta);
+    }
+    else if (curve_mode == HEARTS1) {
+      // r(theta)=2-2sintheta+sintheta(sqrt(|costheta|))/(sintheta+1.4);
+      double r = 2 - (2 * sin(theta)) + (sin(theta) * sqrt(abs(cos(theta))) / (sin(theta) + 1.4));
+      point.x = -1 * (r * cos(theta));
+      point.y = -1 * (r * sin(theta));
+    }
+    else if (curve_mode == HEARTS2) {
+      // x = 16sin^3(t)
+      // y = 13cost-5cos(2t)-2cos(3t)-cos(4t)
+      point.x = -1 * (16 * Math.pow(sin(theta), 3));
+      point.y = -1 * ((13 * cos(theta)) - (5 * cos(2*theta)) - (2 * cos(3*theta)) - cos(4*theta));
     }
     else {  // default to circle
       double r = a;
