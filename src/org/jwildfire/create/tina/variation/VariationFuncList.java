@@ -463,6 +463,9 @@ public class VariationFuncList {
     registerVariationFunc(PostAxisSymmetryWFFunc.class);
     registerVariationFunc(MobiusStripFunc.class);
     
+    registerVariationFunc(Hearts3SimpleFunc.class);
+    registerVariationFunc(Hearts4SimpleFunc.class);
+    
     resolvedAliasMap = new HashMap<>();
     for (Entry<Class<? extends VariationFunc>, String> funcCls : aliasMap.entrySet()) {
       String vName = getVariationName(funcCls.getKey(), false);
