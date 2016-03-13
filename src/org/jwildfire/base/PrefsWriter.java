@@ -26,7 +26,7 @@ public class PrefsWriter {
     pPrefs.setCreateTinaDefaultMacroButtons(false);
     
     addValue(sb, Prefs.KEY_TINA_DENSITY_POSTPROCESS, pPrefs.isDensityPostProcess());
-    
+    addValue(sb, Prefs.KEY_TINA_DEFAULT_DENSITY_COLORMAP, pPrefs.getDefaultDensityColormap());
 
     addValue(sb, Prefs.KEY_GENERAL_DEVELOPMENT_MODE, pPrefs.isDevelopmentMode());
     addValue(sb, Prefs.KEY_GENERAL_BASE_MATH_LIB, pPrefs.getBaseMathLibType().toString());

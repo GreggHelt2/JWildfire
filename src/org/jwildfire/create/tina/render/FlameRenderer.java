@@ -36,6 +36,7 @@ import org.jwildfire.create.tina.base.Stereo3dColor;
 import org.jwildfire.create.tina.base.Stereo3dEye;
 import org.jwildfire.create.tina.base.Stereo3dMode;
 import org.jwildfire.create.tina.base.raster.AbstractRaster;
+import org.jwildfire.create.tina.palette.RenderColor;
 import org.jwildfire.create.tina.random.AbstractRandomGenerator;
 import org.jwildfire.create.tina.random.RandomGeneratorFactory;
 import org.jwildfire.create.tina.render.image.AbstractImageRenderThread;
@@ -60,6 +61,7 @@ import org.jwildfire.transform.ScaleTransformer;
 public class FlameRenderer {
   // constants
   private final static int MAX_FILTER_WIDTH = 25;
+  // private static boolean DEBUG_DENSITY_COLORMAP = false;
   // init in initRaster
   protected int imageWidth;
   protected int imageHeight;
@@ -86,8 +88,9 @@ public class FlameRenderer {
   private RenderInfo renderInfo;
 
   protected final Flame flame;
-  private final Prefs prefs;
+  public final Prefs prefs;
   private boolean preview;
+  private Pixel pixutil = new Pixel();
 
   private List<IterationObserver> iterationObservers;
   private List<AbstractRenderThread> runningThreads;
@@ -194,14 +197,44 @@ public class FlameRenderer {
     boolean post_density_mapping = prefs.isDensityPostProcess();
     SimpleImage pImage = res.getImage();
     if (post_density_mapping) {
-      int iwidth = pImage.getImageWidth();
-      int iheight = pImage.getImageHeight();
-      System.out.println("   renderFlame post processing, WxH = " + iwidth + " x " + iheight);
-      for (int i=0; i< iwidth; i++) {
-        int k = i;
-        if (k>=iheight) { k = 0; }
-        pImage.setRGB(i,k, 255, 255, 0); 
+      Layer layer1 = flame.getFirstLayer();
+      RenderColor[] colorMap = layer1.getPalette().createRenderPalette(flame.getWhiteLevel());
+
+      int image_width = pImage.getImageWidth();
+      int image_height = pImage.getImageHeight();
+      System.out.println("   renderFlame post processing, WxH = " + image_width + " x " + image_height);
+      for (int x=0; x<image_width; x++) {
+        for (int y=0; y<image_height; y++) {
+          /*
+          int argb = pImage.getARGBValue(x, y);
+          int alpha = (argb >>> 24) & 0xff;
+          int red = (argb >> 16) & 0x000000FF;
+          int green = (argb >>8 ) & 0x000000FF;
+          int blue = (argb) & 0x000000FF;
+          */
+          int r = pImage.getRValue(x, y);
+          int g = pImage.getGValue(x, y);
+          int b = pImage.getBValue(x, y);
+          // if color matches background color, don't change, otherwise remap to colormap based on intensity:
+          if (r != flame.getBGColorRed() ||
+                  g != flame.getBGColorGreen() ||
+                  b != flame.getBGColorBlue() ) {
+            int avgint = (r + g + b)/3;
+            RenderColor mapcol = colorMap[avgint];
+            pixutil.setRGB((int)mapcol.red, (int)mapcol.green, (int)mapcol.blue);
+            pImage.setRGB(x, y, pixutil);
+          }
+        }
       }
+      /*
+      if (DEBUG_DENSITY_COLORMAP) {
+        for (int x=0; x< image_width; x++) {
+          int y = x;
+          if (y>=image_height) { y = image_height/2; }
+          pImage.setRGB(x,y, 255, 255, 0); 
+        }
+      }
+              */
     }
     return res;
   }
