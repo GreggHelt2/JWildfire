@@ -22,13 +22,18 @@ import java.util.List;
 import org.jwildfire.create.tina.base.Flame;
 import org.jwildfire.create.tina.base.Layer;
 import org.jwildfire.create.tina.base.raster.AbstractRaster;
+import org.jwildfire.create.tina.io.MapGradientReader;
+import org.jwildfire.create.tina.palette.RGBPalette;
 import org.jwildfire.create.tina.palette.RenderColor;
 import org.jwildfire.create.tina.random.AbstractRandomGenerator;
 import org.jwildfire.create.tina.variation.FlameTransformationContext;
 
 public class RenderIterationState implements Serializable {
   private static final long serialVersionUID = 2L;
-
+  public static RGBPalette density_default_palette;
+  // public RGBPalette density_default_palette;
+  private boolean density_palette_missing = false;
+  
   protected final AbstractRenderThread renderThread;
   protected final FlameRenderer renderer;
   protected final FlameRendererView view;
@@ -52,9 +57,42 @@ public class RenderIterationState implements Serializable {
     ctx = pCtx;
     randGen = pRandGen;
     observers = renderer.getIterationObservers();
-    colorMap = pLayer.getPalette().createRenderPalette(flame.getWhiteLevel());
+
+    if (pRenderer.prefs.isDensityPostProcess()) {
+      if (density_default_palette == null && !density_palette_missing) {
+        createDensityDefaultPalette();
+      }
+      if (density_palette_missing) {
+        colorMap = pLayer.getPalette().createRenderPalette(flame.getWhiteLevel());
+      }
+      else {
+        colorMap = density_default_palette.createRenderPalette(flame.getWhiteLevel());
+      }
+    }
+    else {
+      colorMap = pLayer.getPalette().createRenderPalette(flame.getWhiteLevel());
+    }
     paletteIdxScl = colorMap.length - 2;
     raster = pRenderer.getRaster();
+  }
+  
+ //  public static void createDensityDefaultPalette() {
+  public void createDensityDefaultPalette() {
+    // String palette_file = "/Users/gregg";
+    String palette_file = renderer.prefs.getDefaultDensityColormap();
+    System.out.println("getting default density colormap: " + palette_file);
+    MapGradientReader greader = new MapGradientReader();
+    try {
+      List<RGBPalette> palettes = greader.readPalettes(palette_file);
+      density_default_palette = palettes.get(0);
+    }
+    catch (Exception ex) {
+      ex.printStackTrace();
+      density_default_palette = null;
+      density_palette_missing = true;
+    }
+    System.out.println("default density palette: " + density_default_palette);
+
   }
 
 }

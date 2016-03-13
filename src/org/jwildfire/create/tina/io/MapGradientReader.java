@@ -35,7 +35,9 @@ public class MapGradientReader {
       return readPaletteFromMapData(mapData, pFilename);
     }
     catch (Exception ex) {
-      throw new RuntimeException(pFilename, ex);
+      ex.printStackTrace();
+      // throw new RuntimeException(pFilename, ex);
+      return null;
     }
   }
 

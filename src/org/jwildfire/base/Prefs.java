@@ -38,6 +38,9 @@ import com.l2fprod.common.beans.editor.ComboBoxPropertyEditor;
 public class Prefs extends ManagedObject {
   // DON'T forget to update the assign() method after adding new properties!!!
   static final String PREFS_FILE = "j-wildfire.properties";
+  
+  static final String KEY_TINA_DENSITY_POSTPROCESS = "tina.general.density_postprocess";
+  static final String KEY_TINA_DEFAULT_DENSITY_COLORMAP = "tina.general.default_density_colormap";
 
   static final String KEY_GENERAL_LOOK_AND_FEEL = "general.look_and_feel";
   static final String KEY_GENERAL_LOOK_AND_FEEL_THEME = "general.look_and_feel.theme";
@@ -162,6 +165,12 @@ public class Prefs extends ManagedObject {
   static final String KEY_IFLAMES_LIBRARY_PATH_FLAMES = "iflames.library_path.flames";
   static final String KEY_IFLAMES_LIBRARY_PATH_IMAGES = "iflames.library_path.images";
   static final String KEY_IFLAMES_LOAD_LIBRARY_AT_STARTUP = "iflames.load_library_at_startup";
+  
+  @Property(description = "density postprocessing", category = PropertyCategory.GENERAL)
+  private boolean densityPostProcess = true;
+  
+  @Property(description = "default density colormap", category = PropertyCategory.GENERAL)
+  private String defaultDensityColormap = null;
 
   @Property(description = "Script drawer for the animation editor (please note that this NOT for scripts of the flame-editor)", category = PropertyCategory.MISC)
   private String scriptPath = null;
@@ -688,8 +697,26 @@ public class Prefs extends ManagedObject {
   public String getScriptPath() {
     return scriptPath;
   }
-
+  
+  public boolean isDensityPostProcess() {
+    return densityPostProcess;
+  }
+  public void setDensityPostProcess(boolean b) {
+    densityPostProcess = b;
+  }
+  
+  public String getDefaultDensityColormap() {
+    return defaultDensityColormap;
+  }
+  
+  public void setDefaultDensityColormap(String filepath) {
+    defaultDensityColormap = filepath;
+  }
+  
   public void assign(Prefs pSrc) {
+    
+    densityPostProcess = pSrc.densityPostProcess;
+    defaultDensityColormap = pSrc.defaultDensityColormap;
     thumbnailPath = pSrc.thumbnailPath;
     scriptPath = pSrc.scriptPath;
     lastInputScriptPath = pSrc.lastInputScriptPath;
