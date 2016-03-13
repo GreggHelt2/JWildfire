@@ -183,12 +183,27 @@ public class FlameRenderer {
   }
 
   public RenderedFlame renderFlame(RenderInfo pRenderInfo) {
+    System.out.println("called renderFlame(RenderInfo), WxH => " + pRenderInfo.getImageWidth() + " x " + pRenderInfo.getImageHeight());
+    RenderedFlame res;
     if (!Stereo3dMode.NONE.equals(flame.getStereo3dMode())) {
-      return renderImageStereo3d(pRenderInfo);
+      res = renderImageStereo3d(pRenderInfo);
     }
     else {
-      return renderImageNormal(pRenderInfo, 1, 0);
+      res = renderImageNormal(pRenderInfo, 1, 0);
     }
+    boolean post_density_mapping = prefs.isDensityPostProcess();
+    SimpleImage pImage = res.getImage();
+    if (post_density_mapping) {
+      int iwidth = pImage.getImageWidth();
+      int iheight = pImage.getImageHeight();
+      System.out.println("   renderFlame post processing, WxH = " + iwidth + " x " + iheight);
+      for (int i=0; i< iwidth; i++) {
+        int k = i;
+        if (k>=iheight) { k = 0; }
+        pImage.setRGB(i,k, 255, 255, 0); 
+      }
+    }
+    return res;
   }
 
   private RenderedFlame renderImageStereo3d(RenderInfo pRenderInfo) {
