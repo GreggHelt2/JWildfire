@@ -98,6 +98,10 @@ public class PrefsReader {
             }
           }
         }
+        
+        
+        pPrefs.setDensityPostProcess(getBooleanProperty(props, Prefs.KEY_TINA_DENSITY_POSTPROCESS, pPrefs.isDensityPostProcess()));
+        
         pPrefs.setImagePath(getProperty(props, Prefs.KEY_GENERAL_PATH_IMAGES, pPrefs.getImagePath()));
         pPrefs.setScriptPath(getProperty(props, Prefs.KEY_GENERAL_PATH_SCRIPTS, pPrefs.getScriptPath()));
         pPrefs.setThumbnailPath(getProperty(props, Prefs.KEY_GENERAL_PATH_THUMBNAILS, pPrefs.getThumbnailPath()));

@@ -24,6 +24,9 @@ public class PrefsWriter {
   public void writePrefs(Prefs pPrefs) throws Exception {
     StringBuilder sb = new StringBuilder();
     pPrefs.setCreateTinaDefaultMacroButtons(false);
+    
+    addValue(sb, Prefs.KEY_TINA_DENSITY_POSTPROCESS, pPrefs.isDensityPostProcess());
+    
 
     addValue(sb, Prefs.KEY_GENERAL_DEVELOPMENT_MODE, pPrefs.isDevelopmentMode());
     addValue(sb, Prefs.KEY_GENERAL_BASE_MATH_LIB, pPrefs.getBaseMathLibType().toString());
