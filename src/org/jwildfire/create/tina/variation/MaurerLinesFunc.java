@@ -232,8 +232,8 @@ public class MaurerLinesFunc extends VariationFunc {
   
   // direct color gradient -- should be near bottom of parameter list,
   //   since (now that colormap options is working) will be almost always COLORMAP
-  private static final int COLORMAP_CLAMP = 1;
-  private static final int COLORMAP_WRAP = 2;
+  public static final int COLORMAP_CLAMP = 1;
+  public static final int COLORMAP_WRAP = 2;
   private static final int RED_GREEN = 3;
   private static final int RED_BLUE = 4;
   private static final int BLUE_GREEN = 5;
@@ -249,8 +249,9 @@ public class MaurerLinesFunc extends VariationFunc {
   private static final int DISTANCE_FROM_MIDLINE_POINTS = 8;
   private static final int DISTANCE_FROM_NEAREST_END_POINTS = 9;
   private static final int SPEED_AT_ENDPOINT1 = 10;
+  public static final int DENSITY_HACKY_HACK = 20;
   // private static final int WEIGHTED_LINE_LENGTH = 5;
-  private static final int CURRENT_THETA = 11;
+  public static final int CURRENT_THETA = 11;
   
   // measure thresholding
   private static final int PERCENT = 0;
@@ -326,13 +327,13 @@ public class MaurerLinesFunc extends VariationFunc {
   
   private boolean diff_mode = false;
   private int curve_mode = RHODONEA;
-  private int direct_color_gradient = OFF;
-  private int direct_color_measure = LINE_LENGTH_LINES;
-  private int direct_color_thesholding = PERCENT;
+  public int direct_color_gradient = OFF;
+  public int direct_color_measure = LINE_LENGTH_LINES;
+  public int direct_color_thesholding = PERCENT;
   
 //  private double color_scaling = 100;
-  private double color_low_thresh = 0.3;
-  private double color_high_thresh = 2.0;
+  public double color_low_thresh = 0.3;
+  public double color_high_thresh = 2.0;
   
   private int filter_count = 0;
   private List filters = new ArrayList();
@@ -1076,7 +1077,7 @@ public class MaurerLinesFunc extends VariationFunc {
     double midlength = line_length/2.0;  // use midlength of Maurer line as radius
     double xmid = (x1 + x2)/2.0;
     double ymid = (y1 + y2)/2.0;
-
+    
     double speed1 = curve.getSpeed(theta1, end_point1);
 
     boolean use_render_mode = true;
@@ -2231,7 +2232,7 @@ public class MaurerLinesFunc extends VariationFunc {
     //
     //  COLORING
     //
-    if (direct_color_measure != NONE && direct_color_gradient != OFF) {
+    if (direct_color_measure != NONE && direct_color_gradient != OFF && direct_color_measure != DENSITY_HACKY_HACK) {
       double val;
       double[] sampled_vals;
       if (direct_color_measure == LINE_LENGTH_LINES) {

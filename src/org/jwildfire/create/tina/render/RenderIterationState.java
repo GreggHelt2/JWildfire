@@ -21,12 +21,16 @@ import java.util.List;
 
 import org.jwildfire.create.tina.base.Flame;
 import org.jwildfire.create.tina.base.Layer;
+import org.jwildfire.create.tina.base.XForm;
 import org.jwildfire.create.tina.base.raster.AbstractRaster;
 import org.jwildfire.create.tina.io.MapGradientReader;
 import org.jwildfire.create.tina.palette.RGBPalette;
 import org.jwildfire.create.tina.palette.RenderColor;
 import org.jwildfire.create.tina.random.AbstractRandomGenerator;
 import org.jwildfire.create.tina.variation.FlameTransformationContext;
+import org.jwildfire.create.tina.variation.MaurerLinesFunc;
+import org.jwildfire.create.tina.variation.Variation;
+import org.jwildfire.create.tina.variation.VariationFunc;
 
 public class RenderIterationState implements Serializable {
   private static final long serialVersionUID = 2L;
@@ -57,8 +61,24 @@ public class RenderIterationState implements Serializable {
     ctx = pCtx;
     randGen = pRandGen;
     observers = renderer.getIterationObservers();
+    
+    
+    boolean use_density_postprocess = false;
+    XForm firstxform = layer.getXForms().get(0);
+    if (firstxform != null && firstxform.getVariationCount() > 0)  {
+      Variation var = firstxform.getVariation(0);
+      VariationFunc vfunc = var.getFunc();
+      if (vfunc instanceof MaurerLinesFunc) {
+        MaurerLinesFunc mfunc = (MaurerLinesFunc)vfunc;
+        if (mfunc.direct_color_measure == mfunc.DENSITY_HACKY_HACK) {
+          use_density_postprocess = true;
+        }
+      }
+      else { use_density_postprocess = false; }
+    }
 
-    if (pRenderer.prefs.isDensityPostProcess()) {
+    if (use_density_postprocess) {
+      // System.out.println("using hacky density postprocessing");
       if (density_default_palette == null && !density_palette_missing) {
         createDensityDefaultPalette();
       }

@@ -169,7 +169,7 @@ public class Prefs extends ManagedObject {
   @Property(description = "density postprocessing", category = PropertyCategory.GENERAL)
   private boolean densityPostProcess = true;
   
-  @Property(description = "default density colormap", category = PropertyCategory.GENERAL)
+  @Property(description = "default density colormap, use solid black for white background, solid white for black background?", category = PropertyCategory.GENERAL)
   private String defaultDensityColormap = null;
 
   @Property(description = "Script drawer for the animation editor (please note that this NOT for scripts of the flame-editor)", category = PropertyCategory.MISC)

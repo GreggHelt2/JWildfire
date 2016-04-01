@@ -35,6 +35,7 @@ import org.jwildfire.create.tina.base.Layer;
 import org.jwildfire.create.tina.base.Stereo3dColor;
 import org.jwildfire.create.tina.base.Stereo3dEye;
 import org.jwildfire.create.tina.base.Stereo3dMode;
+import org.jwildfire.create.tina.base.XForm;
 import org.jwildfire.create.tina.base.raster.AbstractRaster;
 import org.jwildfire.create.tina.palette.RenderColor;
 import org.jwildfire.create.tina.random.AbstractRandomGenerator;
@@ -47,7 +48,10 @@ import org.jwildfire.create.tina.render.image.RenderImageSimpleScaledThread;
 import org.jwildfire.create.tina.render.image.RenderImageSimpleThread;
 import org.jwildfire.create.tina.render.image.RenderImageThread;
 import org.jwildfire.create.tina.variation.FlameTransformationContext;
+import org.jwildfire.create.tina.variation.MaurerLinesFunc;
 import org.jwildfire.create.tina.variation.RessourceManager;
+import org.jwildfire.create.tina.variation.Variation;
+import org.jwildfire.create.tina.variation.VariationFunc;
 import org.jwildfire.image.Pixel;
 import org.jwildfire.image.SimpleHDRImage;
 import org.jwildfire.image.SimpleImage;
@@ -186,7 +190,7 @@ public class FlameRenderer {
   }
 
   public RenderedFlame renderFlame(RenderInfo pRenderInfo) {
-    System.out.println("called renderFlame(RenderInfo), WxH => " + pRenderInfo.getImageWidth() + " x " + pRenderInfo.getImageHeight());
+    // System.out.println("called renderFlame(RenderInfo), WxH => " + pRenderInfo.getImageWidth() + " x " + pRenderInfo.getImageHeight());
     RenderedFlame res;
     if (!Stereo3dMode.NONE.equals(flame.getStereo3dMode())) {
       res = renderImageStereo3d(pRenderInfo);
@@ -194,48 +198,114 @@ public class FlameRenderer {
     else {
       res = renderImageNormal(pRenderInfo, 1, 0);
     }
-    boolean post_density_mapping = prefs.isDensityPostProcess();
-    SimpleImage pImage = res.getImage();
-    if (post_density_mapping) {
-      Layer layer1 = flame.getFirstLayer();
-      RenderColor[] colorMap = layer1.getPalette().createRenderPalette(flame.getWhiteLevel());
 
-      int image_width = pImage.getImageWidth();
-      int image_height = pImage.getImageHeight();
-      System.out.println("   renderFlame post processing, WxH = " + image_width + " x " + image_height);
-      for (int x=0; x<image_width; x++) {
-        for (int y=0; y<image_height; y++) {
+    // boolean post_density_mapping = prefs.isDensityPostProcess();
+    boolean use_density_postprocess = false;
+    Layer layer1 = flame.getFirstLayer();
+    if (layer1 != null && layer1.getXForms().size() >= 1) {
+    XForm firstxform = layer1.getXForms().get(0);
+    if (firstxform != null && firstxform.getVariationCount() > 0)  {
+      Variation var = firstxform.getVariation(0);
+      VariationFunc vfunc = var.getFunc();
+      if (vfunc instanceof MaurerLinesFunc) {
+        MaurerLinesFunc mfunc = (MaurerLinesFunc)vfunc;
           /*
-          int argb = pImage.getARGBValue(x, y);
-          int alpha = (argb >>> 24) & 0xff;
-          int red = (argb >> 16) & 0x000000FF;
-          int green = (argb >>8 ) & 0x000000FF;
-          int blue = (argb) & 0x000000FF;
-          */
-          int r = pImage.getRValue(x, y);
-          int g = pImage.getGValue(x, y);
-          int b = pImage.getBValue(x, y);
-          // if color matches background color, don't change, otherwise remap to colormap based on intensity:
-          if (r != flame.getBGColorRed() ||
-                  g != flame.getBGColorGreen() ||
-                  b != flame.getBGColorBlue() ) {
-            int avgint = (r + g + b)/3;
-            RenderColor mapcol = colorMap[avgint];
-            pixutil.setRGB((int)mapcol.red, (int)mapcol.green, (int)mapcol.blue);
-            pImage.setRGB(x, y, pixutil);
+        public int direct_color_gradient = OFF;
+        public int direct_color_measure = LINE_LENGTH_LINES;
+        public int direct_color_thesholding = PERCENT;
+        
+        //  private double color_scaling = 100;
+        public double color_low_thresh = 0.3;
+        public double color_high_thresh = 2.0;
+        */
+  
+        if (mfunc.direct_color_measure == mfunc.DENSITY_HACKY_HACK) {
+          SimpleImage pImage = res.getImage();
+          use_density_postprocess = true;
+          
+          RenderColor[] colorMap = layer1.getPalette().createRenderPalette(flame.getWhiteLevel());
+          // double low = layer1.getXForms().get(0).getColor();
+          // double high = layer1.getXForms().get(0).
+          int image_width = pImage.getImageWidth();
+          int image_height = pImage.getImageHeight();
+          System.out.println("   renderFlame post processing, WxH = " + image_width + " x " + image_height);
+          for (int x=0; x<image_width; x++) {
+            for (int y=0; y<image_height; y++) {
+              /*
+              int argb = pImage.getARGBValue(x, y);
+              int alpha = (argb >>> 24) & 0xff;
+              int red = (argb >> 16) & 0x000000FF;
+              int green = (argb >>8 ) & 0x000000FF;
+              int blue = (argb) & 0x000000FF;
+              */
+              int r = pImage.getRValue(x, y);
+              int g = pImage.getGValue(x, y);
+              int b = pImage.getBValue(x, y);
+              // if color matches background color, don't change, otherwise remap to colormap based on intensity:
+              if (r != flame.getBGColorRed() ||
+                      g != flame.getBGColorGreen() ||
+                      b != flame.getBGColorBlue() ) {
+                double intensity = (r + g + b)/3;
+                double cindex;
+                double low = mfunc.color_low_thresh * 255;
+                // double high = mfunc.color_high_thresh * 255;
+
+                /*if (mfunc.direct_color_gradient == mfunc.COLORMAP_WRAP) {
+                  // if val is outside range, wrap it around (cylce) to keep within range
+                  if (intensity < low) {
+                    // val = high_value - ((low_value - val) % (high_value - low_value));
+                    cindex = high - ((low - intensity) % (high - low));
+                  }
+                  else if (intensity > high) {
+                    // val = low_value + ((val - low_value) % (high_value - low_value));
+                    cindex = low + ((intensity - low) % (high - low));
+                  }
+                  else { cindex = ((intensity - low)/(high - low)) * 255; }
+                }
+                else { // default to colormap clamping
+                */
+                double scale = mfunc.color_high_thresh;
+               
+                cindex = low + (intensity * scale);
+                if (cindex < 0) { cindex = 0; }
+                if (cindex > 255) { cindex = 255; }
+//              }
+//                  if (intensity < low) { cindex = low; }
+//                  else if (intensity >= high) { cindex = high; }
+//                  else { 
+                    //cindex = (intensity - low) *(high - low); }
+                       // cindex = ((intensity - low)/(high - low)) * 255; }
+                // }
+                RenderColor mapcol = colorMap[(int)cindex];                  
+                  
+        /*baseColor = ((val - low_value)/(high_value - low_value)) * 255; 
+        pVarTP.color = baseColor / 255.0;
+        if (pVarTP.color < 0) { pVarTP.color = 0; }
+        if (pVarTP.color > 1.0) { pVarTP.color = 1.0; }
+      }*/
+                
+                
+                // RenderColor mapcol = colorMap[intensity];
+                pixutil.setRGB((int)mapcol.red, (int)mapcol.green, (int)mapcol.blue);
+                pImage.setRGB(x, y, pixutil);
+              }
+            }
           }
-        }
-      }
-      /*
-      if (DEBUG_DENSITY_COLORMAP) {
-        for (int x=0; x< image_width; x++) {
+          /*
+          if (DEBUG_DENSITY_COLORMAP) {
+          for (int x=0; x< image_width; x++) {
           int y = x;
           if (y>=image_height) { y = image_height/2; }
-          pImage.setRGB(x,y, 255, 255, 0); 
+          pImage.setRGB(x,y, 255, 255, 0);
+          }
+          }
+              */
         }
       }
-              */
+      else { use_density_postprocess = false; }
     }
+    }
+
     return res;
   }
 
