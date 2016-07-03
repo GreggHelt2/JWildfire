@@ -228,6 +228,14 @@ public class LogDensityFilter extends FilterHolder {
         for (int px = 0; px < oversample; px++) {
           for (int py = 0; py < oversample; py++) {
             getSample(pFilteredPnt, pX * oversample + px, pY * oversample + py);
+            // CozyG -- my interpretation of how variables here map to variables in Draves' Fractal Flame Algorithm paper
+            //  pCount here is the count of number of points from the IFS that map to this pixel (px, py), 
+            //      equivalent to Draves' alpha channel before scaling?
+            //  logscale here is the equivalent of the log(alpha)/alpha scaling factor from Draves
+            //    but includs additional scaling factors for contrast, brightness, color oversampling, quality (sample density), motion blur, 
+            //    possibly others...
+            //  intensity here is equivalent to Draves' alpha channel after scaling 
+            
             double logScale;
             long pCount = pFilteredPnt.rp.count;
             if (pCount > 0) {
