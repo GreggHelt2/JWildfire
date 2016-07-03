@@ -157,6 +157,7 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
     enableControl(data.camPosZREd, false);
 
     enableControl(data.bgTransparencyCBx, false);
+    enableControl(data.binaryTransparencyCBx, false);
     enableControl(data.foregroundOpacityField, false);
 
     enableControl(data.motionBlurLengthField, false);
@@ -679,6 +680,7 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
       data.gammaThresholdSlider.setValue(Tools.FTOI(getCurrFlame().getGammaThreshold() * TinaController.SLIDER_SCALE_GAMMA_THRESHOLD));
 
       data.bgTransparencyCBx.setSelected(getCurrFlame().isBGTransparency());
+      data.binaryTransparencyCBx.setSelected(getCurrFlame().isBinaryTransparency());
 
       data.xFormAntialiasAmountREd.setText(Tools.doubleToString(getCurrFlame().getAntialiasAmount()));
       data.xFormAntialiasAmountSlider.setValue(Tools.FTOI(getCurrFlame().getAntialiasAmount() * TinaController.SLIDER_SCALE_COLOR));
@@ -1548,6 +1550,17 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
       if (flame != null) {
         owner.saveUndoPoint();
         flame.setBGTransparency(data.bgTransparencyCBx.isSelected());
+        enableControls();
+      }
+    }
+  }
+  
+  public void flameBinaryTransparencyCbx_changed() {
+    if (!isNoRefresh()) {
+      Flame flame = getCurrFlame();
+      if (flame != null) {
+        owner.saveUndoPoint();
+        flame.setBinaryTransparency(data.binaryTransparencyCBx.isSelected());
         enableControls();
       }
     }

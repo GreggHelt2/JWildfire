@@ -1746,6 +1746,17 @@ public class TinaInternalFrame extends JInternalFrame {
       bgTransparencyCBx.setBounds(848, 5, 169, 18);
       tinaColoringPanel.add(bgTransparencyCBx);
       tinaColoringPanel.add(getBackgroundColorIndicatorBtn());
+      
+      binaryTransparencyCBx = new JCheckBox("Binary transparency");
+      binaryTransparencyCBx.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getFlameControls() != null) {
+            tinaController.getFlameControls().flameBinaryTransparencyCbx_changed();
+          }
+        }
+      });
+      binaryTransparencyCBx.setBounds(848, 50, 169, 18);
+      tinaColoringPanel.add(binaryTransparencyCBx);
 
       JLabel lblBackgroundColor = new JLabel();
       lblBackgroundColor.setText("Background color");
@@ -1956,6 +1967,8 @@ public class TinaInternalFrame extends JInternalFrame {
       lblOpacity.setFont(Prefs.getPrefs().getFont("Dialog", Font.BOLD, 10));
       lblOpacity.setBounds(790, 25, 56, 22);
       tinaColoringPanel.add(lblOpacity);
+      
+
 
       foregroundOpacitySlider = new JSlider();
       foregroundOpacitySlider.setValue(0);
@@ -4751,7 +4764,7 @@ public class TinaInternalFrame extends JInternalFrame {
         getDofCamZREd(), getDofCamZSlider(), getTinaPixelsPerUnitREd(), getTinaPixelsPerUnitSlider(),
         getTinaBrightnessREd(), getTinaBrightnessSlider(), getTinaContrastREd(), getTinaContrastSlider(), getTinaGammaREd(), getTinaGammaSlider(),
         getTinaVibrancyREd(), getTinaVibrancySlider(), getTinaFilterRadiusREd(), getTinaFilterRadiusSlider(), getTinaFilterKernelCmb(),
-        getTinaGammaThresholdREd(), getTinaGammaThresholdSlider(), getBgTransparencyCBx(), getTinaPaletteRandomPointsREd(), getTinaPaletteImgPanel(), getTinaCholorChooserPaletteImgPanel(), getTinaPaletteShiftREd(), getTinaPaletteShiftSlider(),
+        getTinaGammaThresholdREd(), getTinaGammaThresholdSlider(), getBgTransparencyCBx(), getBinaryTransparencyCBx(), getTinaPaletteRandomPointsREd(), getTinaPaletteImgPanel(), getTinaCholorChooserPaletteImgPanel(), getTinaPaletteShiftREd(), getTinaPaletteShiftSlider(),
         getTinaPaletteRedREd(), getTinaPaletteRedSlider(), getTinaPaletteGreenREd(), getTinaPaletteGreenSlider(), getTinaPaletteBlueREd(),
         getTinaPaletteBlueSlider(), getTinaPaletteHueREd(), getTinaPaletteHueSlider(), getTinaPaletteSaturationREd(), getTinaPaletteSaturationSlider(),
         getTinaPaletteContrastREd(), getTinaPaletteContrastSlider(), getTinaPaletteGammaREd(), getTinaPaletteGammaSlider(), getTinaPaletteBrightnessREd(),
@@ -11029,6 +11042,7 @@ public class TinaInternalFrame extends JInternalFrame {
   private JPanel panel_35;
   private JToggleButton toggleTransparencyButton;
   private JCheckBox bgTransparencyCBx;
+  private JCheckBox binaryTransparencyCBx;
   private JPanel panel_36;
   private JPanel dancingFlamesFlamePnl;
   private JButton dancingFlamesStopShowBtn;
@@ -14869,6 +14883,10 @@ public class TinaInternalFrame extends JInternalFrame {
 
   public JCheckBox getBgTransparencyCBx() {
     return bgTransparencyCBx;
+  }
+  
+  public JCheckBox getBinaryTransparencyCBx() {
+    return binaryTransparencyCBx;
   }
 
   private JPanel getPanel_36() {
