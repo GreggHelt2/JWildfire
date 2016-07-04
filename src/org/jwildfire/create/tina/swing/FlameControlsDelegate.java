@@ -675,6 +675,8 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
       data.tinaPostNoiseThresholdSlider.setValue(Tools.FTOI(getCurrFlame().getPostNoiseFilterThreshold() * TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD));
       data.foregroundOpacityField.setText(String.valueOf(getCurrFlame().getForegroundOpacity()));
       data.foregroundOpacitySlider.setValue(Tools.FTOI(getCurrFlame().getForegroundOpacity() * TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD));
+      data.luminosityThreshField.setText(String.valueOf(getCurrFlame().getLuminosityThresh()));
+      data.luminosityThreshSlider.setValue(Tools.FTOI(getCurrFlame().getLuminosityThresh() * TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD));
 
       data.gammaThresholdREd.setText(String.valueOf(getCurrFlame().getGammaThreshold()));
       data.gammaThresholdSlider.setValue(Tools.FTOI(getCurrFlame().getGammaThreshold() * TinaController.SLIDER_SCALE_GAMMA_THRESHOLD));
@@ -1565,7 +1567,7 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
       }
     }
   }
-
+  
   public void postNoiseFilterCheckBox_changed() {
     if (!isNoRefresh()) {
       Flame flame = getCurrFlame();
@@ -1592,4 +1594,13 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
   public void foregroundOpacityREd_changed() {
     flameTextFieldChanged(data.foregroundOpacitySlider, data.foregroundOpacityField, "foregroundOpacity", TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD);
   }
+  
+  void luminosityThreshSlider_stateChanged(ChangeEvent e) {
+      flameSliderChanged(data.luminosityThreshSlider, data.luminosityThreshField, "luminosityThresh", TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD);
+  }
+
+  void luminosityThreshREd_changed() {
+    flameTextFieldChanged(data.luminosityThreshSlider, data.luminosityThreshField, "luminosityThresh", TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD);
+  }
+  
 }

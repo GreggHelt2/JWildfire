@@ -971,6 +971,10 @@ public class Prefs extends ManagedObject {
   public void setTinaDefaultBinaryTransparency(boolean tinaDefaultBinaryTransparency) {
     this.tinaDefaultBinaryTransparency = tinaDefaultBinaryTransparency;
   }
+  
+  public double getTinaDefaultLuminosityThresh() {
+    return 0.0;
+  }
 
   public RandomGeneratorType getTinaRandomNumberGenerator() {
     return tinaRandomNumberGenerator;

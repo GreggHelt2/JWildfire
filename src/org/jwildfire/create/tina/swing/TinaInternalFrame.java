@@ -1955,10 +1955,9 @@ public class TinaInternalFrame extends JInternalFrame {
           }
         }
       });
-
       tinaColoringPanel.add(foregroundOpacityField);
-
-      JLabel lblOpacity = new JLabel();
+      
+            JLabel lblOpacity = new JLabel();
       lblOpacity.setToolTipText("");
       lblOpacity.setText("Opacity");
       lblOpacity.setSize(new Dimension(94, 22));
@@ -1967,8 +1966,6 @@ public class TinaInternalFrame extends JInternalFrame {
       lblOpacity.setFont(Prefs.getPrefs().getFont("Dialog", Font.BOLD, 10));
       lblOpacity.setBounds(790, 25, 56, 22);
       tinaColoringPanel.add(lblOpacity);
-      
-
 
       foregroundOpacitySlider = new JSlider();
       foregroundOpacitySlider.setValue(0);
@@ -1992,8 +1989,75 @@ public class TinaInternalFrame extends JInternalFrame {
           tinaController.saveUndoPoint();
         }
       });
-
       tinaColoringPanel.add(foregroundOpacitySlider);
+
+      
+      JLabel lblLuminosityThresh = new JLabel();
+      lblLuminosityThresh.setToolTipText("");
+      lblLuminosityThresh.setText("Luminosity Threshold");
+      lblLuminosityThresh.setSize(new Dimension(94, 22));
+      lblLuminosityThresh.setPreferredSize(new Dimension(94, 22));
+      lblLuminosityThresh.setLocation(new Point(488, 2));
+      lblLuminosityThresh.setFont(Prefs.getPrefs().getFont("Dialog", Font.BOLD, 10));
+//      lblLuminosityThresh.setBounds(850, 100, 56, 22);
+      lblLuminosityThresh.setBounds(451, 125, 130, 22);
+      tinaColoringPanel.add(lblLuminosityThresh);
+
+      luminosityThreshSlider = new JSlider();
+      luminosityThreshSlider.setValue(0);
+      luminosityThreshSlider.setSize(new Dimension(220, 19));
+      luminosityThreshSlider.setPreferredSize(new Dimension(220, 19));
+      luminosityThreshSlider.setName("luminosityThreshSlider");
+      luminosityThreshSlider.setMaximum(1000);
+      // luminosityThreshSlider.setLocation(new Point(686, 2));
+      luminosityThreshSlider.setFont(Prefs.getPrefs().getFont("Dialog", Font.BOLD, 10));
+      luminosityThreshSlider.setBounds(649, 125, 220, 19);
+//            tinaSaturationSlider.setBounds(649, 96, 220, 19);
+      luminosityThreshSlider.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getFlameControls() != null) {
+            tinaController.getFlameControls().luminosityThreshSlider_stateChanged(e);
+          }
+        }
+      });
+      luminosityThreshSlider.addMouseListener(new MouseAdapter() {
+        @Override
+        public void mousePressed(MouseEvent e) {
+          tinaController.saveUndoPoint();
+        }
+      });
+
+      tinaColoringPanel.add(luminosityThreshSlider);
+      
+      luminosityThreshField = new JWFNumberField();
+      luminosityThreshField.setValueStep(0.01);
+      luminosityThreshField.setText("");
+      luminosityThreshField.setSize(new Dimension(100, 24));
+      luminosityThreshField.setPreferredSize(new Dimension(100, 24));
+      luminosityThreshField.setMaxValue(255.0);
+      luminosityThreshField.setLocation(new Point(584, 2));
+      luminosityThreshField.setLinkedMotionControlName("luminosityThreshSlider");
+      luminosityThreshField.setHasMinValue(true);
+      luminosityThreshField.setHasMaxValue(true);
+      luminosityThreshField.setFont(Prefs.getPrefs().getFont("Dialog", Font.PLAIN, 10));
+      luminosityThreshField.setEditable(true);
+      luminosityThreshField.setBounds(582, 125, 60, 24);
+      luminosityThreshField.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getFlameControls() != null) {
+            if (!luminosityThreshField.isMouseAdjusting() || luminosityThreshField.getMouseChangeCount() == 0) {
+              if (!luminosityThreshSlider.getValueIsAdjusting()) {
+                tinaController.saveUndoPoint();
+              }
+            }
+            tinaController.getFlameControls().luminosityThreshREd_changed();
+          }
+        }
+      });
+
+      tinaColoringPanel.add(luminosityThreshField);
+
+
     }
     return tinaColoringPanel;
   }
@@ -4754,7 +4818,9 @@ public class TinaInternalFrame extends JInternalFrame {
 
     TinaControllerParameter params = new TinaControllerParameter();
 
-    params.setParams1(this, pErrorHandler, pPrefs,/* getCenterCenterPanel()*/getMainPrevievPnl(), getTinaCameraRollREd(), getTinaCameraRollSlider(), getTinaCameraPitchREd(),
+    params.setParams1(this, pErrorHandler, pPrefs,
+        /* getCenterCenterPanel()*/
+        getMainPrevievPnl(), getTinaCameraRollREd(), getTinaCameraRollSlider(), getTinaCameraPitchREd(),
         getTinaCameraPitchSlider(), getTinaCameraYawREd(), getTinaCameraYawSlider(), getTinaCameraPerspectiveREd(), getTinaCameraPerspectiveSlider(),
         getTinaCameraCentreXREd(), getTinaCameraCentreXSlider(), getTinaCameraCentreYREd(),
         getTinaCameraCentreYSlider(), getTinaCameraZoomREd(), getTinaCameraZoomSlider(), getDofNewDOFCBx(),
@@ -4764,7 +4830,11 @@ public class TinaInternalFrame extends JInternalFrame {
         getDofCamZREd(), getDofCamZSlider(), getTinaPixelsPerUnitREd(), getTinaPixelsPerUnitSlider(),
         getTinaBrightnessREd(), getTinaBrightnessSlider(), getTinaContrastREd(), getTinaContrastSlider(), getTinaGammaREd(), getTinaGammaSlider(),
         getTinaVibrancyREd(), getTinaVibrancySlider(), getTinaFilterRadiusREd(), getTinaFilterRadiusSlider(), getTinaFilterKernelCmb(),
-        getTinaGammaThresholdREd(), getTinaGammaThresholdSlider(), getBgTransparencyCBx(), getBinaryTransparencyCBx(), getTinaPaletteRandomPointsREd(), getTinaPaletteImgPanel(), getTinaCholorChooserPaletteImgPanel(), getTinaPaletteShiftREd(), getTinaPaletteShiftSlider(),
+        getTinaGammaThresholdREd(), getTinaGammaThresholdSlider(), 
+        
+        getBgTransparencyCBx(), getBinaryTransparencyCBx(), getLuminosityThreshField(), getLuminosityThreshSlider(),
+        
+        getTinaPaletteRandomPointsREd(), getTinaPaletteImgPanel(), getTinaCholorChooserPaletteImgPanel(), getTinaPaletteShiftREd(), getTinaPaletteShiftSlider(),
         getTinaPaletteRedREd(), getTinaPaletteRedSlider(), getTinaPaletteGreenREd(), getTinaPaletteGreenSlider(), getTinaPaletteBlueREd(),
         getTinaPaletteBlueSlider(), getTinaPaletteHueREd(), getTinaPaletteHueSlider(), getTinaPaletteSaturationREd(), getTinaPaletteSaturationSlider(),
         getTinaPaletteContrastREd(), getTinaPaletteContrastSlider(), getTinaPaletteGammaREd(), getTinaPaletteGammaSlider(), getTinaPaletteBrightnessREd(),
@@ -11661,6 +11731,8 @@ public class TinaInternalFrame extends JInternalFrame {
   private JSlider tinaPostNoiseThresholdSlider;
   private JWFNumberField foregroundOpacityField;
   private JSlider foregroundOpacitySlider;
+  private JWFNumberField luminosityThreshField;
+  private JSlider luminosityThreshSlider;
   private JButton scriptEditBtn;
   private JPanel panel_113;
   private JToggleButton nonlinearParams1PreButton;
@@ -14888,6 +14960,7 @@ public class TinaInternalFrame extends JInternalFrame {
   public JCheckBox getBinaryTransparencyCBx() {
     return binaryTransparencyCBx;
   }
+  
 
   private JPanel getPanel_36() {
     if (panel_36 == null) {
@@ -24517,6 +24590,14 @@ public class TinaInternalFrame extends JInternalFrame {
 
   public JSlider getForegroundOpacitySlider() {
     return foregroundOpacitySlider;
+  }
+  
+  public JWFNumberField getLuminosityThreshField() {
+    return this.luminosityThreshField;
+  }
+
+  public JSlider getLuminosityThreshSlider() {
+    return this.luminosityThreshSlider;
   }
 
   private JWFNumberField getXFormAntialiasAmountREd() {

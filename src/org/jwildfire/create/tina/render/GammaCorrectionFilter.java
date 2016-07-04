@@ -38,7 +38,7 @@ public class GammaCorrectionFilter {
   private final double alphaScale;
   private final int oversample;
   private boolean binary_transparency;
-  private double intensity_threshold;
+  private double luminosity_threshold;
 
   public static class ColorF {
     public double r, g, b;
@@ -98,7 +98,7 @@ public class GammaCorrectionFilter {
     binary_transparency = flame.isBinaryTransparency();
     // intensity threshold
     // if intensity of incoming point is <= threshold then ignore point color, just use background
-    intensity_threshold = 0.0;
+    luminosity_threshold = flame.getLuminosityThresh();
   }
 
   public void transformPoint(LogDensityPoint logDensityPnt, GammaCorrectedRGBPoint pRGBPoint, int pX, int pY) {
@@ -106,7 +106,7 @@ public class GammaCorrectionFilter {
     double logScl;
     int inverseAlphaInt;
 
-    if (logDensityPnt.intensity > intensity_threshold) {
+    if (logDensityPnt.intensity > 0.0) {
       double alpha;
       if (logDensityPnt.intensity <= flame.getGammaThreshold()) {
         double frac = logDensityPnt.intensity / flame.getGammaThreshold();
@@ -140,6 +140,16 @@ public class GammaCorrectionFilter {
       pRGBPoint.red = finalColor.r;
       pRGBPoint.green = finalColor.g;
       pRGBPoint.blue = finalColor.b;
+      // luminosity ranges from 0 => 1 and takes into account alpha
+      double luminosity = (pRGBPoint.red + pRGBPoint.green + pRGBPoint.blue) * ((double)pRGBPoint.alpha/255.0) / (255.0 * 3.0);
+      // if point luminosity is below luminosity threshold then ignore point color and use background
+      //   (TODO: switch to calculating point color similarity to background color and basing thresholding on this rather than luminosity?)
+      if (luminosity < luminosity_threshold) {
+        pRGBPoint.red = pRGBPoint.bgRed;
+        pRGBPoint.green = pRGBPoint.bgGreen;
+        pRGBPoint.blue = pRGBPoint.bgBlue;
+        pRGBPoint.alpha = withAlpha ? 0 : 255;
+      }
     }
     else {
       pRGBPoint.red = pRGBPoint.bgRed;

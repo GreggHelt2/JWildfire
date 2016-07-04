@@ -58,6 +58,7 @@ public class AbstractFlameReader {
   public static final String ATTR_BACKGROUND = "background";
   public static final String ATTR_BG_TRANSPARENCY = "bg_transparency";
   public static final String ATTR_BINARY_TRANSPARENCY = "binary_transparency";
+  public static final String ATTR_LUMINOSITY_THRESHOLD = "luminosity_threshold";
   public static final String ATTR_BRIGHTNESS = "brightness";
   public static final String ATTR_SATURATION = "saturation";
   public static final String ATTR_GAMMA = "gamma";
@@ -267,6 +268,12 @@ public class AbstractFlameReader {
     }
     else {
       pFlame.setBinaryTransparency(prefs.isTinaDefaultBinaryTransparency());
+    }
+    if ((hs = atts.get(ATTR_LUMINOSITY_THRESHOLD)) != null) {
+      pFlame.setLuminosityThresh(Double.parseDouble(hs));
+    }
+    else {
+      pFlame.setLuminosityThresh(prefs.getTinaDefaultLuminosityThresh());
     }
     if ((hs = atts.get(ATTR_GAMMA)) != null) {
       pFlame.setGamma(Double.parseDouble(hs));

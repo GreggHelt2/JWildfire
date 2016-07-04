@@ -130,6 +130,8 @@ public class Flame implements Assignable<Flame>, Serializable {
   private boolean postNoiseFilter;
   private double postNoiseFilterThreshold;
   private double foregroundOpacity;
+  private double luminosityThresh;
+  
   @AnimAware
   private int bgColorRed;
   @AnimAware
@@ -286,6 +288,7 @@ public class Flame implements Assignable<Flame>, Serializable {
     whiteLevel = Prefs.getPrefs().getTinaDefaultFadeToWhiteLevel();
     saturation = 1.0;
     foregroundOpacity = Prefs.getPrefs().getTinaDefaultForegroundOpacity();
+    luminosityThresh = 0.0;
   }
 
   public void resetBokehSettings() {
@@ -701,6 +704,7 @@ public class Flame implements Assignable<Flame>, Serializable {
     postNoiseFilter = pFlame.postNoiseFilter;
     postNoiseFilterThreshold = pFlame.postNoiseFilterThreshold;
     foregroundOpacity = pFlame.foregroundOpacity;
+    luminosityThresh = pFlame.luminosityThresh;
 
     motionBlurLength = pFlame.motionBlurLength;
     motionBlurTimeStep = pFlame.motionBlurTimeStep;
@@ -1490,6 +1494,14 @@ public class Flame implements Assignable<Flame>, Serializable {
 
   public void setForegroundOpacity(double pForegroundOpacity) {
     foregroundOpacity = pForegroundOpacity;
+  }
+  
+  public double getLuminosityThresh() {
+    return luminosityThresh;
+  }
+
+  public void setLuminosityThresh(double pLuminosityThresh) {
+    luminosityThresh = pLuminosityThresh;
   }
 
 }
