@@ -71,6 +71,7 @@ public class DefaultRenderIterationState extends RenderIterationState {
     else {
       colorProvider = pLayer.isSmoothGradient() ? new SmoothColorProvider() : new DefaultColorProvider();
     }
+    // System.out.println("color provider: " + colorProvider.getClass().getName());
 
     Flame flame = pPacket.getFlame();
     switch (flame.getPostSymmetryType()) {
@@ -142,6 +143,7 @@ public class DefaultRenderIterationState extends RenderIterationState {
     else {
       applyEmptyFinalTransform();
     }
+    q.drawMode = xf.getDrawMode();
     projector.projectPoint(q);
   }
 
@@ -389,6 +391,7 @@ public class DefaultRenderIterationState extends RenderIterationState {
   }
 
   protected void plotPoint(int xIdx, int yIdx, double intensity) {
+
     if (p.rgbColor) {
       plotRed = p.redColor;
       plotGreen = p.greenColor;
@@ -405,9 +408,28 @@ public class DefaultRenderIterationState extends RenderIterationState {
       plotGreen = color.green;
       plotBlue = color.blue;
     }
-    transformPlotColor(p);
+    
 
-    plotBuffer[plotBufferIdx++].set(xIdx, yIdx, plotRed * intensity, plotGreen * intensity, plotBlue * intensity);
+    PlotSample psample = plotBuffer[plotBufferIdx];
+    // modifications for point-count-negation
+    // assuming color provider is DefaultColorProvider 
+    //    plotRed, plotGreen, plotBlue should range from 0.0 => 255.0 ??
+    //    apply negation if 
+    /*if (plotRed == 0.0 && plotGreen == 0.0 && plotBlue == 0.0) {
+      // skip transformPlotColor(), since it can potentially change from (0,0,0) (depending on modGamma, modContrast, modSaturation values)
+      // plotBuffer[plotBufferIdx++].set(xIdx, yIdx, 0.0, 0.0, 0.0);
+    }
+    else {
+      transformPlotColor(p);
+      // plotBuffer[plotBufferIdx++].set(xIdx, yIdx, plotRed * intensity, plotGreen * intensity, plotBlue * intensity);
+    }
+            */
+    transformPlotColor(p);
+    psample.set(xIdx, yIdx, plotRed * intensity, plotGreen * intensity, plotBlue * intensity);
+    psample.setDrawMode(q.drawMode);
+    plotBufferIdx++;
+
+
     if (plotBufferIdx >= plotBuffer.length) {
       applySamplesToRaster();
     }

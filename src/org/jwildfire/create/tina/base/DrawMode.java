@@ -17,5 +17,5 @@
 package org.jwildfire.create.tina.base;
 
 public enum DrawMode {
-  NORMAL, HIDDEN, OPAQUE
+  NORMAL, HIDDEN, OPAQUE, SUBTRACTIVE1, SUBTRACTIVE2
 }

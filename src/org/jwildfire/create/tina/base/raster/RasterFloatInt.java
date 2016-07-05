@@ -17,6 +17,7 @@
 package org.jwildfire.create.tina.base.raster;
 
 import java.io.Serializable;
+import org.jwildfire.create.tina.base.DrawMode;
 
 import org.jwildfire.create.tina.render.PlotSample;
 
@@ -57,6 +58,11 @@ public class RasterFloatInt implements AbstractRaster, Serializable {
     pDestRasterPoint.green = green[pX][pY];
     pDestRasterPoint.blue = blue[pX][pY];
     pDestRasterPoint.count = count[pX][pY];
+    // added for point_count_negation branch
+    if (pDestRasterPoint.red < 0) { pDestRasterPoint.red = 0; }
+    if (pDestRasterPoint.green < 0) { pDestRasterPoint.green = 0; }
+    if (pDestRasterPoint.blue < 0) { pDestRasterPoint.blue = 0; }
+    if (pDestRasterPoint.count < 0) { pDestRasterPoint.count = 0; }
   }
 
   @Override
@@ -66,6 +72,11 @@ public class RasterFloatInt implements AbstractRaster, Serializable {
       pDestRasterPoint.green = green[pX][pY];
       pDestRasterPoint.blue = blue[pX][pY];
       pDestRasterPoint.count = count[pX][pY];
+      // added for point_count_negation branch
+      if (pDestRasterPoint.red < 0) { pDestRasterPoint.red = 0; }
+      if (pDestRasterPoint.green < 0) { pDestRasterPoint.green = 0; }
+      if (pDestRasterPoint.blue < 0) { pDestRasterPoint.blue = 0; }
+      if (pDestRasterPoint.count < 0) { pDestRasterPoint.count = 0; }
     }
     else {
       pDestRasterPoint.red = pDestRasterPoint.green = pDestRasterPoint.blue = 0;
@@ -78,10 +89,27 @@ public class RasterFloatInt implements AbstractRaster, Serializable {
     for (int i = 0; i < pCount; i++) {
       PlotSample sample = pPlotBuffer[i];
       int x = sample.x, y = sample.y;
-      red[x][y] += (float) sample.r;
-      green[x][y] += (float) sample.g;
-      blue[x][y] += (float) sample.b;
-      count[x][y]++;
+      DrawMode dmode = sample.getDrawMode();
+      if (dmode == DrawMode.SUBTRACTIVE1) {
+        red[x][y] -= (float) sample.r;
+        green[x][y] -= (float) sample.g;
+        blue[x][y] -= (float) sample.b;
+        count[x][y]--;
+      }
+      else {  // NORMAL mode, and others
+        red[x][y] += (float) sample.r;
+        green[x][y] += (float) sample.g;
+        blue[x][y] += (float) sample.b;
+        count[x][y]++;
+      }
+      // mods for point-count-negation
+      // if (r,g,b) = (0,0,0) then consider it negation
+      /* if (sample.r == 0.0 && sample.g == 0.0 && sample.b == 0.0) {
+      }
+      else {
+      }
+      */
     }
   }
+  
 }

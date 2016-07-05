@@ -83,6 +83,9 @@ public class AbstractFlameWriter {
     else if (pXForm.getDrawMode().equals(DrawMode.HIDDEN)) {
       attrList.add(pXB.createAttr("opacity", 0.0));
     }
+    else if (pXForm.getDrawMode().equals(DrawMode.SUBTRACTIVE1)) {
+      attrList.add(pXB.createAttr(AbstractFlameReader.ATTR_SUBTRACTIVE, 1));
+    }
     attrList.add(pXB.createAttr("symmetry", pXForm.getColorSymmetry()));
 
     UniqueNamesMaker namesMaker = new UniqueNamesMaker();
