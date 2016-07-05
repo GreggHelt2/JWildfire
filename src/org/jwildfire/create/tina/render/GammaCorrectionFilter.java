@@ -37,6 +37,8 @@ public class GammaCorrectionFilter {
   private final int rasterWidth, rasterHeight;
   private final double alphaScale;
   private final int oversample;
+  private boolean binary_transparency;
+  private double luminosity_threshold;
 
   public static class ColorF {
     public double r, g, b;
@@ -53,6 +55,7 @@ public class GammaCorrectionFilter {
     rasterHeight = pRasterHeight;
     alphaScale = 1.0 - MathLib.atan(3.0 * (pFlame.getForegroundOpacity() - 1.0)) / 1.25;
     oversample = pFlame.getSpatialOversampling();
+
     initFilter();
   }
 
@@ -88,12 +91,21 @@ public class GammaCorrectionFilter {
     modSaturation = flame.getSaturation() - 1.0;
     if (modSaturation < -1.0)
       modSaturation = -1.0;
+        
+    // binary transparency
+    // if binary_transparency and withAlpha, then render each pixel as either fully transparent or fully opaque
+    //    (alpha channel = 0 or 255, no intermediate values)
+    binary_transparency = flame.isBinaryTransparency();
+    // intensity threshold
+    // if intensity of incoming point is <= threshold then ignore point color, just use background
+    luminosity_threshold = flame.getLuminosityThresh();
   }
 
   public void transformPoint(LogDensityPoint logDensityPnt, GammaCorrectedRGBPoint pRGBPoint, int pX, int pY) {
     calculateBGColor(pRGBPoint, pX, pY);
     double logScl;
     int inverseAlphaInt;
+
     if (logDensityPnt.intensity > 0.0) {
       double alpha;
       if (logDensityPnt.intensity <= flame.getGammaThreshold()) {
@@ -109,8 +121,18 @@ public class GammaCorrectionFilter {
         alphaInt = 0;
       else if (alphaInt > 255)
         alphaInt = 255;
-      inverseAlphaInt = 255 - alphaInt;
-      pRGBPoint.alpha = withAlpha ? alphaInt : 255;
+      // alphaInt: 0 => totally transparent, 255 => totally opaque
+      // inverseAlphaInt: 0 ==> totally opaque, 255 => totally transparent
+
+      // binary_transparency overrides withAlpha and makes any populated pixels fully opaque (while leaving background fully transparent)
+      if (binary_transparency) { 
+        pRGBPoint.alpha = 255;
+        inverseAlphaInt = 0;
+      }
+      else {
+        pRGBPoint.alpha = withAlpha ? alphaInt : 255;
+        inverseAlphaInt = 255 - alphaInt;
+      }
 
       ColorF transfColor = applyLogScale(logDensityPnt, logScl);
       ColorI finalColor = addBackground(pRGBPoint, transfColor, inverseAlphaInt);
@@ -118,6 +140,16 @@ public class GammaCorrectionFilter {
       pRGBPoint.red = finalColor.r;
       pRGBPoint.green = finalColor.g;
       pRGBPoint.blue = finalColor.b;
+      // luminosity ranges from 0 => 1 and takes into account alpha
+      double luminosity = (pRGBPoint.red + pRGBPoint.green + pRGBPoint.blue) * ((double)pRGBPoint.alpha/255.0) / (255.0 * 3.0);
+      // if point luminosity is below luminosity threshold then ignore point color and use background
+      //   (TODO: switch to calculating point color similarity to background color and basing thresholding on this rather than luminosity?)
+      if (luminosity < luminosity_threshold) {
+        pRGBPoint.red = pRGBPoint.bgRed;
+        pRGBPoint.green = pRGBPoint.bgGreen;
+        pRGBPoint.blue = pRGBPoint.bgBlue;
+        pRGBPoint.alpha = withAlpha ? 0 : 255;
+      }
     }
     else {
       pRGBPoint.red = pRGBPoint.bgRed;

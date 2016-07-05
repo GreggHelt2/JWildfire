@@ -82,6 +82,7 @@ public class Prefs extends ManagedObject {
   static final String KEY_TINA_RENDER_REALTIME_QUALITY = "tina.render.realtime.quality";
   static final String KEY_TINA_RENDER_PREVIEW_QUALITY = "tina.render.preview.quality";
   static final String KEY_TINA_RENDER_DEFAULT_BG_TRANSPARENCY = "tina.render.default_bg_transparency";
+  static final String KEY_TINA_RENDER_DEFAULT_BINARY_TRANSPARENCY = "tina.render.default_binary_transparency";
   static final String KEY_TINA_RENDER_DEFAULT_ANTIALIASING_AMOUNT = "tina.render.default_antialiasing_amount.8";
   static final String KEY_TINA_RENDER_DEFAULT_ANTIALIASING_RADIUS = "tina.render.default_antialiasing_radius.5";
   static final String KEY_TINA_PROFILE_ASSOCIATE_WITH_FLAMES = "tina.profile.associate_with_flames";
@@ -476,6 +477,9 @@ public class Prefs extends ManagedObject {
 
   @Property(description = "Default background transparency", category = PropertyCategory.TINA)
   private boolean tinaDefaultBGTransparency = false;
+  
+  @Property(description = "Default binary transparency (limit to completely transparenty or completely opaque", category = PropertyCategory.TINA)
+  private boolean tinaDefaultBinaryTransparency = false;
 
   @Property(description = "Default antialiasing amount (set to zero to turn antialiasing off by default)", category = PropertyCategory.TINA)
   private double tinaDefaultAntialiasingAmount = 0.25;
@@ -740,6 +744,7 @@ public class Prefs extends ManagedObject {
     tinaSaveFlamesWhenImageIsSaved = pSrc.tinaSaveFlamesWhenImageIsSaved;
     tinaSaveHDRInIR = pSrc.tinaSaveHDRInIR;
     tinaDefaultBGTransparency = pSrc.tinaDefaultBGTransparency;
+    tinaDefaultBinaryTransparency = pSrc.tinaDefaultBinaryTransparency;
     tinaRasterType = pSrc.tinaRasterType;
     tinaJWFScriptPath = pSrc.tinaJWFScriptPath;
     tinaCustomVariationsPath = pSrc.tinaCustomVariationsPath;
@@ -957,6 +962,18 @@ public class Prefs extends ManagedObject {
 
   public void setTinaDefaultBGTransparency(boolean tinaDefaultBGTransparency) {
     this.tinaDefaultBGTransparency = tinaDefaultBGTransparency;
+  }
+  
+  public boolean isTinaDefaultBinaryTransparency() {
+    return tinaDefaultBinaryTransparency;
+  }
+
+  public void setTinaDefaultBinaryTransparency(boolean tinaDefaultBinaryTransparency) {
+    this.tinaDefaultBinaryTransparency = tinaDefaultBinaryTransparency;
+  }
+  
+  public double getTinaDefaultLuminosityThresh() {
+    return 0.0;
   }
 
   public RandomGeneratorType getTinaRandomNumberGenerator() {

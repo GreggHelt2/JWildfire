@@ -37,6 +37,7 @@ public class PrefsWriter {
     addValue(sb, Prefs.KEY_TINA_PATH_MOVIEFLAMES, pPrefs.getMovieFlamesPath());
     addValue(sb, Prefs.KEY_GENERAL_PATH_SOUND_FILES, pPrefs.getSoundFilePath());
     addValue(sb, Prefs.KEY_TINA_RENDER_DEFAULT_BG_TRANSPARENCY, pPrefs.isTinaDefaultBGTransparency());
+    addValue(sb, Prefs.KEY_TINA_RENDER_DEFAULT_BINARY_TRANSPARENCY, pPrefs.isTinaDefaultBinaryTransparency());
     addValue(sb, Prefs.KEY_TINA_RENDER_DEFAULT_ANTIALIASING_AMOUNT, pPrefs.getTinaDefaultAntialiasingAmount());
     addValue(sb, Prefs.KEY_TINA_RENDER_DEFAULT_ANTIALIASING_RADIUS, pPrefs.getTinaDefaultAntialiasingRadius());
     addValue(sb, Prefs.KEY_TINA_ADVANCED_CODE_EDITOR, pPrefs.isTinaAdvancedCodeEditor());

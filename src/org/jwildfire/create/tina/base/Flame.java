@@ -126,9 +126,12 @@ public class Flame implements Assignable<Flame>, Serializable {
   private FilterKernelType spatialFilterKernel;
   private double sampleDensity;
   private boolean bgTransparency;
+  private boolean binaryTransparency;
   private boolean postNoiseFilter;
   private double postNoiseFilterThreshold;
   private double foregroundOpacity;
+  private double luminosityThresh;
+  
   @AnimAware
   private int bgColorRed;
   @AnimAware
@@ -211,6 +214,7 @@ public class Flame implements Assignable<Flame>, Serializable {
     layers.add(new Layer());
     sampleDensity = 100.0;
     bgTransparency = true;
+    binaryTransparency = false;
     pixelsPerUnit = 50;
     name = "";
     bgImageFilename = "";
@@ -284,6 +288,7 @@ public class Flame implements Assignable<Flame>, Serializable {
     whiteLevel = Prefs.getPrefs().getTinaDefaultFadeToWhiteLevel();
     saturation = 1.0;
     foregroundOpacity = Prefs.getPrefs().getTinaDefaultForegroundOpacity();
+    luminosityThresh = 0.0;
   }
 
   public void resetBokehSettings() {
@@ -664,6 +669,7 @@ public class Flame implements Assignable<Flame>, Serializable {
     spatialFilterKernel = pFlame.spatialFilterKernel;
     sampleDensity = pFlame.sampleDensity;
     bgTransparency = pFlame.bgTransparency;
+    binaryTransparency = pFlame.binaryTransparency;
     bgColorRed = pFlame.bgColorRed;
     bgColorGreen = pFlame.bgColorGreen;
     bgColorBlue = pFlame.bgColorBlue;
@@ -698,6 +704,7 @@ public class Flame implements Assignable<Flame>, Serializable {
     postNoiseFilter = pFlame.postNoiseFilter;
     postNoiseFilterThreshold = pFlame.postNoiseFilterThreshold;
     foregroundOpacity = pFlame.foregroundOpacity;
+    luminosityThresh = pFlame.luminosityThresh;
 
     motionBlurLength = pFlame.motionBlurLength;
     motionBlurTimeStep = pFlame.motionBlurTimeStep;
@@ -782,7 +789,8 @@ public class Flame implements Assignable<Flame>, Serializable {
         (fabs(camZ - pFlame.camZ) > EPSILON) || !camZCurve.isEqual(pFlame.camZCurve) ||
         (newCamDOF != pFlame.newCamDOF) || (fabs(spatialFilterRadius - pFlame.spatialFilterRadius) > EPSILON) ||
         !spatialFilterKernel.equals(pFlame.spatialFilterKernel) ||
-        (fabs(sampleDensity - pFlame.sampleDensity) > EPSILON) || (bgTransparency != pFlame.bgTransparency) || (bgColorRed != pFlame.bgColorRed) ||
+        (fabs(sampleDensity - pFlame.sampleDensity) > EPSILON) || (bgTransparency != pFlame.bgTransparency) || (bgColorRed != pFlame.bgColorRed) || 
+        (binaryTransparency != pFlame.binaryTransparency)||
         (bgColorGreen != pFlame.bgColorGreen) || (bgColorBlue != pFlame.bgColorBlue) ||
         (fabs(gamma - pFlame.gamma) > EPSILON) || !gammaCurve.isEqual(pFlame.gammaCurve) ||
         (fabs(gammaThreshold - pFlame.gammaThreshold) > EPSILON) || !gammaThresholdCurve.isEqual(pFlame.gammaThresholdCurve) ||
@@ -831,6 +839,14 @@ public class Flame implements Assignable<Flame>, Serializable {
 
   public void setBGTransparency(boolean bgTransparency) {
     this.bgTransparency = bgTransparency;
+  }
+  
+  public boolean isBinaryTransparency() {
+    return binaryTransparency;
+  }
+
+  public void setBinaryTransparency(boolean binaryTransparency) {
+    this.binaryTransparency = binaryTransparency;
   }
 
   public String getName() {
@@ -1478,6 +1494,14 @@ public class Flame implements Assignable<Flame>, Serializable {
 
   public void setForegroundOpacity(double pForegroundOpacity) {
     foregroundOpacity = pForegroundOpacity;
+  }
+  
+  public double getLuminosityThresh() {
+    return luminosityThresh;
+  }
+
+  public void setLuminosityThresh(double pLuminosityThresh) {
+    luminosityThresh = pLuminosityThresh;
   }
 
 }

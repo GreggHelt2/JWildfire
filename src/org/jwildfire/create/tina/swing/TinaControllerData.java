@@ -102,6 +102,7 @@ public class TinaControllerData {
   public JWFNumberField gammaThresholdREd;
   public JSlider gammaThresholdSlider;
   public JCheckBox bgTransparencyCBx;
+  public JCheckBox binaryTransparencyCBx;
   public JComboBox shadingCmb;
   public JWFNumberField shadingAmbientREd;
   public JSlider shadingAmbientSlider;
@@ -432,4 +433,6 @@ public class TinaControllerData {
   public JSlider tinaPostNoiseThresholdSlider;
   public JWFNumberField foregroundOpacityField;
   public JSlider foregroundOpacitySlider;
+  public JWFNumberField luminosityThreshField;
+  public JSlider luminosityThreshSlider;
 }

@@ -397,6 +397,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     data.gammaThresholdREd = parameterObject.pGammaThresholdREd;
     data.gammaThresholdSlider = parameterObject.pGammaThresholdSlider;
     data.bgTransparencyCBx = parameterObject.pBGTransparencyCBx;
+    data.binaryTransparencyCBx = parameterObject.pBinaryTransparencyCBx;
     data.paletteRandomPointsREd = parameterObject.pPaletteRandomPointsREd;
     data.paletteRandomGeneratorCmb = parameterObject.paletteRandomGeneratorCmb;
     data.paletteFadeColorsCBx = parameterObject.paletteFadeColorsCBx;
@@ -646,6 +647,8 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     data.tinaPostNoiseThresholdSlider = parameterObject.tinaPostNoiseThresholdSlider;
     data.foregroundOpacityField = parameterObject.foregroundOpacityField;
     data.foregroundOpacitySlider = parameterObject.foregroundOpacitySlider;
+    data.luminosityThreshField = parameterObject.luminosityThreshField;
+    data.luminosityThreshSlider = parameterObject.luminosityThreshSlider;
 
     data.mouseTransformSlowButton = parameterObject.pMouseTransformSlowButton;
     data.toggleTriangleWithColorsButton = parameterObject.toggleTriangleWithColorsButton;
@@ -3359,6 +3362,7 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     flame.setHeight(600);
     flame.setPixelsPerUnit(50);
     flame.setBGTransparency(prefs.isTinaDefaultBGTransparency());
+    flame.setBinaryTransparency(prefs.isTinaDefaultBinaryTransparency());
     RandomGradientGenerator gradientGen = RandomGradientGeneratorList.getRandomGradientGeneratorInstance((String) data.paletteRandomGeneratorCmb.getSelectedItem());
     RGBPalette palette = gradientGen.generatePalette(Integer.parseInt(data.paletteRandomPointsREd.getText()), data.paletteFadeColorsCBx.isSelected());
     flame.getFirstLayer().setPalette(palette);
