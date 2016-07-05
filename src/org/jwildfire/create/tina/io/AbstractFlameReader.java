@@ -158,6 +158,7 @@ public class AbstractFlameReader {
   public static final String CURVE_ATTR_X = "x";
   public static final String CURVE_ATTR_Y = "y";
 
+
   protected AbstractFlameReader(Prefs pPrefs) {
     prefs = pPrefs;
   }
@@ -625,6 +626,7 @@ public class AbstractFlameReader {
   public static final String ATTR_WEIGHT = "weight";
   public static final String ATTR_COLOR = "color";
   public static final String ATTR_OPACITY = "opacity";
+  public static final String ATTR_SUBTRACTIVE = "subtractive";
   public static final String ATTR_XY_COEFS = "coefs";
   public static final String ATTR_XY_POST = "post";
   public static final String ATTR_YZ_COEFS = "yzCoefs";
@@ -709,6 +711,9 @@ public class AbstractFlameReader {
       else {
         pXForm.setDrawMode(DrawMode.NORMAL);
       }
+    }
+    if ((hs = atts.get(ATTR_SUBTRACTIVE)) != null) {
+      pXForm.setDrawMode(DrawMode.SUBTRACTIVE1);
     }
     if ((hs = atts.get(ATTR_SYMMETRY)) != null) {
       pXForm.setColorSymmetry(Double.parseDouble(hs));

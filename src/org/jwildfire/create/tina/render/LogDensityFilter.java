@@ -91,6 +91,9 @@ public class LogDensityFilter extends FilterHolder {
         getSample(pFilteredPnt, pX * oversample + px, pY * oversample + py);
         double logScale;
         long pCount = pFilteredPnt.rp.count;
+        // mods for point_count_negation
+        //     since counts can go negative, need to zero out before calculating logScale
+        if (pCount < 0) { pCount = 0; }
         if (pCount < precalcLogArray.length) {
           logScale = precalcLogArray[(int) pCount];
         }

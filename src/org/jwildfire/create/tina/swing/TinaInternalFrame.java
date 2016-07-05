@@ -4992,6 +4992,8 @@ public class TinaInternalFrame extends JInternalFrame {
       getXFormDrawModeCmb().addItem(DrawMode.NORMAL);
       getXFormDrawModeCmb().addItem(DrawMode.OPAQUE);
       getXFormDrawModeCmb().addItem(DrawMode.HIDDEN);
+      getXFormDrawModeCmb().addItem(DrawMode.SUBTRACTIVE1);
+      getXFormDrawModeCmb().addItem(DrawMode.SUBTRACTIVE2);
 
       getShadingCmb().removeAllItems();
       getShadingCmb().addItem(Shading.FLAT);

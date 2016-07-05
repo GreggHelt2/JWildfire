@@ -42,6 +42,7 @@ public final class XYZPoint implements Serializable, Assignable<XYZPoint> {
   public double blueColor;
   // supress sample from drawing
   public boolean doHide;
+  public DrawMode drawMode;
   // often (but not always) used properties, calculation only if needed
   protected double sumsq;
   protected boolean validSumsq;
@@ -90,6 +91,7 @@ public final class XYZPoint implements Serializable, Assignable<XYZPoint> {
     greenColor = p.greenColor;
     blueColor = p.blueColor;
     doHide = p.doHide;
+    drawMode = p.drawMode;
   }
 
   @Override
@@ -109,6 +111,7 @@ public final class XYZPoint implements Serializable, Assignable<XYZPoint> {
     x = y = z = color = modGamma = modContrast = modSaturation = 0.0;
     sumsq = sqrt = atan = atanYX = sinA = cosA = 0.0;
     validSumsq = validSqrt = validAtan = validAtanYX = validSinA = validCosA = false;
+    drawMode = DrawMode.NORMAL;
   }
 
   public double getPrecalcSumsq() {

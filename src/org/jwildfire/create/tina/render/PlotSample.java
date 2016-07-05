@@ -16,9 +16,12 @@
 */
 package org.jwildfire.create.tina.render;
 
+import org.jwildfire.create.tina.base.DrawMode;
+
 public class PlotSample {
   public int x, y;
   public double r, g, b;
+  public DrawMode draw_mode = DrawMode.NORMAL;
 
   public void set(int x, int y, double r, double g, double b) {
     this.x = x;
@@ -27,4 +30,13 @@ public class PlotSample {
     this.g = g;
     this.b = b;
   }
+  
+  public void setDrawMode(DrawMode mode) {
+    this.draw_mode = mode;
+  }
+  
+  public DrawMode getDrawMode() { 
+    return draw_mode;
+  }
+
 }
