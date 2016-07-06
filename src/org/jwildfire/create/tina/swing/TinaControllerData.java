@@ -432,4 +432,6 @@ public class TinaControllerData {
   public JSlider tinaPostNoiseThresholdSlider;
   public JWFNumberField foregroundOpacityField;
   public JSlider foregroundOpacitySlider;
+  public JWFNumberField logDensityBaseField;
+  public JSlider logDensityBaseSlider;
 }

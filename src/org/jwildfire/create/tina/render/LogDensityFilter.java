@@ -42,6 +42,47 @@ public class LogDensityFilter extends FilterHolder {
   private final AbstractRandomGenerator randGen;
   private final boolean jitter;
   private final int colorOversampling;
+  private DensityMapper densityMap;
+  
+  abstract class DensityMapper {
+    abstract public double map(double count);
+  }
+  
+  class Log10Mapper extends DensityMapper {
+    public double map(double count) {
+      double mcount = count * motionBlurScl;
+      return (k1 * log10(1.0 + mcount * k2)) / (flame.getWhiteLevel() * mcount);
+    }
+  }
+  
+  class LogNaturalMapper extends DensityMapper {
+    public double map(double count) {
+      double mcount = count * motionBlurScl;
+      return (k1 * log(1.0 + mcount * k2)) / (flame.getWhiteLevel() * mcount);
+    }
+  }
+    
+  class LinearMapper extends DensityMapper {
+    public double map(double count) {
+      double mcount = count * motionBlurScl;
+      return (k1 * (1.0 + mcount * k2)) / (flame.getWhiteLevel() * mcount);
+    }
+  }
+  
+  class LogBaseNMapper extends DensityMapper {
+    double base;
+    double logb;
+
+    public LogBaseNMapper(double b) {
+      base = b;
+      logb = log(b);
+    }
+    // log_b(x) = log_k(x) / log_k(b)  ==> log(x)/log(b) ==> log(x)/logb
+    public double map(double count) {
+      double mcount = count * motionBlurScl;
+      return (k1 * (log(1.0 + mcount * k2)/logb)) / (flame.getWhiteLevel() * mcount);
+    }
+  }
 
   public LogDensityFilter(Flame pFlame, AbstractRandomGenerator pRandGen) {
     super(pFlame);
@@ -55,6 +96,16 @@ public class LogDensityFilter extends FilterHolder {
     }
     else {
       randGen = null;
+    }
+    double log_density_base = flame.getLogDensityBase();
+    if (log_density_base == 10.0) {
+      densityMap = new Log10Mapper();
+    }
+    else if (Math.abs(log_density_base - Math.E) < 0.01) {
+      densityMap = new LogNaturalMapper();
+    }
+    else { 
+      densityMap = new LogBaseNMapper(log_density_base);
     }
   }
 
@@ -79,7 +130,8 @@ public class LogDensityFilter extends FilterHolder {
     precalcLogArray = new double[PRECALC_LOG_ARRAY_SIZE + 1];
     for (int i = 1; i <= PRECALC_LOG_ARRAY_SIZE; i++) {
       double x = i * motionBlurScl;
-      precalcLogArray[i] = (k1 * log10(1 + x * k2)) / (flame.getWhiteLevel() * x);
+      // precalcLogArray[i] = (k1 * log10(1 + x * k2)) / (flame.getWhiteLevel() * x);
+      precalcLogArray[i] = densityMap.map(i);
     }
   }
 
@@ -95,7 +147,8 @@ public class LogDensityFilter extends FilterHolder {
           logScale = precalcLogArray[(int) pCount];
         }
         else {
-          logScale = (k1 * log10(1.0 + pCount * motionBlurScl * k2)) / (flame.getWhiteLevel() * pCount * motionBlurScl);
+          // logScale = (k1 * log10(1.0 + pCount * motionBlurScl * k2)) / (flame.getWhiteLevel() * pCount * motionBlurScl);
+          logScale = densityMap.map(pCount);
         }
         if (pCount > 0) {
           if (colorFunc == ColorFunc.NULL) {
@@ -180,7 +233,8 @@ public class LogDensityFilter extends FilterHolder {
                   logScale = precalcLogArray[pIdx];
                 }
                 else {
-                  logScale = (k1 * log10(1.0 + count * motionBlurScl * k2)) / (flame.getWhiteLevel() * count * motionBlurScl);
+                  // logScale = (k1 * log10(1.0 + count * motionBlurScl * k2)) / (flame.getWhiteLevel() * count * motionBlurScl);
+                  logScale = densityMap.map(count);
                 }
                 pFilteredPnt.red += filter[i][j] * logScale * pFilteredPnt.rp.red / (double) colorOversampling;
                 pFilteredPnt.green += filter[i][j] * logScale * pFilteredPnt.rp.green / (double) colorOversampling;
@@ -204,7 +258,8 @@ public class LogDensityFilter extends FilterHolder {
                   logScale = precalcLogArray[pIdx];
                 }
                 else {
-                  logScale = (k1 * log10(1.0 + count * motionBlurScl * k2)) / (flame.getWhiteLevel() * count * motionBlurScl);
+                  // logScale = (k1 * log10(1.0 + count * motionBlurScl * k2)) / (flame.getWhiteLevel() * count * motionBlurScl);
+                  logScale = densityMap.map(count);
                 }
                 final double scale = ChannelMixerCurves.FILTER_SCALE;
                 double rawR = pFilteredPnt.rp.red * scale / (double) count;
@@ -235,7 +290,8 @@ public class LogDensityFilter extends FilterHolder {
                 logScale = precalcLogArray[(int) pCount];
               }
               else {
-                logScale = (k1 * log10(1.0 + pCount * motionBlurScl * k2)) / (flame.getWhiteLevel() * pCount * motionBlurScl);
+                // logScale = (k1 * log10(1.0 + pCount * motionBlurScl * k2)) / (flame.getWhiteLevel() * pCount * motionBlurScl);
+                logScale = densityMap.map(pCount);
               }
               if (colorFunc == ColorFunc.NULL) {
                 pFilteredPnt.red += logScale * pFilteredPnt.rp.red / (double) colorOversampling;
