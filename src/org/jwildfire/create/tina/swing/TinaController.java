@@ -649,6 +649,8 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     data.foregroundOpacitySlider = parameterObject.foregroundOpacitySlider;
     data.luminosityThreshField = parameterObject.luminosityThreshField;
     data.luminosityThreshSlider = parameterObject.luminosityThreshSlider;
+    data.logDensityBaseField = parameterObject.logDensityBaseField;
+    data.logDensityBaseSlider = parameterObject.logDensityBaseSlider;
 
     data.mouseTransformSlowButton = parameterObject.pMouseTransformSlowButton;
     data.toggleTriangleWithColorsButton = parameterObject.toggleTriangleWithColorsButton;

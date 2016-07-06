@@ -435,4 +435,7 @@ public class TinaControllerData {
   public JSlider foregroundOpacitySlider;
   public JWFNumberField luminosityThreshField;
   public JSlider luminosityThreshSlider;
+  public JWFNumberField logDensityBaseField;
+  public JSlider logDensityBaseSlider;
+
 }

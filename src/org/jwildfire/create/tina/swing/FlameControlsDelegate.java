@@ -677,6 +677,8 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
       data.foregroundOpacitySlider.setValue(Tools.FTOI(getCurrFlame().getForegroundOpacity() * TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD));
       data.luminosityThreshField.setText(String.valueOf(getCurrFlame().getLuminosityThresh()));
       data.luminosityThreshSlider.setValue(Tools.FTOI(getCurrFlame().getLuminosityThresh() * TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD));
+      data.logDensityBaseField.setText(String.valueOf(getCurrFlame().getLogDensityBase()));
+      data.logDensityBaseSlider.setValue(Tools.FTOI(getCurrFlame().getLogDensityBase() * TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD));
 
       data.gammaThresholdREd.setText(String.valueOf(getCurrFlame().getGammaThreshold()));
       data.gammaThresholdSlider.setValue(Tools.FTOI(getCurrFlame().getGammaThreshold() * TinaController.SLIDER_SCALE_GAMMA_THRESHOLD));
@@ -1603,4 +1605,12 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
     flameTextFieldChanged(data.luminosityThreshSlider, data.luminosityThreshField, "luminosityThresh", TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD);
   }
   
+  public void logDensityBaseSlider_stateChanged(ChangeEvent e) {
+    flameSliderChanged(data.logDensityBaseSlider, data.logDensityBaseField, "logDensityBase", TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD);
+  }
+
+  public void logDensityBaseREd_changed() {
+    flameTextFieldChanged(data.logDensityBaseSlider, data.logDensityBaseField, "logDensityBase", TinaController.SLIDER_SCALE_POST_NOISE_FILTER_THRESHOLD);
+  }
+
 }

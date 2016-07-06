@@ -291,7 +291,7 @@ public class Prefs extends ManagedObject {
 
   @Property(description = "Default foreground-opacity when rendering images with transparent background", category = PropertyCategory.TINA)
   private double tinaDefaultForegroundOpacity = 1.0;
-
+  
   @Property(description = "Use flat (and faster) rendering to visualize filter-kernels", category = PropertyCategory.TINA)
   private boolean tinaDefaultFilterVisualisationFlat = false;
 

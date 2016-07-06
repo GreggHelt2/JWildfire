@@ -238,6 +238,8 @@ public class AbstractFlameWriter {
     attrList.add(xb.createAttr("vibrancy", pFlame.getVibrancy()));
     attrList.add(xb.createAttr("contrast", pFlame.getContrast()));
     attrList.add(xb.createAttr(ATTR_WHITE_LEVEL, pFlame.getWhiteLevel()));
+    
+    attrList.add(xb.createAttr(AbstractFlameReader.ATTR_LOG_DENSITY_BASE, pFlame.getLogDensityBase()));
     attrList.add(xb.createAttr("temporal_samples", 1.0));
     attrList.add(xb.createAttr("cam_zoom", pFlame.getCamZoom()));
     attrList.add(xb.createAttr("cam_pitch", (pFlame.getCamPitch() * Math.PI) / 180.0));

@@ -1990,7 +1990,6 @@ public class TinaInternalFrame extends JInternalFrame {
         }
       });
       tinaColoringPanel.add(foregroundOpacitySlider);
-
       
       JLabel lblLuminosityThresh = new JLabel();
       lblLuminosityThresh.setToolTipText("");
@@ -1999,7 +1998,6 @@ public class TinaInternalFrame extends JInternalFrame {
       lblLuminosityThresh.setPreferredSize(new Dimension(94, 22));
       lblLuminosityThresh.setLocation(new Point(488, 2));
       lblLuminosityThresh.setFont(Prefs.getPrefs().getFont("Dialog", Font.BOLD, 10));
-//      lblLuminosityThresh.setBounds(850, 100, 56, 22);
       lblLuminosityThresh.setBounds(451, 125, 130, 22);
       tinaColoringPanel.add(lblLuminosityThresh);
 
@@ -2009,10 +2007,8 @@ public class TinaInternalFrame extends JInternalFrame {
       luminosityThreshSlider.setPreferredSize(new Dimension(220, 19));
       luminosityThreshSlider.setName("luminosityThreshSlider");
       luminosityThreshSlider.setMaximum(1000);
-      // luminosityThreshSlider.setLocation(new Point(686, 2));
       luminosityThreshSlider.setFont(Prefs.getPrefs().getFont("Dialog", Font.BOLD, 10));
       luminosityThreshSlider.setBounds(649, 125, 220, 19);
-//            tinaSaturationSlider.setBounds(649, 96, 220, 19);
       luminosityThreshSlider.addChangeListener(new ChangeListener() {
         public void stateChanged(ChangeEvent e) {
           if (tinaController != null && tinaController.getFlameControls() != null) {
@@ -2021,12 +2017,11 @@ public class TinaInternalFrame extends JInternalFrame {
         }
       });
       luminosityThreshSlider.addMouseListener(new MouseAdapter() {
-        @Override
+          @Override
         public void mousePressed(MouseEvent e) {
           tinaController.saveUndoPoint();
         }
       });
-
       tinaColoringPanel.add(luminosityThreshSlider);
       
       luminosityThreshField = new JWFNumberField();
@@ -2057,7 +2052,65 @@ public class TinaInternalFrame extends JInternalFrame {
 
       tinaColoringPanel.add(luminosityThreshField);
 
+      
+      
+      /*****************************
+       *   controls for setting log density base
+       */
+      JPanel logDensityP = new JPanel(new GridLayout(1, 3));   
+      logDensityP.setBounds(875, 91, 300, 24);
+      
+      JLabel lblLogDensityBase = new JLabel();
+      lblLogDensityBase.setToolTipText("");
+      lblLogDensityBase.setText("Log Density Base");
+      lblLogDensityBase.setFont(Prefs.getPrefs().getFont("Dialog", Font.BOLD, 10));
+      logDensityP.add(lblLogDensityBase);
+      
+      logDensityBaseField = new JWFNumberField();
+      logDensityBaseField.setValueStep(0.05);
+      logDensityBaseField.setText("");
+      logDensityBaseField.setMaxValue(100.0);
+      logDensityBaseField.setLinkedMotionControlName("logDensityBaseSlider");
+      logDensityBaseField.setHasMinValue(true);
+      logDensityBaseField.setHasMaxValue(true);
+      logDensityBaseField.setFont(Prefs.getPrefs().getFont("Dialog", Font.PLAIN, 10));
+      logDensityBaseField.setEditable(true);
+      logDensityBaseField.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getFlameControls() != null) {
+            if (!logDensityBaseField.isMouseAdjusting() || logDensityBaseField.getMouseChangeCount() == 0) {
+              if (!logDensityBaseSlider.getValueIsAdjusting()) {
+                tinaController.saveUndoPoint();
+              }
+            }
+            tinaController.getFlameControls().logDensityBaseREd_changed();
+          }
+        }
+      });
+      logDensityP.add(logDensityBaseField);
 
+      logDensityBaseSlider = new JSlider();
+      logDensityBaseSlider.setValue(10000);
+      logDensityBaseSlider.setName("logDensityBaseSlider");
+      logDensityBaseSlider.setMinimum(1001);
+      logDensityBaseSlider.setMaximum(10000);
+      logDensityBaseSlider.setFont(Prefs.getPrefs().getFont("Dialog", Font.BOLD, 10));
+      logDensityBaseSlider.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (tinaController != null && tinaController.getFlameControls() != null) {
+            tinaController.getFlameControls().logDensityBaseSlider_stateChanged(e);
+          }
+        }
+      });
+      logDensityBaseSlider.addMouseListener(new MouseAdapter() {
+        @Override
+        public void mousePressed(MouseEvent e) {
+          tinaController.saveUndoPoint();
+        }
+      });
+      logDensityP.add(logDensityBaseSlider);
+      
+      tinaColoringPanel.add(logDensityP);
     }
     return tinaColoringPanel;
   }
@@ -4961,7 +5014,7 @@ public class TinaInternalFrame extends JInternalFrame {
         getFilterKernelPreviewRootPnl(), getTinaSpatialOversamplingREd(), getTinaSpatialOversamplingSlider(), getTinaColorOversamplingREd(),
         getTinaColorOversamplingSlider(), getTinaSampleJitteringCheckBox(), getFilterKernelFlatPreviewBtn(),
         getTinaPostNoiseFilterCheckBox(), getTinaPostNoiseThresholdField(), getTinaPostNoiseThresholdSlider(),
-        getForegroundOpacityField(), getForegroundOpacitySlider(), getScriptEditBtn(), getRealtimePreviewToggleButton());
+        getForegroundOpacityField(), getForegroundOpacitySlider(), getLogDensityBaseField(), getLogDensityBaseSlider(), getScriptEditBtn(), getRealtimePreviewToggleButton());
 
     tinaController = new TinaController(params);
     if (Prefs.getPrefs().isTinaIntegrationChaoticaDisabled()) {
@@ -11735,6 +11788,9 @@ public class TinaInternalFrame extends JInternalFrame {
   private JSlider foregroundOpacitySlider;
   private JWFNumberField luminosityThreshField;
   private JSlider luminosityThreshSlider;
+  private JWFNumberField logDensityBaseField;
+  private JSlider logDensityBaseSlider;
+  
   private JButton scriptEditBtn;
   private JPanel panel_113;
   private JToggleButton nonlinearParams1PreButton;
@@ -24600,6 +24656,14 @@ public class TinaInternalFrame extends JInternalFrame {
 
   public JSlider getLuminosityThreshSlider() {
     return this.luminosityThreshSlider;
+  }
+  
+  public JWFNumberField getLogDensityBaseField() {
+    return logDensityBaseField;
+  }
+
+  public JSlider getLogDensityBaseSlider() {
+    return logDensityBaseSlider;
   }
 
   private JWFNumberField getXFormAntialiasAmountREd() {

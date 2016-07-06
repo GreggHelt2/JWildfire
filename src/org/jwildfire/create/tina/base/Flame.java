@@ -125,6 +125,7 @@ public class Flame implements Assignable<Flame>, Serializable {
   private double spatialFilterRadius;
   private FilterKernelType spatialFilterKernel;
   private double sampleDensity;
+  private double logDensityBase;
   private boolean bgTransparency;
   private boolean binaryTransparency;
   private boolean postNoiseFilter;
@@ -213,6 +214,7 @@ public class Flame implements Assignable<Flame>, Serializable {
     layers.clear();
     layers.add(new Layer());
     sampleDensity = 100.0;
+    logDensityBase = 10;
     bgTransparency = true;
     binaryTransparency = false;
     pixelsPerUnit = 50;
@@ -289,6 +291,7 @@ public class Flame implements Assignable<Flame>, Serializable {
     saturation = 1.0;
     foregroundOpacity = Prefs.getPrefs().getTinaDefaultForegroundOpacity();
     luminosityThresh = 0.0;
+    logDensityBase = 10.0;
   }
 
   public void resetBokehSettings() {
@@ -404,6 +407,14 @@ public class Flame implements Assignable<Flame>, Serializable {
 
   public void setSampleDensity(double sampleDensity) {
     this.sampleDensity = sampleDensity;
+  }
+  
+  public double getLogDensityBase() {
+    return logDensityBase;
+  }
+
+  public void setLogDensityBase(double base) {
+    this.logDensityBase = base;
   }
 
   public double getPixelsPerUnit() {
@@ -705,6 +716,7 @@ public class Flame implements Assignable<Flame>, Serializable {
     postNoiseFilterThreshold = pFlame.postNoiseFilterThreshold;
     foregroundOpacity = pFlame.foregroundOpacity;
     luminosityThresh = pFlame.luminosityThresh;
+    logDensityBase = pFlame.logDensityBase;
 
     motionBlurLength = pFlame.motionBlurLength;
     motionBlurTimeStep = pFlame.motionBlurTimeStep;

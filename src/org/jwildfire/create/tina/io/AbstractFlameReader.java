@@ -144,6 +144,7 @@ public class AbstractFlameReader {
   public static final String ATTR_FRAME_COUNT = "frame_count";
   public static final String ATTR_FRAME = "frame";
   public static final String ATTR_FPS = "fps";
+  public static final String ATTR_LOG_DENSITY_BASE = "log_density_base";
 
   public static final String CURVE_ATTR_ENABLED = "enabled";
   public static final String CURVE_ATTR_VIEW_XMIN = "view_xmin";
@@ -245,6 +246,9 @@ public class AbstractFlameReader {
     }
     if ((hs = atts.get(ATTR_QUALITY)) != null) {
       pFlame.setSampleDensity(Double.parseDouble(hs));
+    }
+    if ((hs = atts.get(ATTR_LOG_DENSITY_BASE)) != null) {
+      pFlame.setLogDensityBase(Double.parseDouble(hs));
     }
     if ((hs = atts.get(ATTR_BACKGROUND)) != null) {
       String s[] = hs.split(" ");
