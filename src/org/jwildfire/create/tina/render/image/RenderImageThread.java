@@ -20,6 +20,7 @@ import org.jwildfire.create.tina.render.GammaCorrectedRGBPoint;
 import org.jwildfire.create.tina.render.GammaCorrectionFilter;
 import org.jwildfire.create.tina.render.LogDensityFilter;
 import org.jwildfire.create.tina.render.LogDensityPoint;
+import org.jwildfire.create.tina.render.IntensityColorFunc;
 import org.jwildfire.image.SimpleImage;
 
 public class RenderImageThread extends AbstractImageRenderThread {
@@ -30,6 +31,7 @@ public class RenderImageThread extends AbstractImageRenderThread {
   private final LogDensityPoint logDensityPnt;
   private final GammaCorrectedRGBPoint rbgPoint;
   private final SimpleImage img;
+  private boolean REPORT_COUNTS = false;
 
   public RenderImageThread(LogDensityFilter pLogDensityFilter, GammaCorrectionFilter pGammaCorrectionFilter, int pStartRow, int pEndRow, SimpleImage pImg) {
     logDensityFilter = pLogDensityFilter;
@@ -44,9 +46,11 @@ public class RenderImageThread extends AbstractImageRenderThread {
   @Override
   public void run() {
     setDone(false);
+    logDensityFilter.clearCounts(); 
     try {
       for (int i = startRow; i < endRow; i++) {
         for (int j = 0; j < img.getImageWidth(); j++) {
+          // logDensityFilter.transformPoint() is the ONLY place that LogDensityPnt is modified  (and transformPointSimple())
           logDensityFilter.transformPoint(logDensityPnt, j, i);
           gammaCorrectionFilter.transformPoint(logDensityPnt, rbgPoint, j, i);
           img.setARGB(j, i, rbgPoint.alpha, rbgPoint.red, rbgPoint.green, rbgPoint.blue);
@@ -54,6 +58,9 @@ public class RenderImageThread extends AbstractImageRenderThread {
       }
     }
     finally {
+      if (REPORT_COUNTS) { 
+        logDensityFilter.reportCounts(); 
+      }
       setDone(true);
     }
   }

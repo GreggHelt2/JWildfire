@@ -4925,6 +4925,7 @@ public class TinaInternalFrame extends JInternalFrame {
       getChannelMixerModeCmb().removeAllItems();
       getChannelMixerModeCmb().addItem(ChannelMixerMode.OFF);
       getChannelMixerModeCmb().addItem(ChannelMixerMode.BRIGHTNESS);
+      getChannelMixerModeCmb().addItem(ChannelMixerMode.INTENSITY);
       getChannelMixerModeCmb().addItem(ChannelMixerMode.RGB);
       getChannelMixerModeCmb().addItem(ChannelMixerMode.FULL);
 

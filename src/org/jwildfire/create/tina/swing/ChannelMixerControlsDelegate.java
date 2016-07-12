@@ -197,6 +197,17 @@ public class ChannelMixerControlsDelegate {
         channelMixerPanels.get(PANEL_BG).setVisible(false);
         channelMixerPanels.get(PANEL_BB).setVisible(false);
         break;
+      case INTENSITY: 
+        channelMixerPanels.get(PANEL_RR).setVisible(true);
+        channelMixerPanels.get(PANEL_RG).setVisible(false);
+        channelMixerPanels.get(PANEL_RB).setVisible(false);
+        channelMixerPanels.get(PANEL_GR).setVisible(false);
+        channelMixerPanels.get(PANEL_GG).setVisible(false);
+        channelMixerPanels.get(PANEL_GB).setVisible(false);
+        channelMixerPanels.get(PANEL_BR).setVisible(false);
+        channelMixerPanels.get(PANEL_BG).setVisible(false);
+        channelMixerPanels.get(PANEL_BB).setVisible(false);
+        break;
       case RGB:
         channelMixerPanels.get(PANEL_RR).setVisible(true);
         channelMixerPanels.get(PANEL_RG).setVisible(false);

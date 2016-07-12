@@ -365,6 +365,9 @@ public class AbstractFlameWriter {
       case BRIGHTNESS:
         writeMotionCurve(xb, attrList, AbstractFlameReader.ATTR_CHANNEL_MIXER_RR_CURVE, pFlame.getMixerRRCurve());
         break;
+      case INTENSITY:
+        writeMotionCurve(xb, attrList, AbstractFlameReader.ATTR_CHANNEL_MIXER_RR_CURVE, pFlame.getMixerRRCurve());
+        break;
       case RGB:
         writeMotionCurve(xb, attrList, AbstractFlameReader.ATTR_CHANNEL_MIXER_RR_CURVE, pFlame.getMixerRRCurve());
         writeMotionCurve(xb, attrList, AbstractFlameReader.ATTR_CHANNEL_MIXER_GG_CURVE, pFlame.getMixerGGCurve());
