@@ -178,6 +178,37 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   //     https://chronologicaldot.wordpress.com/2013/10/15/understanding-how-fractal-transforms-are-processed/
   public static int POST_TO_PRE = 3;  
   
+    // 
+  // COLOR HANDLING
+  // 
+  private static final int DESTINATION_DISTANCE_FROM_CURVE = 1;
+  private static final int DESTINATION_DISTANCE_FROM_SOURCE = 2;
+  private static final int SOURCE_DISTANCE_FROM_CURVE = 3;
+  private static final int DESTINATION_DISTANCE_FROM_ORIGIN = 4;   // distance from (0,0) point
+  private static final int CURVE_DISTANCE_FROM_ORIGIN = 5;   // distance from (0,0) point
+  private static final int SOURCE_DISTANCE_FROM_ORIGIN = 6;   // distance from (0,0) point
+  private static final int DESTINATION_SCALED_DISTANCE_FROM_CURVE = 7;
+  private static final int DESTINATION_X_DISTANCE_FROM_CURVE = 7;
+  private static final int DESTINATION_Y_DISTANCE_FROM_CURVE = 8;
+  private static final int DESTINATION_Z_DISTANCE_FROM_CURVE = 9;
+  private static final int DESTINATAION_CURVE_SUM_DISTANCE_FROM_ORIGIN = 10;
+  private static final int DESTINATAION_CURVE_AVG_DISTANCE_FROM_ORIGIN = 11;
+  private static final int DESTINATION_X_DISTANCE_FROM_ORIGIN = 12;  
+  private static final int DESTINATION_XY_DIFF_DISTANCE_FROM_CURVE = 13;
+  
+  
+  
+  private static final int OFF = 0;
+  private static final int NONE = 0;
+  private static final int COLORMAP_CLAMP = 1;
+  private static final int COLORMAP_WRAP = 2;
+  // color thresholding
+  private static final int PERCENT = 0;
+  private static final int VALUE = 1;
+  // other possibilties -- distance or deviation from mean?
+  
+    
+  
   protected class LinkedPolarCurvePoint {
     protected double radius;
     protected double angle;
@@ -273,9 +304,12 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected static final String PARAM_OUTPUT_X = "output_x";
   protected static final String PARAM_OUTPUT_Y = "output_y";    
   protected static final String PARAM_OUTPUT_Z = "output_z";
-
-
-    
+  
+  private static final String PARAM_DIRECT_COLOR_MEASURE = "direct_color_measure";
+  private static final String PARAM_DIRECT_COLOR_GRADIENT = "direct_color_gradient";
+  private static final String PARAM_DIRECT_COLOR_THRESHOLDING = "direct_color_thresholding";
+  private static final String PARAM_COLOR_LOW_THRESH = "color_low_threshold";
+  private static final String PARAM_COLOR_HIGH_THRESH = "color_high_threshold";
   
   protected static final String[] paramNames = { 
                                                PARAM_CURVE_SCALE, 
@@ -295,6 +329,10 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                                                PARAM_MODIFY_X, PARAM_MODIFY_Y, PARAM_MODIFY_Z, 
                                                PARAM_INPUT_X, PARAM_INPUT_Y, PARAM_INPUT_Z, 
                                                PARAM_OUTPUT_X, PARAM_OUTPUT_Y, PARAM_OUTPUT_Z, 
+                                               PARAM_DIRECT_COLOR_MEASURE, PARAM_DIRECT_COLOR_GRADIENT, 
+                                               PARAM_DIRECT_COLOR_THRESHOLDING, 
+                                               PARAM_COLOR_LOW_THRESH, PARAM_COLOR_HIGH_THRESH
+  
   }; 
 
   protected double curve_scale = 1;
@@ -371,6 +409,14 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
   protected double metacycle_scale = 1.1;
   protected double metacycle_rotation = 0; // additional (cumulative) theta offset (in cycles) for each metacycle (rotate the metacycle)
 
+  // Color Handling
+  private int direct_color_gradient = OFF;
+  private int direct_color_measure = DESTINATION_DISTANCE_FROM_CURVE;
+  private int direct_color_thesholding = VALUE;
+    //  private double color_scaling = 100;
+  private double color_low_thresh = 0.3;
+  private double color_high_thresh = 2.0;
+  
   // vars for determining inner/outer via even-odd rule
   int default_sample_count = 36000;
   int angle_bin_count = 720;
@@ -562,8 +608,142 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
     pCurve.clear();
     calcCurvePoint(pContext, theta, pCurve);
     renderByMode(pContext, pXForm, srcPoint, dstPoint, pAmount, pCurve);
+    setColor(srcPoint, dstPoint, pCurve);
   }
   
+  public void setColor(XYZPoint srcPoint, XYZPoint dstPoint, XYZPoint curvePoint) {
+    if (direct_color_measure != NONE && direct_color_gradient != OFF) {
+      double val = 0;
+      double[] sampled_vals;
+      if (direct_color_measure == DESTINATION_DISTANCE_FROM_CURVE) {
+        val = sqrt(sqr(dstPoint.x - curvePoint.x) + sqr(dstPoint.y - curvePoint.y));
+      }
+      else if (direct_color_measure == DESTINATION_SCALED_DISTANCE_FROM_CURVE) {  // distance of new point from curve point, but scaled by distance of curve point from origin
+        double curve_origin_distance = sqrt(sqr(curvePoint.x) + sqr(curvePoint.y));
+        if (curve_origin_distance == 0) { return; }
+        else {
+          val = sqrt(sqr(dstPoint.x - curvePoint.x) + sqr(dstPoint.y - curvePoint.y));
+        }
+      }
+      else if (direct_color_measure == DESTINATION_DISTANCE_FROM_ORIGIN) {  // distance of new point from origin (0,0)
+        val = sqrt(sqr(dstPoint.x) + sqr(dstPoint.y));
+      }
+      else if (direct_color_measure == DESTINATION_X_DISTANCE_FROM_ORIGIN) { 
+        val = abs(dstPoint.x);
+      }
+      else if (direct_color_measure == DESTINATION_X_DISTANCE_FROM_CURVE) { // x difference 
+        val = abs(dstPoint.x - curvePoint.x);
+      }
+
+      else if (direct_color_measure == DESTINATION_Y_DISTANCE_FROM_CURVE) { 
+        val = abs(dstPoint.y - curvePoint.y);
+      }
+      else if (direct_color_measure == DESTINATION_Z_DISTANCE_FROM_CURVE) { 
+        val = abs(dstPoint.z - curvePoint.z);
+      }
+      else if (direct_color_measure == DESTINATION_XY_DIFF_DISTANCE_FROM_CURVE) { // x difference 
+        val = abs(abs(dstPoint.x - curvePoint.x) - abs(dstPoint.y - curvePoint.y));
+      }
+      else if (direct_color_measure == DESTINATAION_CURVE_SUM_DISTANCE_FROM_ORIGIN) {
+        val = sqrt(sqr(dstPoint.x) + sqr(dstPoint.y)) + sqrt(sqr(curvePoint.x) + sqr(curvePoint.y));
+      }
+      else if (direct_color_measure == DESTINATAION_CURVE_AVG_DISTANCE_FROM_ORIGIN) {
+          val = (sqrt(sqr(dstPoint.x) + sqr(dstPoint.y)) + sqrt(sqr(curvePoint.x) + sqr(curvePoint.y)))/2.0;
+      }
+      else if (direct_color_measure == CURVE_DISTANCE_FROM_ORIGIN) {
+        val = sqrt(sqr(curvePoint.x) + sqr(curvePoint.y));
+      }
+      else if (direct_color_measure == SOURCE_DISTANCE_FROM_ORIGIN) {
+        val = sqrt(sqr(srcPoint.x) + sqr(srcPoint.y));
+      }
+      else if (direct_color_measure == DESTINATION_DISTANCE_FROM_SOURCE) {
+        val = sqrt(sqr(dstPoint.x - srcPoint.x) + sqr(dstPoint.y - srcPoint.y));
+      }
+      else if (direct_color_measure == SOURCE_DISTANCE_FROM_CURVE) {
+        val = sqrt(sqr(srcPoint.x - curvePoint.x) + sqr(srcPoint.y - curvePoint.y));
+      }
+      else { return; }  // value not recognized, default back to normal coloring mode
+        
+      /* else if (direct_color_measure == META_INDEX && meta_mode != OFF) {
+        val = current_meta_step;
+        sampled_vals = null;
+      }
+        */
+      double baseColor = 0;
+      double low_value, high_value;
+      
+      if (false) {
+      // ignore percentile option and direct_color_thesholding if using META_INDEX mode??
+      /* 
+      if (direct_color_measure == META_INDEX && meta_mode != OFF) {
+        low_value = 0;
+        high_value = meta_steps;
+      }*/
+      }
+      else {
+        /* if (direct_color_thesholding == PERCENT) {
+          if (direct_color_measure == DISTANCE_ALONG_LINE_POINTS) {
+            low_value = color_low_thresh * line_length;
+            high_value = color_high_thresh * line_length;
+          }
+          else if (direct_color_measure == DISTANCE_FROM_MIDLINE_POINTS) {
+            low_value = color_low_thresh * midlength;
+            high_value = color_high_thresh * midlength;
+          }
+          else if (direct_color_measure == DISTANCE_FROM_MIDLINE_POINTS || direct_color_measure == DISTANCE_FROM_NEAREST_END_POINTS) {
+            // low_thresh and high_thresh for DISTANCE_FROM_MIDLINE_POINTS and DISTANCE_FROM_NEAREST_END_POINTS 
+            //      can behave differently when thresholding by value, but act the same when thresholding by percentile
+            low_value = color_low_thresh * midlength;
+            high_value = color_high_thresh * midlength;
+          }
+          else {
+            int low_index, high_index;
+            if (color_low_thresh < 0 || color_low_thresh >= 1) { low_index = 0; }
+            else { low_index = (int)(color_low_thresh * sample_size); }
+            if (color_high_thresh >= 1 || color_high_thresh < 0) { high_index = sample_size - 1; }
+            else { high_index = (int)(color_high_thresh * (sample_size-1)); }
+            low_value = sampled_vals[low_index];
+            high_value = sampled_vals[high_index];
+          }
+        }
+        */
+        // else {  // default is by value
+          low_value = color_low_thresh;
+          high_value = color_high_thresh;
+        // }
+        if (low_value > high_value) {
+          double temp = low_value;
+          low_value = high_value;
+          high_value = temp;
+        }
+      }
+      
+      if (val < low_value) { baseColor = 0; }
+      else if (val >= high_value) { baseColor = 255; }
+      else { baseColor = ((val - low_value)/(high_value - low_value)) * 255; }
+      if (direct_color_gradient == COLORMAP_CLAMP) {
+        dstPoint.rgbColor = false;
+        dstPoint.color = baseColor / 255.0;
+        if (dstPoint.color < 0) { dstPoint.color = 0; }
+        if (dstPoint.color > 1.0) { dstPoint.color = 1.0; }
+      }
+      else if (direct_color_gradient == COLORMAP_WRAP) {
+        dstPoint.rgbColor = false;
+        // if val is outside range, wrap it around (cylce) to keep within range
+        if (val < low_value) {
+          val = high_value - ((low_value - val) % (high_value - low_value));
+        }
+        else if (val > high_value) {
+          val = low_value + ((val - low_value) % (high_value - low_value));
+        }
+        baseColor = ((val - low_value)/(high_value - low_value)) * 255; 
+        dstPoint.color = baseColor / 255.0;
+        if (dstPoint.color < 0) { dstPoint.color = 0; }
+        if (dstPoint.color > 1.0) { dstPoint.color = 1.0; }
+      }
+    } // END color_mode != normal
+
+  }
   /*
   *  calculates number of cycles if not specified (cycles_param == 0);
   *  subclasses need to override this to calculate cycles and cycles_to_close (if it can be calculated)
@@ -1939,7 +2119,10 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
                           metacycles, metacycle_offset, metacycle_scale, metacycle_rotation, 
                           (modify_x ? 1 : 0), (modify_y ? 1 : 0), (modify_z ? 1 : 0), 
                           input_x.getIntegerMode(), input_y.getIntegerMode(), input_z.getIntegerMode(), 
-                          output_x.getIntegerMode(), output_y.getIntegerMode(), output_z.getIntegerMode(), 
+                          output_x.getIntegerMode(), output_y.getIntegerMode(), output_z.getIntegerMode(),
+                          direct_color_measure, direct_color_gradient, 
+                          direct_color_thesholding, 
+                          color_low_thresh, color_high_thresh,   
     };
   }
 
@@ -2072,6 +2255,22 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
     else if (PARAM_OUTPUT_Z.equalsIgnoreCase(pName))  {
       output_z = Dimension.get((int)floor(pValue));
       if (output_z == null) { output_z = Dimension.Z; }
+    }
+    
+    else if (PARAM_DIRECT_COLOR_MEASURE.equalsIgnoreCase(pName)) {
+      direct_color_measure = (int)pValue;
+    }
+    else if (PARAM_DIRECT_COLOR_GRADIENT.equalsIgnoreCase(pName)) {
+      direct_color_gradient = (int)pValue;
+    }
+    else if (PARAM_DIRECT_COLOR_THRESHOLDING.equalsIgnoreCase(pName)) {
+      direct_color_thesholding = (int)pValue;
+    }
+    else if (PARAM_COLOR_LOW_THRESH.equalsIgnoreCase(pName)) {
+      color_low_thresh = pValue;
+    }
+    else if (PARAM_COLOR_HIGH_THRESH.equalsIgnoreCase(pName)) {
+      color_high_thresh = pValue;
     }
     else
       throw new IllegalArgumentException(pName);
