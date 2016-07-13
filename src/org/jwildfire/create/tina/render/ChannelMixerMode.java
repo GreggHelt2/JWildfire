@@ -32,6 +32,12 @@ public enum ChannelMixerMode {
       return BrightnessColorFunc.class;
     }
   },
+  INTENSITY {
+    @Override
+    protected Class<? extends ColorFunc> getColorFuncType() {
+      return IntensityColorFunc.class;
+    }
+  },
   RGB {
     @Override
     protected Class<? extends ColorFunc> getColorFuncType() {

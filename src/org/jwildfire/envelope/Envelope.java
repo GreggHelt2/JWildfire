@@ -387,10 +387,12 @@ public class Envelope implements Serializable {
 
     if ((indl >= 0) && (indr >= 0)) {
       double xdist = vSX[indr] - vSX[indl];
-      if (xdist < 0.00000001)
-        return vSX[indl];
-      else
+      if (xdist < 0.00000001) {
+        return vSY[indl];
+      }
+      else {
         return vSY[indl] + (pTime - vSX[indl]) / xdist * (vSY[indr] - vSY[indl]);
+      }
     }
     else if (indl >= 0) {
       return vSY[indl];

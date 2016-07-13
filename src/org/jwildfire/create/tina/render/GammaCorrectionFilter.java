@@ -271,6 +271,10 @@ public class GammaCorrectionFilter {
 
   private void applyModSaturation(GammaCorrectedRGBPoint pRGBPoint, double currModSaturation) {
     HSLRGBConverter hslrgbConverter = pRGBPoint.hslrgbConverter;
+    if (pRGBPoint.red == pRGBPoint.green && pRGBPoint.red == pRGBPoint.blue) {
+      // if red/green/blue values are same, then should remain unsaturated grayscale, so just return
+      return;
+    }
     hslrgbConverter.fromRgb(pRGBPoint.red / COLORSCL, pRGBPoint.green / COLORSCL, pRGBPoint.blue / COLORSCL);
     hslrgbConverter.fromHsl(hslrgbConverter.getHue(), hslrgbConverter.getSaturation() + currModSaturation, hslrgbConverter.getLuminosity());
     pRGBPoint.red = Tools.roundColor(hslrgbConverter.getRed() * COLORSCL);
@@ -394,12 +398,17 @@ public class GammaCorrectionFilter {
       luminosity = (min + max) / 2.0;
       if (Math.abs(luminosity) <= MathLib.EPSILON)
         return;
-      saturation = max - min;
+      double chroma = max - min;
+      // saturation = max - min;
 
-      if (Math.abs(saturation) <= MathLib.EPSILON)
+     // if (Math.abs(saturation) <= MathLib.EPSILON)
+      if (Math.abs(chroma) <= MathLib.EPSILON)
         return;
 
-      saturation /= ((luminosity) <= 0.5) ? (min + max) : (2.0 - max - min);
+      
+      // saturation /= ((luminosity) <= 0.5) ? (min + max) : (2.0 - max - min);
+      saturation = chroma / (1 - Math.abs(2*luminosity - 1));
+      
       if (Math.abs(red - max) < MathLib.EPSILON) {
         hue = ((green == min) ? 5.0 + (max - blue) / (max - min) : 1.0 - (max - green) / (max - min));
       }

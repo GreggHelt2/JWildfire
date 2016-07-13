@@ -605,6 +605,9 @@ public class AbstractFlameReader {
       case BRIGHTNESS:
         readMotionCurveAttributes(atts, pFlame.getMixerRRCurve(), ATTR_CHANNEL_MIXER_RR_CURVE + "_");
         break;
+      case INTENSITY: 
+        readMotionCurveAttributes(atts, pFlame.getMixerRRCurve(), ATTR_CHANNEL_MIXER_RR_CURVE + "_");
+        break;
       case RGB:
         readMotionCurveAttributes(atts, pFlame.getMixerRRCurve(), ATTR_CHANNEL_MIXER_RR_CURVE + "_");
         readMotionCurveAttributes(atts, pFlame.getMixerGGCurve(), ATTR_CHANNEL_MIXER_GG_CURVE + "_");
