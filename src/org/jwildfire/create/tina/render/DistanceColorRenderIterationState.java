@@ -170,7 +170,9 @@ public class DistanceColorRenderIterationState extends DefaultRenderIterationSta
       plotBlue = color.blue;
     }
     transformPlotColor(p);
-
+    
+    //  possible bug, potentially different intensity used for red, should use same as green and blue?
+    //     plotBuffer[plotBufferIdx++].set(xIdx, yIdx, plotRed * prj.intensity, plotGreen * intensity, plotBlue * intensity);
     plotBuffer[plotBufferIdx++].set(xIdx, yIdx, plotRed * prj.intensity, plotGreen * intensity, plotBlue * intensity);
     if (plotBufferIdx >= plotBuffer.length) {
       applySamplesToRaster();
