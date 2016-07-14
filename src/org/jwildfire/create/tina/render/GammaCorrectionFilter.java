@@ -16,6 +16,7 @@
 */
 package org.jwildfire.create.tina.render;
 
+import java.awt.Color;
 import static org.jwildfire.base.mathlib.MathLib.pow;
 
 import org.jwildfire.base.Tools;
@@ -39,6 +40,8 @@ public class GammaCorrectionFilter {
   private final int oversample;
   private boolean binary_transparency;
   private double luminosity_threshold;
+  private boolean invert_color = false;
+  private boolean invert_brightness = false;
 
   public static class ColorF {
     public double r, g, b;
@@ -99,6 +102,8 @@ public class GammaCorrectionFilter {
     // intensity threshold
     // if intensity of incoming point is <= threshold then ignore point color, just use background
     luminosity_threshold = flame.getLuminosityThresh();
+    invert_color = flame.isInvertColor();
+    invert_brightness = flame.isInvertBrightness();
   }
 
   public void transformPoint(LogDensityPoint logDensityPnt, GammaCorrectedRGBPoint pRGBPoint, int pX, int pY) {
@@ -140,6 +145,30 @@ public class GammaCorrectionFilter {
       pRGBPoint.red = finalColor.r;
       pRGBPoint.green = finalColor.g;
       pRGBPoint.blue = finalColor.b;
+      
+      if (invert_brightness) { // for now assume pixels with count > 0 are opaque...
+        // get [hue, saturation, brightness] array (each has range 0.0->1.0)
+        float[] hsb = Color.RGBtoHSB(pRGBPoint.red, pRGBPoint.green, pRGBPoint.blue, null);
+        float hue = hsb[0];
+        float saturation = hsb[1];
+        float brightness = hsb[2];
+        float inverted_brightness = 1.0f - brightness;
+        // create new RGB Color with inverted brightness
+        Color modColor = new Color(Color.HSBtoRGB(hue, saturation, inverted_brightness));
+        pRGBPoint.red = modColor.getRed();
+        pRGBPoint.green = modColor.getGreen();
+        pRGBPoint.blue = modColor.getBlue();
+      }
+      
+      if (invert_color) { // or should this come after modSaturation is applied?
+        pRGBPoint.red = 255 - pRGBPoint.red;
+        pRGBPoint.green = 255 - pRGBPoint.green;
+        pRGBPoint.blue = 255 - pRGBPoint.blue;
+      }
+  /*    if (invert_alpha) {
+        pRGBPoint.alpha = 255 - pRGBPoint.alpha;
+      }
+          */
       // luminosity ranges from 0 => 1 and takes into account alpha
       double luminosity = (pRGBPoint.red + pRGBPoint.green + pRGBPoint.blue) * ((double)pRGBPoint.alpha/255.0) / (255.0 * 3.0);
       // if point luminosity is below luminosity threshold then ignore point color and use background
@@ -158,7 +187,7 @@ public class GammaCorrectionFilter {
       pRGBPoint.alpha = withAlpha ? 0 : 255;
     }
 
-    if (modSaturation != 0) {
+    if (modSaturation != 0) {  
       applyModSaturation(pRGBPoint, modSaturation);
     }
   }

@@ -127,6 +127,8 @@ public class Flame implements Assignable<Flame>, Serializable {
   private double sampleDensity;
   private boolean bgTransparency;
   private boolean binaryTransparency;
+  private boolean invertColor;
+  private boolean invertBrightness;
   private boolean postNoiseFilter;
   private double postNoiseFilterThreshold;
   private double foregroundOpacity;
@@ -214,7 +216,6 @@ public class Flame implements Assignable<Flame>, Serializable {
     layers.add(new Layer());
     sampleDensity = 100.0;
     bgTransparency = true;
-    binaryTransparency = false;
     pixelsPerUnit = 50;
     name = "";
     bgImageFilename = "";
@@ -288,6 +289,9 @@ public class Flame implements Assignable<Flame>, Serializable {
     whiteLevel = Prefs.getPrefs().getTinaDefaultFadeToWhiteLevel();
     saturation = 1.0;
     foregroundOpacity = Prefs.getPrefs().getTinaDefaultForegroundOpacity();
+    binaryTransparency = false;
+    invertColor = false;
+    invertBrightness = false;
     luminosityThresh = 0.0;
   }
 
@@ -670,6 +674,8 @@ public class Flame implements Assignable<Flame>, Serializable {
     sampleDensity = pFlame.sampleDensity;
     bgTransparency = pFlame.bgTransparency;
     binaryTransparency = pFlame.binaryTransparency;
+    invertColor = pFlame.invertColor;
+    invertBrightness = pFlame.invertBrightness;
     bgColorRed = pFlame.bgColorRed;
     bgColorGreen = pFlame.bgColorGreen;
     bgColorBlue = pFlame.bgColorBlue;
@@ -790,7 +796,7 @@ public class Flame implements Assignable<Flame>, Serializable {
         (newCamDOF != pFlame.newCamDOF) || (fabs(spatialFilterRadius - pFlame.spatialFilterRadius) > EPSILON) ||
         !spatialFilterKernel.equals(pFlame.spatialFilterKernel) ||
         (fabs(sampleDensity - pFlame.sampleDensity) > EPSILON) || (bgTransparency != pFlame.bgTransparency) || (bgColorRed != pFlame.bgColorRed) || 
-        (binaryTransparency != pFlame.binaryTransparency)||
+        (binaryTransparency != pFlame.binaryTransparency) || (invertColor != pFlame.invertColor) || (invertBrightness != pFlame.invertBrightness) ||
         (bgColorGreen != pFlame.bgColorGreen) || (bgColorBlue != pFlame.bgColorBlue) ||
         (fabs(gamma - pFlame.gamma) > EPSILON) || !gammaCurve.isEqual(pFlame.gammaCurve) ||
         (fabs(gammaThreshold - pFlame.gammaThreshold) > EPSILON) || !gammaThresholdCurve.isEqual(pFlame.gammaThresholdCurve) ||
@@ -847,6 +853,22 @@ public class Flame implements Assignable<Flame>, Serializable {
 
   public void setBinaryTransparency(boolean binaryTransparency) {
     this.binaryTransparency = binaryTransparency;
+  }
+  
+  public boolean isInvertColor() {
+    return invertColor;
+  }
+  
+   public void setInvertColor(boolean invertColor) {
+     this.invertColor = invertColor;
+  }
+  
+  public boolean isInvertBrightness() {
+    return invertBrightness;
+  }
+  
+   public void setInvertBrightness(boolean invertBrightness) {
+    this.invertBrightness = invertBrightness;
   }
 
   public String getName() {
