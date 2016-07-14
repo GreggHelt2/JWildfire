@@ -229,7 +229,9 @@ public class AbstractFlameWriter {
     attrList.add(xb.createAttr("quality", pFlame.getSampleDensity()));
     attrList.add(xb.createAttr("background", (double) pFlame.getBGColorRed() / 255.0 + " " + (double) pFlame.getBGColorGreen() / 255.0 + " " + (double) pFlame.getBGColorBlue() / 255.0));
     attrList.add(xb.createAttr("bg_transparency", pFlame.isBGTransparency() ? "1" : "0"));
-    attrList.add(xb.createAttr("binary_transparency", pFlame.isBinaryTransparency() ? "1" : "0"));
+    attrList.add(xb.createAttr(AbstractFlameReader.ATTR_BINARY_TRANSPARENCY, pFlame.isBinaryTransparency() ? "1" : "0"));
+    attrList.add(xb.createAttr(AbstractFlameReader.ATTR_INVERT_COLOR, pFlame.isInvertColor() ? "1" : "0"));
+    attrList.add(xb.createAttr(AbstractFlameReader.ATTR_INVERT_BRIGHTNESS, pFlame.isInvertBrightness() ? "1" : "0"));
     attrList.add(xb.createAttr("luminosity_threshold", pFlame.getLuminosityThresh()));
     attrList.add(xb.createAttr("brightness", pFlame.getBrightness()));
     attrList.add(xb.createAttr(ATTR_SATURATION, pFlame.getSaturation()));

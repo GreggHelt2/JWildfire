@@ -1570,6 +1570,28 @@ public class FlameControlsDelegate extends AbstractControlsDelegate {
     }
   }
   
+    public void flameInvertColorCbx_changed() {
+    if (!isNoRefresh()) {
+      Flame flame = getCurrFlame();
+      if (flame != null) {
+        owner.saveUndoPoint();
+        flame.setInvertColor(data.invertColorCBx.isSelected());
+        enableControls();
+      }
+    }
+  }
+    
+    public void flameInvertBrightnessCbx_changed() {
+    if (!isNoRefresh()) {
+      Flame flame = getCurrFlame();
+      if (flame != null) {
+        owner.saveUndoPoint();
+        flame.setInvertBrightness(data.invertBrightnessCBx.isSelected());
+        enableControls();
+      }
+    }
+  }
+  
   public void postNoiseFilterCheckBox_changed() {
     if (!isNoRefresh()) {
       Flame flame = getCurrFlame();

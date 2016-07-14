@@ -398,6 +398,8 @@ public class TinaController implements FlameHolder, LayerHolder, ScriptRunnerEnv
     data.gammaThresholdSlider = parameterObject.pGammaThresholdSlider;
     data.bgTransparencyCBx = parameterObject.pBGTransparencyCBx;
     data.binaryTransparencyCBx = parameterObject.pBinaryTransparencyCBx;
+    data.invertColorCBx = parameterObject.pInvertColorCBx;
+    data.invertBrightnessCBx = parameterObject.pInvertBrightnessCBx;
     data.paletteRandomPointsREd = parameterObject.pPaletteRandomPointsREd;
     data.paletteRandomGeneratorCmb = parameterObject.paletteRandomGeneratorCmb;
     data.paletteFadeColorsCBx = parameterObject.paletteFadeColorsCBx;
