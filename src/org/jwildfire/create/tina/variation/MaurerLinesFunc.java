@@ -1224,14 +1224,14 @@ public class MaurerLinesFunc extends VariationFunc {
     // double speed1 = curve.getSpeed(theta1, end_point1);
 
     boolean use_render_mode = true;
-    if (show_points_param > 0 || show_curve_param > 0) {
+    if (show_points_param != 0 || show_curve_param != 0) {
       double rnd = pContext.random();
       /**
        *  overrides of rendering mode
        */
       double xoffset=0, yoffset=0, zoffset = 0;
       double rand2 = Math.random();
-      if (rand2 <= show_points_param) {
+      if (rand2 <= abs(show_points_param)) {
         // drawing Maurer anchor points instead of specified render_mode
         use_render_mode = false;
         if (point_thickness != 0) {
@@ -1244,7 +1244,7 @@ public class MaurerLinesFunc extends VariationFunc {
           xoffset = 0;
           yoffset = 0;
         }
-        if (rnd <= (show_points_param/2)) {
+        if (show_points_param < 0 || rnd <= (abs(show_points_param)/2)) {
           xout = x1 + xoffset;
           yout = y1 + yoffset;
         }
@@ -1254,7 +1254,7 @@ public class MaurerLinesFunc extends VariationFunc {
         }
         zout = 0;
       }
-      else if (rand2 <= (show_points_param + show_curve_param)) {
+      else if (rand2 <= (abs(show_points_param) + abs(show_curve_param))) {
         // drawing base curve instead of specified render_mode
         use_render_mode = false;
         if (curve_thickness != 0) {
