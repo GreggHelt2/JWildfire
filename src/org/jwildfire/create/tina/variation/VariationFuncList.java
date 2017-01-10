@@ -479,6 +479,12 @@ public class VariationFuncList {
     registerVariationFunc(PlaneWFFunc.class);
     registerVariationFunc(CheckerboardWFFunc.class);
     registerVariationFunc(IsoSFPlot3DWFFunc.class);
+    
+    registerVariationFunc(RhodoneaCurveFunc.class);
+    registerVariationFunc(ButterflyFayCurveFunc.class);
+    registerVariationFunc(EpitrochoidCurveFunc.class);
+    registerVariationFunc(HypotrochoidCurveFunc.class);
+    registerVariationFunc(CircleCurveFunc.class);
 
     resolvedAliasMap = new HashMap<>();
     for (Entry<Class<? extends VariationFunc>, String> funcCls : aliasMap.entrySet()) {
@@ -487,12 +493,6 @@ public class VariationFuncList {
         resolvedAliasMap.put(funcCls.getValue(), vName);
       }
     }
-
-    registerVariationFunc(RhodoneaCurveFunc.class);
-    registerVariationFunc(ButterflyFayCurveFunc.class);
-    registerVariationFunc(EpitrochoidCurveFunc.class);
-    registerVariationFunc(HypotrochoidCurveFunc.class);
-    registerVariationFunc(CircleCurveFunc.class);
 
   }
 
