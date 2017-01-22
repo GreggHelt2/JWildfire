@@ -1,6 +1,5 @@
 package org.jwildfire.create.tina.variation;
 
-import static java.lang.Math.random;
 import static org.jwildfire.base.mathlib.MathLib.M_PI;
 import static org.jwildfire.base.mathlib.MathLib.M_2PI;
 
@@ -237,7 +236,7 @@ public class HypertileMobiusFunc extends VariationFunc {
 
   @Override
   public String getName() {
-    return "hyperptile_mobius";
+    return "hypertile_mobius";
   }
 
 }
