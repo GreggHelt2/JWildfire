@@ -119,6 +119,8 @@ public class DCPerlinFunc extends VariationFunc {
           Vx = 0.5 * r * s;
           Vy = 0.5 * r * c;
           break;
+        default: // nothing to do
+          break;
       }
 
       // Assign V for noise vector position according to map
@@ -237,7 +239,7 @@ public class DCPerlinFunc extends VariationFunc {
     else if (PARAM_Z.equalsIgnoreCase(pName))
       z = pValue;
     else if (PARAM_SELECT_BAILOUT.equalsIgnoreCase(pName))
-      scale = limitIntVal(Tools.FTOI(pValue), 2, 1000);
+      select_bailout = limitIntVal(Tools.FTOI(pValue), 2, 1000);
     else
       throw new IllegalArgumentException(pName);
   }
