@@ -114,27 +114,7 @@ public class OsculatingCirclesFunc extends VariationFunc {
     cycles = (line_count * step_size_radians) / M_2PI;
   }
 
-  /* THESE ARE ALL WRONG!!! */
-  // derivatives for for rhodonea curve
-  // r = cos(k*t)
-  // x = r * cos(t) = cos(k*t) * cos(t)
-  //    x'  = -cos(k*t) * sin(t)
-  //    x'' = -cos(k*t) * cos(t)
-  // y = r * sin(t) = cos(k*t) * sin(t)
-  //    y'  = cos(k*t) * cos(t)
-  //    y'' = -cos(k*t) * sin(t)
-
-  // derivatives for epitrochoid
-  // x = (a+b)*cos(t) + c*cos(((a+b)/b)*t)
-  // y = (a+b)*sin(t) - c*sin(((a+b)/b)*t)
-  // x
-
-  // derivatives for hypotrochoid
-  // x = (a-b)*cos(t) + c*cos(((a-b)/b)*t)
-  // y = (a-b)*sin(t) - c*sin(((a-b)/b)*t)
-  /* PREVIOUS WAS ALL WRONG!!! */
-
-  /* Here are CORRECT derivatives for rhodonea, using Mathematica: 
+  /* first and seond derivatives for rhodonea, using Mathematica: 
   x[t_]  = Cos[k*t]*Cos[t]
   x'[t]  = -Cos[k t] Sin[t] - k Cos[t] Sin[k t]
   x''[t] = -Cos[t] Cos[k t] - k^2 Cos[t] Cos[k t] + 2 k Sin[t] Sin[k t]
@@ -173,7 +153,9 @@ public class OsculatingCirclesFunc extends VariationFunc {
     return yd2;
   }
 
-  /* signed curvature */
+  /* signed curvature
+  *  for reference see https://en.wikipedia.org/wiki/Osculating_circle
+  */
   public double getSignedCurvature(double t) {
     double f1 = getXFirstDerivative(t);
     double f2 = getXSecondDerivative(t);
@@ -188,10 +170,18 @@ public class OsculatingCirclesFunc extends VariationFunc {
     return abs(getSignedCurvature(t));
   }
 
+  /**
+   * radius of osculating circle
+   * for reference see https://en.wikipedia.org/wiki/Osculating_circle
+   */
   public double getOsculatingRadius(double t) {
     return 1.0/getCurvature(t);
   }
 
+  /** 
+  *  center coordinate for osculating circle
+  *  for reference see: http://mathworld.wolfram.com/OsculatingCircle.html
+  */
   public DoublePoint2D getOsculatingCenterPoint(double t) {
     double f1 = getXFirstDerivative(t);
     double f2 = getXSecondDerivative(t);
@@ -199,13 +189,6 @@ public class OsculatingCirclesFunc extends VariationFunc {
     double g2 = getYSecondDerivative(t);
     DoublePoint2D p = getCurveCoords(t);
 
-    /* WRONG calcs
-    double num = f1*f1 + g1*g1;
-    double den = f1*g2 - f2*g1;
-    osc_center.x = p.x - ((den * g1)/num);
-    osc_center.y = p.y - ((den * f1)/num);
-    */
-    
     // f = p.x
     // g = p.y
     // x = f - (((f1^2 + g1^2) * g1)/(f1*g2 - f2*g1))
