@@ -114,6 +114,7 @@ public class OsculatingCirclesFunc extends VariationFunc {
     cycles = (line_count * step_size_radians) / M_2PI;
   }
 
+  /* THESE ARE ALL WRONG!!! */
   // derivatives for for rhodonea curve
   // r = cos(k*t)
   // x = r * cos(t) = cos(k*t) * cos(t)
@@ -131,30 +132,44 @@ public class OsculatingCirclesFunc extends VariationFunc {
   // derivatives for hypotrochoid
   // x = (a-b)*cos(t) + c*cos(((a-b)/b)*t)
   // y = (a-b)*sin(t) - c*sin(((a-b)/b)*t)
+  /* PREVIOUS WAS ALL WRONG!!! */
 
+  /* Here are CORRECT derivatives for rhodonea, using Mathematica: 
+  x[t_]  = Cos[k*t]*Cos[t]
+  x'[t]  = -Cos[k t] Sin[t] - k Cos[t] Sin[k t]
+  x''[t] = -Cos[t] Cos[k t] - k^2 Cos[t] Cos[k t] + 2 k Sin[t] Sin[k t]
+  
+  y[t_]  =  Cos[k * t]*Sin[t]
+  y'[t]  =  Cos[t] Cos[k t] - k Sin[t] Sin[k t]
+  y''[t] =  -Cos[k t] Sin[t] - k^2 Cos[k t] Sin[t] - 2 k Cos[t] Sin[k t]
+  */
 
   public double getXFirstDerivative(double t)  {
     // for now assume rhodonea
     double xd1;
-    xd1 = -1 * cos(k * t) * sin(t);
+    // xd1 = -1 * cos(k * t) * sin(t);
+    xd1 = (-1 * cos(k*t) * sin(t)) - ( k * cos(t) * sin(k*t));
     return xd1;
   }
 
   public double getXSecondDerivative(double t) {
     double xd2;
-    xd2 = -1 * cos(k * t) * cos(t);
+    // xd2 = -1 * cos(k * t) * cos(t);
+    xd2 = (-1 * cos(t) * cos(k*t)) - (k*k *  cos(t) * cos(k*t)) + (2*k * sin(t) * sin(k*t));
     return xd2;
   }
 
   public double getYFirstDerivative(double t) {
     double yd1;
-    yd1 = cos(k * t) * cos(t);
+    // yd1 = cos(k * t) * cos(t);
+    yd1 =  (cos(t) * cos(k*t)) - (k * sin(t) * sin(k*t));
     return yd1;
   }
 
   public double getYSecondDerivative(double t) {
     double yd2;
-    yd2 = -1 * cos(k * t) * sin(t);
+    // yd2 = -1 * cos(k * t) * sin(t);
+    yd2 = (-1 * cos(k*t) * sin(t)) - (k*k * cos(k*t) * sin(t)) - (2*k * cos(t) * sin(k*t));
     return yd2;
   }
 
@@ -183,10 +198,23 @@ public class OsculatingCirclesFunc extends VariationFunc {
     double g1 = getYFirstDerivative(t);
     double g2 = getYSecondDerivative(t);
     DoublePoint2D p = getCurveCoords(t);
+
+    /* WRONG calcs
     double num = f1*f1 + g1*g1;
     double den = f1*g2 - f2*g1;
     osc_center.x = p.x - ((den * g1)/num);
     osc_center.y = p.y - ((den * f1)/num);
+    */
+    
+    // f = p.x
+    // g = p.y
+    // x = f - (((f1^2 + g1^2) * g1)/(f1*g2 - f2*g1))
+    // y = g + (((f1^2 + g1^2) * f1)/(f1*g2 - f2*g1))
+    double num = f1*f1 + g1*g1;
+    double denom = f1*g2 - f2*g1;
+    
+    osc_center.x = p.x - ((num * g1)/denom);
+    osc_center.y = p.y + ((num * f1)/denom);
     return osc_center;
   }
   
