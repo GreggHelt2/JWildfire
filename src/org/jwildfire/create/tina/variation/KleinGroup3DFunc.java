@@ -184,7 +184,8 @@ public class KleinGroup3DFunc extends VariationFunc {
 
   @Override
   public String getName() {
-    return "klein3D_group";
+    //    return "klein3D_group";
+    return "klein_group_3D";
   }
 
 }
