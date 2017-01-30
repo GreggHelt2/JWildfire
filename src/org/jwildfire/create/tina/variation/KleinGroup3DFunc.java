@@ -5,6 +5,18 @@ import org.jwildfire.create.tina.base.XForm;
 import org.jwildfire.create.tina.base.XYZPoint;
 import org.jwildfire.create.tina.base.Layer;
 
+
+/**
+ * 
+ * KleinGroup3dFunc is meant to make it easier to create "interesting" 3D Kleinian group limit sets 
+ *     internally uses three 3D Mobius transformations as generators, plus their inverses
+ *         (3D Mobius transformations use quaternions in place of complex numbers )
+ * 
+ *  Author: Gregg Helt
+ */
+public class KleinGroup3DFunc extends VariationFunc {
+  
+  
 class Quaternion {
   double t;
   double x;
@@ -19,16 +31,6 @@ class Quaternion {
   }
 
 }
-
-/**
- * 
- * KleinGroup3dFunc is meant to make it easier to create "interesting" 3D Kleinian group limit sets 
- *     internally uses three 3D Mobius transformations as generators, plus their inverses
- *         (3D Mobius transformations use quaternions in place of complex numbers )
- * 
- *  Author: Gregg Helt
- */
-public class KleinGroup3DFunc extends VariationFunc {
   private static final long serialVersionUID = 1L;
 
   private static final String PARAM_TR = "tr";
