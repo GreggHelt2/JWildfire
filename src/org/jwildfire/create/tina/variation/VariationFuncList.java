@@ -479,6 +479,7 @@ public class VariationFuncList {
     registerVariationFunc(CheckerboardWFFunc.class);
     registerVariationFunc(IsoSFPlot3DWFFunc.class);
     
+    registerVariationFunc(KleinGroupFunc.class);
     registerVariationFunc(KleinGroup3DFunc.class);
 
     resolvedAliasMap = new HashMap<>();
