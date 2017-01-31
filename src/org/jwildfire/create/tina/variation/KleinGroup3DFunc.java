@@ -1,36 +1,75 @@
 package org.jwildfire.create.tina.variation;
 
-import static org.jwildfire.base.mathlib.MathLib.sqr;
+import static org.jwildfire.base.mathlib.MathLib.sqrt;
 import org.jwildfire.create.tina.base.XForm;
 import org.jwildfire.create.tina.base.XYZPoint;
 import org.jwildfire.create.tina.base.Layer;
-
 
 /**
  * 
  * KleinGroup3dFunc is meant to make it easier to create "interesting" 3D Kleinian group limit sets 
  *     internally uses three 3D Mobius transformations as generators, plus their inverses
- *         (3D Mobius transformations use quaternions in place of complex numbers )
+ *         (3D Mobius transformations use quaternions, instead of complex numbers like 2D Mobius transformations)
  * 
  *  Author: Gregg Helt
  */
 public class KleinGroup3DFunc extends VariationFunc {
   
-  
-class Quaternion {
-  double t;
-  double x;
-  double y;
-  double z;
-  
-  public Quaternion(double t, double x, double y, double z) {
-    this.t = t;
-    this.x = x;
-    this.y = y;
-    this.z = z;
+  /** 
+   * Inner class for quaternion math
+   * Q(n0, n1, n2, n3) = n0 + n1*i + n2*j + n3*k
+   */
+  class Quaternion {
+    double n0, n1, n2, n3;
+    
+    public Quaternion(double n0, double n1, double n2, double n3) {
+      this.n0 = n0;
+      this.n1 = n1;
+      this.n2 = n2;
+      this.n3 = n3;
+    }
+    
+    public Quaternion add(Quaternion b) {
+      return new Quaternion(n0+b.n0, n1+b.n1, n2+b.n2, n3+b.n3);
+    }
+
+    public Quaternion mult(Quaternion b) {
+       // m0 = a0b0−a1b1−a2b2−a3b3
+      double new0 = n0*b.n0 - n1*b.n1 - n2*b.n2 - n3*b.n3;
+      //  m1 = a0b1+a1b0+a2b3−a3b2
+      double new1 = n0*b.n1 + n1*b.n0 + n2*b.n3 - n3*b.n2;
+      //  m2 = a0b2−a1b3+a2b0+a3b1
+      double new2 = n0*b.n2 - n1*b.n3 + n2*b.n0 + n3*b.n1;
+      //  m3 = a0b3+a1b2−a2b1+a3b0
+      double new3 = n0*b.n3 + n1*b.n2 - n2*b.n1 + n3*b.n0;
+      return new Quaternion(new0, new1, new2, new3);
+    }
+    
+    public Quaternion reciprocal() {
+      double norm = sqrt(n0*n0 + n1*n1 + n2*n2 + n3*n3);
+      double normsq = norm * norm;
+      // reciprocal = conjugate / (norm^2)
+      return new Quaternion(n0/normsq, -n1/normsq, -n2/normsq, -n3/normsq);
+    }
+    
+    /** 
+     *  Two kinds of quaternion division, since quaternion multiplication is not commutative
+     *  div1 = reciprocal(b) * this
+     */
+    public Quaternion div1(Quaternion b) {
+      return b.reciprocal().mult(this);
+    }
+
+    /**
+     *  Two kinds of quaternion division, since quaternion multiplication is not commutative
+     *  div2 = this * reciprocal(b)
+     */
+    public Quaternion div2(Quaternion b) {
+      return this.mult(b.reciprocal());
+    }
+
   }
 
-}
   private static final long serialVersionUID = 1L;
 
   private static final String PARAM_TR = "tr";
@@ -57,48 +96,32 @@ class Quaternion {
   protected Object[] mtransforms;
 
   @Override
+/**
+ * Using Mobius transformations, but with quaternions instead of complex numbers
+ */
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
-    // using (modified) quaternion calcs from Mobiq by zephyrtronium http://zephyrtronium.deviantart.com/art/Mobiq-Apophysis-Plugin-170449212 converted to work in JWildfire by Brad Stefanov
-   /*  
-    Mobiq notes:
-    Qlib uses the notation T + X i + Y j + Z k, so I used the following while
-    simplifying. I took a usual Mobius transform (ax + b) / (cx + d) and made
-    a, b, c, and d quaternions instead of just complex numbers, with x being
-    a quaternion FTx + FTy i + FTz j + 0 k. Multiplying quaternions happens to
-    be a very complex thing, and dividing is no simpler, so I needed to use
-    names that are easily and quickly typed while simplifying to prevent
-    massive insanity/violence/genocide. I then found switching back from those
-    names in my head to be rather difficult and confusing, so I decided to
-    use these macros instead.
-*/
-
+    
     // randomly pick one of the six calculated Mobius transformaton matrices  
     //    a, b, c, A, B, C where A = inverse(a), B = inverse(b), C = inverse(c)
     int mindex = pContext.random(6);
     Quaternion[] quat = (Quaternion[])mtransforms[mindex];
     
     // then use selected matrix for Mobius transformation:
-    //  f(z) = (az + b) / (cz + d);
+    //  f(z) = (az + b) / (cz + d)  where a,b,c,d are quaternions
     Quaternion a = quat[0];
     Quaternion b = quat[1];
     Quaternion c = quat[2];
     Quaternion d = quat[3];
     Quaternion qin = new Quaternion(pAffineTP.x, pAffineTP.y, pAffineTP.z, 0);
  
-    double nt = a.t * qin.t - a.x * qin.x - a.y * qin.y + b.t;
-    double nx = a.t * qin.x + a.x * qin.t - a.z * qin.y + b.x;
-    double ny = a.t * qin.y + a.y * qin.t + a.z * qin.x + b.y;
-    double nz = a.z * qin.t + a.x * qin.y - a.y * qin.x + b.z;
-    double dt = c.t * qin.t - c.x * qin.x - c.y * qin.y + d.t;
-    double dx = c.t * qin.x + c.x * qin.t - c.z * qin.y + d.x;
-    double dy = c.t * qin.y + c.y * qin.t + c.z * qin.x + d.y;
-    double dz = c.z * qin.t + c.x * qin.y - c.y * qin.x + d.z;
-    
-    double normalizer = sqr(dt) + sqr(dx) + sqr(dy) + sqr(dz);
+    // use div1
+    Quaternion qout = qin.mult(a).add(b).div1(qin.mult(c).add(d));
+    // use div2
+    // Quaternion qout2 = qin.mult(a).add(b).div2(qin.mult(c).add(d));
 
-    pVarTP.x += pAmount * (nt * dt + nx * dx + ny * dy + nz * dz) / normalizer;
-    pVarTP.y += pAmount * (nx * dt - nt * dx - ny * dz + nz * dy) / normalizer;
-    pVarTP.z += pAmount * (ny * dt - nt * dy - nz * dx + nx * dz) / normalizer;
+    pVarTP.x += pAmount * qout.n0;
+    pVarTP.y += pAmount * qout.n1;
+    pVarTP.z += pAmount * qout.n2;
 
   }
   
@@ -141,10 +164,12 @@ class Quaternion {
     Quaternion m1 = mat[1];
     Quaternion m2 = mat[2];
     Quaternion m3 = mat[3];
-    invmat[0] = new Quaternion( m3.t,  m3.x,  m3.y,  m3.z);
-    invmat[1] = new Quaternion(-m1.t, -m1.x, -m1.y, -m1.z);
-    invmat[2] = new Quaternion(-m2.t, -m2.x, -m2.y, -m2.z);
-    invmat[3] = new Quaternion( m0.t,  m0.x,  m0.y,  m0.z);
+
+    invmat[0] = new Quaternion( m3.n0,  m3.n1,  m3.n2,  m3.n3);
+    invmat[1] = new Quaternion(-m1.n0, -m1.n1, -m1.n2, -m1.n3);
+    invmat[2] = new Quaternion(-m2.n0, -m2.n1, -m2.n2, -m2.n3);
+    invmat[3] = new Quaternion( m0.n0,  m0.n1,  m0.n2,  m0.n3);
+
     return invmat;
   }
 
@@ -186,7 +211,6 @@ class Quaternion {
 
   @Override
   public String getName() {
-    //    return "klein3D_group";
     return "klein_group_3D";
   }
 
