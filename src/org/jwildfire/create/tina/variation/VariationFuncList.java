@@ -479,6 +479,8 @@ public class VariationFuncList {
     registerVariationFunc(CheckerboardWFFunc.class);
     registerVariationFunc(IsoSFPlot3DWFFunc.class);
 
+    registerVariationFunc(Mobius3DWithInverseFunc.class);
+    
     resolvedAliasMap = new HashMap<>();
     for (Entry<Class<? extends VariationFunc>, String> funcCls : aliasMap.entrySet()) {
       String vName = getVariationName(funcCls.getKey(), false);
