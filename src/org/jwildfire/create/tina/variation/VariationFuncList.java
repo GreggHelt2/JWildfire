@@ -483,7 +483,6 @@ public class VariationFuncList {
     registerVariationFunc(KleinGroupFunc.class);
     registerVariationFunc(KleinGroup3DFunc.class);
     registerVariationFunc(MobiusWithInverseFunc.class);
-    registerVariationFunc(Mobius3DWithInverseFunc.class);
 
     resolvedAliasMap = new HashMap<>();
     for (Entry<Class<? extends VariationFunc>, String> funcCls : aliasMap.entrySet()) {
