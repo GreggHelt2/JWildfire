@@ -124,6 +124,11 @@ public class OsculatingCirclesFunc extends VariationFunc {
   y''[t] =  -Cos[k t] Sin[t] - k^2 Cos[k t] Sin[t] - 2 k Cos[t] Sin[k t]
   */
 
+  // period of curve in radians
+  public double getPeriod() {
+    // need to actually fill this out with periodicity calcs...
+    return M_2PI;
+  }
   public double getXFirstDerivative(double t)  {
     // for now assume rhodonea
     double xd1;
@@ -201,6 +206,7 @@ public class OsculatingCirclesFunc extends VariationFunc {
     return osc_center;
   }
   
+  
   /* 
   *  reuses object variable curve_point
   */
@@ -264,11 +270,12 @@ public class OsculatingCirclesFunc extends VariationFunc {
         x = cos(kt)cos(t)
         y = cos(kt)sin(t)
     */
-    double xin = pAffineTP.x;
-    double yin = pAffineTP.y;
+//    double xin = pAffineTP.x;
+//    double yin = pAffineTP.y;
     
     // atan2 range is [-PI, PI], so tin covers 2PI, or 1 cycle (from -0.5 to 0.5 cycle)
-    double tin = atan2(yin, xin); // polar coordinate angle (theta in radians) of incoming point
+//    double tin = atan2(yin, xin); // polar coordinate angle (theta in radians) of incoming point
+    double tin = pContext.random() * getPeriod();
     double t = cycles * (tin + (cycle_offset * 2 * M_PI)); // angle of rose curve
     
     // double r = cos(k * t) + radial_offset;  
