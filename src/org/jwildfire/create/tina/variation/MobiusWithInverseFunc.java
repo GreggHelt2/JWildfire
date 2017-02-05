@@ -9,7 +9,7 @@ import org.nfunk.jep.type.Complex;
 /**
  * MobisuWithInverseFunc uses parameters to create a Mobius transformation M:
  *    M(z) = (az + b) / (cz + d) where a,b,c,d are complex numbers
- * and also creates the inverse Mobius transormation M'
+ * and also creates the inverse Mobius transformation M'
  *    such that M'(M(z)) = z
  * when transform() called, randomly chooses between M and M' for transformation 
  * 
