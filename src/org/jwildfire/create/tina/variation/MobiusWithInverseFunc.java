@@ -79,6 +79,7 @@ public class MobiusWithInverseFunc extends VariationFunc {
     }
   }
   
+  Complex[] mfixed, ifixed;
   
   @Override
   public void init(FlameTransformationContext pContext, Layer pLayer, XForm pXForm, double pAmount) {
@@ -91,6 +92,14 @@ public class MobiusWithInverseFunc extends VariationFunc {
     mobius = normalize(mobius_prenorm);
     // create inverse matrix
     mobius_inverse = matrixInverse(mobius);
+    mfixed = getMobiusFixedPoints(mobius);
+    ifixed = getMobiusFixedPoints(mobius_inverse);
+    System.out.println("Mobius fixed points");
+    System.out.println(mfixed[0]);
+    System.out.println(mfixed[1]);
+    System.out.println("Inverse fixed points");
+    System.out.println(ifixed[0]);
+    System.out.println(ifixed[1]);
   }
   
   /* assumes 2x2 matrix represented by 4-element array: [a b c d] */
@@ -118,6 +127,51 @@ public class MobiusWithInverseFunc extends VariationFunc {
     matinv[2] = mat[2].mul(-1);
     matinv[3] = mat[0];
     return matinv;
+  }
+  
+  Complex infinity = new Complex(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+  
+    /*
+  *  Given an array m of 4 complex numbers representing parameters of a Mobius transform 
+  *          f(z) = (az+b)/(cz+d)
+  *     where m[0] = a, m[1] = b, m[2] = c, m[3] = d
+  *     find and return the two fixed points for the Mobius transform
+  */
+  public Complex[] getMobiusFixedPoints(Complex[] m) {
+    Complex[] fixed_points = new Complex[2];
+    // solving for fixed points is solving for point where: 
+    //     z = (az+b)/(cz+d), 
+    //     which works out to solving quadratic equation: 
+    //     cz2 + (d-a)z - b = 0, so:
+    //     z = (a - d +- (sqrt((d-a)^2 + 4bc))) / 2c
+    //     note that when c = 0, this yield Infinity (or NaN using Complex class)
+    Complex a = m[0];
+    Complex b = m[1];
+    Complex c = m[2];
+    Complex d = m[3];
+    
+    if (c.re() == 0 && c.im() == 0) {
+      // if c == 0 and a == d, then both fixed points are Infinity
+      if (a.re() == d.re() && a.im() == d.im()) {
+        fixed_points[0] = infinity;
+        fixed_points[1] = infinity;
+      }
+      // if c == 0 and a != d, then one fixed pointa at infinity and 
+      //    one found by linear equation fp1 = -b/(a-d)
+      else {
+        fixed_points[0] = b.mul(1.0).div(a.sub(d));
+        fixed_points[1] = infinity;
+      }
+    }
+    else {
+      // t = sqrt((d-a)^2 + 4bc)
+      Complex t = d.sub(a).power(2).add(b.mul(c).mul(4)).sqrt();
+      // z+ = (a - d + t)/2c
+      fixed_points[0] = a.sub(d).add(t).div(c.mul(2));
+      // z- = (a - d - t)/2c
+      fixed_points[1] = a.sub(d).sub(t).div(c.mul(2));
+    }
+    return fixed_points;
   }
 
   @Override
