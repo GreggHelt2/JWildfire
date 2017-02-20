@@ -1,9 +1,11 @@
 package org.jwildfire.create.tina.variation;
 
+import static java.lang.Math.abs;
 import static org.jwildfire.base.mathlib.MathLib.M_2PI;
 import static org.jwildfire.base.mathlib.MathLib.sin;
 import static org.jwildfire.base.mathlib.MathLib.cos;
 import static org.jwildfire.base.mathlib.MathLib.sqr;
+import static org.jwildfire.base.mathlib.MathLib.pow;
 
 import org.jwildfire.create.tina.base.Layer;
 import org.jwildfire.create.tina.base.XForm;
@@ -19,9 +21,10 @@ import org.jwildfire.create.tina.base.XYZPoint;
  *      pre- and post- coefficients as mirrors of each other 
  *      (in other words "move" circle to origin, do inversion, then reverse move) )
  *  also includes "draw_circles" param
- *      if > 0 and < 1, then that fraction of incoming points is used to 
- *      draw circle of inversion rather than doing the actual inversion
- * 
+ *      if 0 > draw_circles < 1, then that fraction of incoming points is used to 
+ *      draw circle of inversion rather than doing the actual inversion >
+ *  In addition to standard circle inversion, can also be used for p-circle inversion as 
+ *      described by Ramirez et al in "Generating Fractal Patterns by Using P-Circle Inversion" (2015)
  */
 public class CircleInversionFunc extends VariationFunc {
   private static final long serialVersionUID = 1L;
@@ -29,14 +32,16 @@ public class CircleInversionFunc extends VariationFunc {
   public static final String PARAM_RADIUS= "radius";
   public static final String PARAM_XORIGIN = "xorigin";
   public static final String PARAM_YORIGIN = "yorigin";
+  public static final String PARAM_P= "p";
   public static final String PARAM_DRAW_CIRCLE = "draw_circle";
   
   double r = 1;
   double a = 0;
   double b = 0;
+  double p = 2;
   double draw_circle = 0;
 
-  private static final String[] paramNames = { PARAM_RADIUS, PARAM_XORIGIN, PARAM_YORIGIN, PARAM_DRAW_CIRCLE };
+  private static final String[] paramNames = { PARAM_RADIUS, PARAM_XORIGIN, PARAM_YORIGIN, PARAM_P, PARAM_DRAW_CIRCLE };
 
   @Override
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
@@ -44,7 +49,13 @@ public class CircleInversionFunc extends VariationFunc {
     double yin = pAffineTP.y;
     double xdiff = xin-a;
     double ydiff = yin-b;
-    double iscale = (r*r)/(sqr(xdiff) + sqr(ydiff));
+    double iscale;
+    if (p == 2) {
+      iscale = (r*r)/(sqr(xdiff) + sqr(ydiff));
+    }
+    else {
+      iscale = (r*r)/ pow( (pow(abs(xdiff),p) + pow(abs(ydiff),p)), 2.0/p);
+    }
     double xout = a + (iscale * xdiff);
     double yout = b + (iscale * ydiff);
     pVarTP.x += pAmount * xout;
@@ -75,7 +86,7 @@ public class CircleInversionFunc extends VariationFunc {
 
   @Override
   public Object[] getParameterValues() {
-    return new Object[] { r, a, b, draw_circle };
+    return new Object[] { r, a, b, p, draw_circle };
   }
 
   @Override
@@ -88,6 +99,9 @@ public class CircleInversionFunc extends VariationFunc {
     }
     else if (PARAM_YORIGIN.equalsIgnoreCase(pName)) {
       b = pValue;
+    }
+    else if (PARAM_P.equalsIgnoreCase(pName)) {
+      p = pValue;
     }
     else if (PARAM_DRAW_CIRCLE.equalsIgnoreCase(pName)) {
       draw_circle = pValue;
