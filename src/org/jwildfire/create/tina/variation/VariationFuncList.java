@@ -470,7 +470,7 @@ public class VariationFuncList {
     registerVariationFunc(PostPointSymmetryWFFunc.class);
     registerVariationFunc(PostAxisSymmetryWFFunc.class);
     registerVariationFunc(MobiusStripFunc.class);
-    
+
     registerVariationFunc(YPlot2DWFFunc.class);
     registerVariationFunc(YPlot3DWFFunc.class);
     registerVariationFunc(ParPlot2DWFFunc.class);
@@ -488,6 +488,9 @@ public class VariationFuncList {
     registerVariationFunc(CircleCurveFunc.class);
 
     registerVariationFunc(OsculatingCirclesFunc.class);
+
+    registerVariationFunc(MaurerRoseFunc.class);
+    registerVariationFunc(MaurerLinesFunc.class);
 
     resolvedAliasMap = new HashMap<>();
     for (Entry<Class<? extends VariationFunc>, String> funcCls : aliasMap.entrySet()) {
