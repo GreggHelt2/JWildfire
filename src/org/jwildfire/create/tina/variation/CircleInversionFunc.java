@@ -6,6 +6,7 @@ import static org.jwildfire.base.mathlib.MathLib.sin;
 import static org.jwildfire.base.mathlib.MathLib.cos;
 import static org.jwildfire.base.mathlib.MathLib.sqr;
 import static org.jwildfire.base.mathlib.MathLib.pow;
+import static org.jwildfire.base.mathlib.MathLib.sqrt;
 
 import org.jwildfire.create.tina.base.Layer;
 import org.jwildfire.create.tina.base.XForm;
@@ -32,16 +33,27 @@ public class CircleInversionFunc extends VariationFunc {
   public static final String PARAM_RADIUS= "radius";
   public static final String PARAM_XORIGIN = "xorigin";
   public static final String PARAM_YORIGIN = "yorigin";
+  public static final String PARAM_INVERSION_MODE = "imode";
+  public static final String PARAM_HIDE_UNINVERTED = "hide_uninverted";
   public static final String PARAM_P= "p";
   public static final String PARAM_DRAW_CIRCLE = "draw_circle";
+  
+  public static int STANDARD = 0;
+  public static int EXTERNAL_INVERSION_ONLY = 1;
+  public static int INTERNAL_INVERSION_ONLY = 2;
   
   double r = 1;
   double a = 0;
   double b = 0;
   double p = 2;
   double draw_circle = 0;
+  int inversion_mode = STANDARD;
+  boolean hide_uninverted = false;
 
-  private static final String[] paramNames = { PARAM_RADIUS, PARAM_XORIGIN, PARAM_YORIGIN, PARAM_P, PARAM_DRAW_CIRCLE };
+  private static final String[] paramNames = { 
+    PARAM_RADIUS, PARAM_XORIGIN, PARAM_YORIGIN, 
+    PARAM_INVERSION_MODE, PARAM_HIDE_UNINVERTED, PARAM_P, PARAM_DRAW_CIRCLE 
+  };
 
   @Override
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
@@ -50,23 +62,48 @@ public class CircleInversionFunc extends VariationFunc {
     double xdiff = xin-a;
     double ydiff = yin-b;
     double iscale;
-    if (p == 2) {
-      iscale = (r*r)/(sqr(xdiff) + sqr(ydiff));
-    }
-    else {
-      iscale = (r*r)/ pow( (pow(abs(xdiff),p) + pow(abs(ydiff),p)), 2.0/p);
-    }
-    double xout = a + (iscale * xdiff);
-    double yout = b + (iscale * ydiff);
-    pVarTP.x += pAmount * xout;
-    pVarTP.y += pAmount * yout;
+    boolean do_inversion = true;
     if (draw_circle > 0) {
       double rnd = pContext.random();
       if (rnd < draw_circle) {
         double theta = pContext.random() * M_2PI;
-        pVarTP.x = a + r * cos(theta);
-        pVarTP.y = b + r * sin(theta);
+        // pVarTP.x = a + r * cos(theta);
+        // pVarTP.y = b + r * sin(theta);
+        pVarTP.x += a + r * cos(theta);
+        pVarTP.y += b + r * sin(theta);
+        return;
       }
+    }
+    if (inversion_mode == EXTERNAL_INVERSION_ONLY) {
+      // only do inversion if input point is outside of circle
+      // calc distance from circle origin
+      double d = sqrt(sqr(xdiff) + sqr(ydiff));
+      do_inversion = (d > r);
+      
+    }
+    else if (inversion_mode == INTERNAL_INVERSION_ONLY) {
+      // only do inversion if input point is inside of circle
+      double d = sqrt(sqr(xdiff) + sqr(ydiff));
+      do_inversion = (d < r);
+    }
+    if (do_inversion) {
+      if (p == 2) {
+        iscale = (r*r)/(sqr(xdiff) + sqr(ydiff));
+      }
+      else {
+        iscale = (r*r)/ pow( (pow(abs(xdiff),p) + pow(abs(ydiff),p)), 2.0/p);
+      }
+      double xout = a + (iscale * xdiff);
+      double yout = b + (iscale * ydiff);
+      pVarTP.x += pAmount * xout;
+      pVarTP.y += pAmount * yout;
+
+      pVarTP.doHide = false;
+    }
+    else { // if didn't do inversion, check to see if should hide
+      pVarTP.x += xin;
+      pVarTP.y += yin;
+      pVarTP.doHide = hide_uninverted;
     }
   }
   
@@ -86,7 +123,7 @@ public class CircleInversionFunc extends VariationFunc {
 
   @Override
   public Object[] getParameterValues() {
-    return new Object[] { r, a, b, p, draw_circle };
+    return new Object[] { r, a, b, inversion_mode, hide_uninverted ? 1 : 0, p, draw_circle };
   }
 
   @Override
@@ -102,6 +139,12 @@ public class CircleInversionFunc extends VariationFunc {
     }
     else if (PARAM_P.equalsIgnoreCase(pName)) {
       p = pValue;
+    }
+    else if (PARAM_INVERSION_MODE.equalsIgnoreCase(pName)) {
+      inversion_mode = (int)pValue;
+    }
+    else if (PARAM_HIDE_UNINVERTED.equalsIgnoreCase(pName)) {
+      hide_uninverted = (pValue == 1) ? true : false;
     }
     else if (PARAM_DRAW_CIRCLE.equalsIgnoreCase(pName)) {
       draw_circle = pValue;
