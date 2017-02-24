@@ -36,6 +36,7 @@ import org.jwildfire.create.tina.base.Layer;
 import org.jwildfire.create.tina.base.Stereo3dColor;
 import org.jwildfire.create.tina.base.Stereo3dEye;
 import org.jwildfire.create.tina.base.Stereo3dMode;
+import org.jwildfire.create.tina.base.XForm;
 import org.jwildfire.create.tina.base.raster.AbstractRaster;
 import org.jwildfire.create.tina.random.AbstractRandomGenerator;
 import org.jwildfire.create.tina.random.RandomGeneratorFactory;
@@ -47,8 +48,11 @@ import org.jwildfire.create.tina.render.image.RenderImageThread;
 import org.jwildfire.create.tina.render.image.RenderZBufferThread;
 import org.jwildfire.create.tina.render.postdof.PostDOFBuffer;
 import org.jwildfire.create.tina.render.postdof.PostDOFCalculator;
+import org.jwildfire.create.tina.variation.CircleInversionFunc;
 import org.jwildfire.create.tina.variation.FlameTransformationContext;
 import org.jwildfire.create.tina.variation.RessourceManager;
+import org.jwildfire.create.tina.variation.Variation;
+import org.jwildfire.create.tina.variation.VariationFunc;
 import org.jwildfire.image.Pixel;
 import org.jwildfire.image.SimpleGrayImage;
 import org.jwildfire.image.SimpleHDRImage;
@@ -699,6 +703,8 @@ public class FlameRenderer {
   private AbstractRenderThread createFlameRenderThread(int pThreadId, int pThreadGroupSize, List<RenderPacket> pRenderPackets, long pSamples, List<RenderSlice> pSlices, double pSliceThicknessMod, int pSliceThicknessSamples) {
     return new FlatRenderThread(prefs, pThreadId, pThreadGroupSize, this, pRenderPackets, pSamples, pSlices, pSliceThicknessMod, pSliceThicknessSamples);
   }
+  
+  public boolean DEBUG_DESIGN_MODE = false;
 
   private void iterate(int pPart, int pParts, List<List<RenderPacket>> pPackets, List<RenderSlice> pSlices, double pSliceThicknessMod, int pSliceThicknessSamples) {
     int SliceThicknessMultiplier = pSliceThicknessMod > MathLib.EPSILON && pSliceThicknessSamples > 0 ? pSliceThicknessSamples : 1;
@@ -712,11 +718,42 @@ public class FlameRenderer {
     long nextProgressUpdate = sampleProgressUpdateStep;
     runningThreads = new ArrayList<AbstractRenderThread>();
     int nThreads = pPackets.size();
+    if (DEBUG_DESIGN_MODE) { System.out.println("creating render threads: " + nThreads); }
     for (int i = 0; i < nThreads; i++) {
       AbstractRenderThread t = createFlameRenderThread(i, nThreads, pPackets.get(i), nSamples / (long) nThreads, pSlices, pSliceThicknessMod, pSliceThicknessSamples);
+      if (i==0) {
+        RenderPacket rpacket = pPackets.get(0).get(0);
+        Flame pflame = rpacket.getFlame();
+        for (XForm xf : pflame.getFirstLayer().getXForms()) {
+          for (Variation var : xf.getVariations()) {
+            VariationFunc vfunc = var.getFunc();
+            if (vfunc instanceof CircleInversionFunc) {
+              CircleInversionFunc ifunc = (CircleInversionFunc)vfunc;
+              ifunc.DESIGN_GUIDE_MODE = true;
+              if (DEBUG_DESIGN_MODE) {
+                System.out.println("set DESIGN_GUIDE_MODE: " + ifunc.DESIGN_GUIDE_MODE + ", for var: " + ifunc);
+              }
+            }
+          }
+        }
+        for (XForm xf : pflame.getFirstLayer().getFinalXForms()) {
+          for (Variation var : xf.getVariations()) {
+            VariationFunc vfunc = var.getFunc();
+            if (vfunc instanceof CircleInversionFunc) {
+              CircleInversionFunc ifunc = (CircleInversionFunc)vfunc;
+              ifunc.DESIGN_GUIDE_MODE = true;
+              if (DEBUG_DESIGN_MODE) {
+                System.out.println("set DESIGN_GUIDE_MODE: " + ifunc.DESIGN_GUIDE_MODE + ", for var: " + ifunc);
+              }
+            }
+          }
+        }
+        
+      }
       runningThreads.add(t);
       new Thread(t).start();
     }
+    if (DEBUG_DESIGN_MODE) { System.out.println("first thread: " + runningThreads.get(0)); }
     boolean done = false;
     while (!done) {
       try {
