@@ -40,6 +40,7 @@ public class CircleInversionFunc extends VariationFunc {
   public static final String PARAM_RING_MAX = "ring_max";
   public static final String PARAM_P= "p";
   public static final String PARAM_DRAW_CIRCLE = "draw_circle";
+  public static final String PARAM_GUIDES_ENABLED = "guides_enabled";
   
   public static int STANDARD = 0;
   public static int EXTERNAL_INVERSION_ONLY = 1;
@@ -50,22 +51,23 @@ public class CircleInversionFunc extends VariationFunc {
   public static int INTERNAL_RING_INVERSION_ONLY = 4;
 
   
+  public boolean DESIGN_GUIDE_MODE = false;
   double r = 1;
   double a = 0;
   double b = 0;
-
   double p = 2;
   double ring_min_ratio = 0;
   double ring_max_ratio = 1;
   double ring_min;
   double ring_max;
   double draw_circle = 0;
+  boolean guides_enabled = true;
   int inversion_mode = STANDARD;
   boolean hide_uninverted = false;
 
   private static final String[] paramNames = { 
     PARAM_RADIUS, PARAM_XORIGIN, PARAM_YORIGIN, 
-    PARAM_INVERSION_MODE, PARAM_HIDE_UNINVERTED, PARAM_RING_MIN, PARAM_RING_MAX, PARAM_P, PARAM_DRAW_CIRCLE, 
+    PARAM_INVERSION_MODE, PARAM_HIDE_UNINVERTED, PARAM_RING_MIN, PARAM_RING_MAX, PARAM_P, PARAM_DRAW_CIRCLE, PARAM_GUIDES_ENABLED
   };
 
   @Override
@@ -77,6 +79,31 @@ public class CircleInversionFunc extends VariationFunc {
     double ydiff = yin-b;
     double iscale;
     
+    if (DESIGN_GUIDE_MODE && guides_enabled) {
+      double rnd = pContext.random() * 4.0;
+      if (rnd < 2) { // 0 <= rnd < 2
+        double theta = rnd * M_2PI;
+        // pVarTP.x += xin + a + r * cos(theta);
+        // pVarTP.y += yin + b + r * sin(theta);
+        // pVarTP.x += xin + r * cos(theta);
+        // pVarTP.y += yin + r * sin(theta);
+        pVarTP.x += a + r * cos(theta);
+        pVarTP.y += b + r * sin(theta);
+      }
+      else if (rnd < 3) {  // 2 <= rnd < 3
+        // draw rmax circle
+        double theta = rnd * M_2PI;
+        pVarTP.x += a + ring_max * cos(theta);
+        pVarTP.y += b + ring_max * sin(theta);
+      }
+      else {  // 3 <= rnd < 4
+        // draw rmin circle (or point)
+        double theta = rnd * M_2PI;
+        pVarTP.x += a + ring_min * cos(theta);
+        pVarTP.y += b + ring_min * sin(theta);
+      }
+      return;
+    }
     
     if (draw_circle > 0) {
       double rnd = pContext.random();
@@ -155,7 +182,7 @@ public class CircleInversionFunc extends VariationFunc {
   @Override
   public Object[] getParameterValues() {
     return new Object[] { r, a, b, 
-      inversion_mode, hide_uninverted ? 1 : 0, ring_min_ratio, ring_max_ratio, p, draw_circle };
+      inversion_mode, hide_uninverted ? 1 : 0, ring_min_ratio, ring_max_ratio, p, draw_circle, guides_enabled ? 1 : 0 };
   }
 
   @Override
@@ -186,6 +213,9 @@ public class CircleInversionFunc extends VariationFunc {
     }
     else if (PARAM_DRAW_CIRCLE.equalsIgnoreCase(pName)) {
       draw_circle = pValue;
+    }
+    else if (PARAM_GUIDES_ENABLED.equalsIgnoreCase(pName)) {
+      guides_enabled = (pValue == 1) ? true : false;
     }
     else
       throw new IllegalArgumentException(pName);
