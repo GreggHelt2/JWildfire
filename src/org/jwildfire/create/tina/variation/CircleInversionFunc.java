@@ -33,36 +33,51 @@ public class CircleInversionFunc extends VariationFunc {
   public static final String PARAM_RADIUS= "radius";
   public static final String PARAM_XORIGIN = "xorigin";
   public static final String PARAM_YORIGIN = "yorigin";
+  
   public static final String PARAM_INVERSION_MODE = "imode";
   public static final String PARAM_HIDE_UNINVERTED = "hide_uninverted";
+  public static final String PARAM_RING_MIN = "ring_min";
+  public static final String PARAM_RING_MAX = "ring_max";
   public static final String PARAM_P= "p";
   public static final String PARAM_DRAW_CIRCLE = "draw_circle";
   
   public static int STANDARD = 0;
   public static int EXTERNAL_INVERSION_ONLY = 1;
   public static int INTERNAL_INVERSION_ONLY = 2;
+  // outer inversion is like external inversion, except 
+  //    leaves unchanged any  "external" regions that are distance < radius (inner hole)
+  public static int EXTERNAL_RING_INVERSION_ONLY = 3;
+  public static int INTERNAL_RING_INVERSION_ONLY = 4;
+
   
   double r = 1;
   double a = 0;
   double b = 0;
+
   double p = 2;
+  double ring_min_ratio = 0;
+  double ring_max_ratio = 1;
+  double ring_min;
+  double ring_max;
   double draw_circle = 0;
   int inversion_mode = STANDARD;
   boolean hide_uninverted = false;
 
   private static final String[] paramNames = { 
     PARAM_RADIUS, PARAM_XORIGIN, PARAM_YORIGIN, 
-    PARAM_INVERSION_MODE, PARAM_HIDE_UNINVERTED, PARAM_P, PARAM_DRAW_CIRCLE 
+    PARAM_INVERSION_MODE, PARAM_HIDE_UNINVERTED, PARAM_RING_MIN, PARAM_RING_MAX, PARAM_P, PARAM_DRAW_CIRCLE, 
   };
 
   @Override
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
     double xin = pAffineTP.x;
     double yin = pAffineTP.y;
+    double zin = pAffineTP.z;
     double xdiff = xin-a;
     double ydiff = yin-b;
     double iscale;
-    boolean do_inversion = true;
+    
+    
     if (draw_circle > 0) {
       double rnd = pContext.random();
       if (rnd < draw_circle) {
@@ -74,17 +89,23 @@ public class CircleInversionFunc extends VariationFunc {
         return;
       }
     }
+    boolean do_inversion;
     if (inversion_mode == EXTERNAL_INVERSION_ONLY) {
       // only do inversion if input point is outside of circle
       // calc distance from circle origin
       double d = sqrt(sqr(xdiff) + sqr(ydiff));
-      do_inversion = (d > r);
+      // do_inversion = (d > r);
+      do_inversion = (d > ring_max) || (d < ring_min);
       
     }
     else if (inversion_mode == INTERNAL_INVERSION_ONLY) {
       // only do inversion if input point is inside of circle
       double d = sqrt(sqr(xdiff) + sqr(ydiff));
-      do_inversion = (d < r);
+      // do_inversion = (d < r);
+      do_inversion = (d < ring_max) && ((d > ring_min) || (ring_min == 0));
+    }
+    else { // default to STANDARD mode ==> always do inversion
+      do_inversion = true;
     }
     if (do_inversion) {
       if (p == 2) {
@@ -97,18 +118,28 @@ public class CircleInversionFunc extends VariationFunc {
       double yout = b + (iscale * ydiff);
       pVarTP.x += pAmount * xout;
       pVarTP.y += pAmount * yout;
+      if (pContext.isPreserveZCoordinate()) {
+        pVarTP.z += pAmount * pAffineTP.z;
+      }
 
       pVarTP.doHide = false;
+
     }
     else { // if didn't do inversion, check to see if should hide
       pVarTP.x += xin;
       pVarTP.y += yin;
+      if (pContext.isPreserveZCoordinate()) {
+        pVarTP.z += pAmount * zin;
+      }
       pVarTP.doHide = hide_uninverted;
+
     }
   }
   
   @Override
   public void init(FlameTransformationContext pContext, Layer pLayer, XForm pXForm, double pAmount) {
+    ring_min = ring_min_ratio * r;
+    ring_max = ring_max_ratio * r;
   }
 
   @Override
@@ -123,7 +154,8 @@ public class CircleInversionFunc extends VariationFunc {
 
   @Override
   public Object[] getParameterValues() {
-    return new Object[] { r, a, b, inversion_mode, hide_uninverted ? 1 : 0, p, draw_circle };
+    return new Object[] { r, a, b, 
+      inversion_mode, hide_uninverted ? 1 : 0, ring_min_ratio, ring_max_ratio, p, draw_circle };
   }
 
   @Override
@@ -136,6 +168,12 @@ public class CircleInversionFunc extends VariationFunc {
     }
     else if (PARAM_YORIGIN.equalsIgnoreCase(pName)) {
       b = pValue;
+    }
+    else if (PARAM_RING_MIN.equalsIgnoreCase(pName)) {
+      ring_min_ratio = pValue;
+    }
+    else if (PARAM_RING_MAX.equalsIgnoreCase(pName)) {
+      ring_max_ratio = pValue;
     }
     else if (PARAM_P.equalsIgnoreCase(pName)) {
       p = pValue;
