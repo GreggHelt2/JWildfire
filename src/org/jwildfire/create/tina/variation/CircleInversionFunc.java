@@ -27,13 +27,15 @@ import org.jwildfire.create.tina.base.XYZPoint;
  *  In addition to standard circle inversion, can also be used for p-circle inversion as 
  *      described by Ramirez et al in "Generating Fractal Patterns by Using P-Circle Inversion" (2015)
  */
-public class CircleInversionFunc extends VariationFunc {
+public class CircleInversionFunc extends VariationFunc implements Guides {
   private static final long serialVersionUID = 1L;
 
   public static final String PARAM_RADIUS= "radius";
   public static final String PARAM_XORIGIN = "xorigin";
   public static final String PARAM_YORIGIN = "yorigin";
+  public static final String PARAM_ZORIGIN = "zorigin";
   
+  public static final String PARAM_ZMODE = "zmode";
   public static final String PARAM_INVERSION_MODE = "imode";
   public static final String PARAM_HIDE_UNINVERTED = "hide_uninverted";
   public static final String PARAM_RING_MIN = "ring_min";
@@ -55,6 +57,7 @@ public class CircleInversionFunc extends VariationFunc {
   double r = 1;
   double a = 0;
   double b = 0;
+  double c = 0;
   double p = 2;
   double ring_min_ratio = 0;
   double ring_max_ratio = 1;
@@ -64,11 +67,18 @@ public class CircleInversionFunc extends VariationFunc {
   boolean guides_enabled = true;
   int inversion_mode = STANDARD;
   boolean hide_uninverted = false;
+  boolean zmode = false;
 
   private static final String[] paramNames = { 
-    PARAM_RADIUS, PARAM_XORIGIN, PARAM_YORIGIN, 
+    PARAM_RADIUS, PARAM_XORIGIN, PARAM_YORIGIN, PARAM_ZORIGIN, PARAM_ZMODE, 
     PARAM_INVERSION_MODE, PARAM_HIDE_UNINVERTED, PARAM_RING_MIN, PARAM_RING_MAX, PARAM_P, PARAM_DRAW_CIRCLE, PARAM_GUIDES_ENABLED
   };
+  
+  public void setDrawGuides(boolean draw) {
+    DESIGN_GUIDE_MODE = draw;
+  }
+  
+  public boolean getDrawGuides() { return DESIGN_GUIDE_MODE; }
 
   @Override
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
@@ -77,20 +87,62 @@ public class CircleInversionFunc extends VariationFunc {
     double zin = pAffineTP.z;
     double xdiff = xin-a;
     double ydiff = yin-b;
+    double zdiff = zin-c;
     double iscale;
+    double hide_ratio = 0.99;
     
     if (DESIGN_GUIDE_MODE && guides_enabled) {
-      double rnd = pContext.random() * 4.0;
-      if (rnd < 2) { // 0 <= rnd < 2
+//      double rnd = pContext.random() * 4.0;
+      double rnd = pContext.random();
+      // if (rnd < 2) { // 0 <= rnd < 2
         double theta = rnd * M_2PI;
         // pVarTP.x += xin + a + r * cos(theta);
         // pVarTP.y += yin + b + r * sin(theta);
         // pVarTP.x += xin + r * cos(theta);
         // pVarTP.y += yin + r * sin(theta);
-        pVarTP.x += a + r * cos(theta);
-        pVarTP.y += b + r * sin(theta);
-      }
-      else if (rnd < 3) {  // 2 <= rnd < 3
+        if (zmode) {
+          double split = pContext.random() * 3.1;
+          if (split < 1) {
+            pVarTP.x += a + r * cos(theta);
+            pVarTP.y += b + r * sin(theta);
+            pVarTP.z = c;
+          }
+          else if (split < 2) {
+            pVarTP.x += a + r * cos(theta);
+            pVarTP.y = b;
+            pVarTP.z += c + r * sin(theta);
+          }
+          else if (split < 3) {
+            pVarTP.x = a;
+            pVarTP.y += b + r * sin(theta);
+            pVarTP.z += c + r * cos(theta);
+          }
+          else {
+            // double offset_rnd = pContext.random() * 0.05;
+            // offset_rnd -= 0.05/2;
+            //pVarTP.x += a + offset_rnd;
+            //pVarTP.y += b + offset_rnd;
+            // pVarTP.z += c + offset_rnd;
+            pVarTP.x += a;
+            pVarTP.y += b;
+            pVarTP.z += c;
+          }
+        }
+        else {
+          double split = pContext.random() * 1.1;
+          if (split < 1) {
+            pVarTP.x += a + r * cos(theta);
+            pVarTP.y += b + r * sin(theta);
+            pVarTP.z += c;
+          }
+          else {
+            pVarTP.x += a;
+            pVarTP.y += b;
+            pVarTP.z += c;
+          }
+        }
+     // }
+  /*    else if (rnd < 3) {  // 2 <= rnd < 3
         // draw rmax circle
         double theta = rnd * M_2PI;
         pVarTP.x += a + ring_max * cos(theta);
@@ -102,6 +154,7 @@ public class CircleInversionFunc extends VariationFunc {
         pVarTP.x += a + ring_min * cos(theta);
         pVarTP.y += b + ring_min * sin(theta);
       }
+          */
       return;
     }
     
@@ -136,18 +189,21 @@ public class CircleInversionFunc extends VariationFunc {
     }
     if (do_inversion) {
       if (p == 2) {
-        iscale = (r*r)/(sqr(xdiff) + sqr(ydiff));
+        // iscale = (r*r)/(sqr(xdiff) + sqr(ydiff));
+        iscale = (r*r)/(sqr(xdiff) + sqr(ydiff) + sqr(zdiff));
       }
       else {
         iscale = (r*r)/ pow( (pow(abs(xdiff),p) + pow(abs(ydiff),p)), 2.0/p);
       }
       double xout = a + (iscale * xdiff);
       double yout = b + (iscale * ydiff);
+      double zout = c + (iscale * zdiff);
       pVarTP.x += pAmount * xout;
       pVarTP.y += pAmount * yout;
-      if (pContext.isPreserveZCoordinate()) {
-        pVarTP.z += pAmount * pAffineTP.z;
-      }
+      pVarTP.z += pAmount * zout;
+      // if (pContext.isPreserveZCoordinate()) {
+      //  pVarTP.z += pAmount * pAffineTP.z;
+      // }
 
       pVarTP.doHide = false;
 
@@ -181,7 +237,8 @@ public class CircleInversionFunc extends VariationFunc {
 
   @Override
   public Object[] getParameterValues() {
-    return new Object[] { r, a, b, 
+    return new Object[] { r, a, b, c, 
+      zmode ? 1 : 0, 
       inversion_mode, hide_uninverted ? 1 : 0, ring_min_ratio, ring_max_ratio, p, draw_circle, guides_enabled ? 1 : 0 };
   }
 
@@ -195,6 +252,12 @@ public class CircleInversionFunc extends VariationFunc {
     }
     else if (PARAM_YORIGIN.equalsIgnoreCase(pName)) {
       b = pValue;
+    }
+    else if (PARAM_ZORIGIN.equalsIgnoreCase(pName)) {
+      c = pValue;
+    }
+    else if (PARAM_ZMODE.equalsIgnoreCase(pName)) {
+      zmode = (pValue == 1) ? true : false;
     }
     else if (PARAM_RING_MIN.equalsIgnoreCase(pName)) {
       ring_min_ratio = pValue;
