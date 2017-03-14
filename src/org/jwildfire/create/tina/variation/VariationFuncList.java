@@ -489,6 +489,9 @@ public class VariationFuncList {
 
     registerVariationFunc(OsculatingCirclesFunc.class);
     registerVariationFunc(CircleInversionFunc.class);
+    registerVariationFunc(InversionFunc.class);
+    registerVariationFunc(Inversion3dFunc.class);
+    registerVariationFunc(SymmetricDrosteFunc.class);
 
     registerVariationFunc(MaurerRoseFunc.class);
     registerVariationFunc(MaurerLinesFunc.class);
