@@ -436,7 +436,15 @@ public class Inversion3dFunc extends VariationFunc implements Guides {
     // shape.getCurvePoint(tin, curve_point);
     // shape.getMaxCurvePoint(tin, curve_point);
     // double rcurve = sqrt(curve_point.x * curve_point.x + curve_point.y * curve_point.y);
-    double rcurve = curve_point.r;
+    double rcurve;
+    if (shape_mode == SPHERE) {
+      rcurve = scale;      
+    }
+    else if (shape_mode == ELLIPSOID) {
+      rcurve = (a + b)/2;
+    }
+    else { rcurve = scale; }
+
     if (inversion_mode == EXTERNAL_INVERSION_ONLY) {
       // only do inversion if input point is outside of circle
       do_inversion = rin > rcurve;
