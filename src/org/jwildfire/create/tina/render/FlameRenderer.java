@@ -50,6 +50,7 @@ import org.jwildfire.create.tina.render.postdof.PostDOFBuffer;
 import org.jwildfire.create.tina.render.postdof.PostDOFCalculator;
 import org.jwildfire.create.tina.variation.CircleInversionFunc;
 import org.jwildfire.create.tina.variation.FlameTransformationContext;
+import org.jwildfire.create.tina.variation.Guides;
 import org.jwildfire.create.tina.variation.RessourceManager;
 import org.jwildfire.create.tina.variation.Variation;
 import org.jwildfire.create.tina.variation.VariationFunc;
@@ -727,11 +728,11 @@ public class FlameRenderer {
         for (XForm xf : pflame.getFirstLayer().getXForms()) {
           for (Variation var : xf.getVariations()) {
             VariationFunc vfunc = var.getFunc();
-            if (vfunc instanceof CircleInversionFunc) {
-              CircleInversionFunc ifunc = (CircleInversionFunc)vfunc;
-              ifunc.DESIGN_GUIDE_MODE = true;
+            if (vfunc instanceof Guides) {
+              Guides gfunc = (Guides)vfunc;
+              gfunc.setDrawGuides(true);
               if (DEBUG_DESIGN_MODE) {
-                System.out.println("set DESIGN_GUIDE_MODE: " + ifunc.DESIGN_GUIDE_MODE + ", for var: " + ifunc);
+                System.out.println("set DESIGN_GUIDE_MODE: " + gfunc.getDrawGuides() + ", for var: " + gfunc);
               }
             }
           }
@@ -739,11 +740,11 @@ public class FlameRenderer {
         for (XForm xf : pflame.getFirstLayer().getFinalXForms()) {
           for (Variation var : xf.getVariations()) {
             VariationFunc vfunc = var.getFunc();
-            if (vfunc instanceof CircleInversionFunc) {
-              CircleInversionFunc ifunc = (CircleInversionFunc)vfunc;
-              ifunc.DESIGN_GUIDE_MODE = true;
+            if (vfunc instanceof Guides) {
+              Guides gfunc = (Guides)vfunc;
+              gfunc.setDrawGuides(true);
               if (DEBUG_DESIGN_MODE) {
-                System.out.println("set DESIGN_GUIDE_MODE: " + ifunc.DESIGN_GUIDE_MODE + ", for var: " + ifunc);
+                System.out.println("set DESIGN_GUIDE_MODE: " + gfunc.getDrawGuides() + ", for var: " + gfunc);
               }
             }
           }
