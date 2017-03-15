@@ -47,13 +47,13 @@ public abstract class AbstractPolarCurveFunc extends VariationFunc {
                            STRETCH3(15), 
                            STRETCH4(16),
                            STRETCH5(17),
+                           XY_SWAP(18), 
                            STRETCH7(19), 
                            STRETCH8(20),
                            STRETCH9(21), 
-                           // TEST(30), 
-                           // TEST2(31),
-                           XY_SWAP(18), 
-                           RADIAL_INVERSION2(24), 
+
+                           CIRCLE_INVERSION_POWER(23), 
+                           CIRCLE_INVERSION(24), 
                            RADIAL_INVERSION(25), 
                            HYPERBOLIC(26),
                            HYPERBOLIC2(27), 
@@ -1413,6 +1413,7 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
       
       double spreadx = spread * xspread;
       double spready = spread * yspread;
+      double iscale;
       // double spready = spread / spread_ratio;
       
       // 4. transformations (setting xout and yout), based on mode for given INSIDE/OUTSIDE/OUTISH classification given above
@@ -1437,6 +1438,22 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           xout = pAmount * routx * xcurve;
           yout = pAmount * routy * ycurve;
           break;    
+        case CIRCLE_INVERSION_POWER: 
+             //     iscale = (r*r)/(sqr(xdiff) + sqr(ydiff));
+             //     iscale * xdiff, iscale * ydiff
+          // iscale = pow(rcurve, spread) / (pow(xin, spread)  + pow(yin, spread));
+          //  = (r*r)/ pow( (pow(abs(xdiff),p) + pow(abs(ydiff),p)), 2.0/p);
+          iscale = (pow(rcurve, spread)) / pow((pow(abs(xin), spread)+ pow(abs(yin), spread)), (2.0/spread));
+          xout = pAmount * iscale * xin;
+          yout = pAmount * iscale * yin;
+          break;
+        case CIRCLE_INVERSION: 
+             //     iscale = (r*r)/(sqr(xdiff) + sqr(ydiff));
+             //     iscale * xdiff, iscale * ydiff
+          iscale = (rcurve * rcurve) / ((xin * xin)  + (yin * yin));
+          xout = pAmount * iscale * xin;
+          yout = pAmount * iscale * yin;
+          break;
         case RADIAL_INVERSION:
           // rout = rcurve - rin;
           routx = rcurve - (rin * spreadx);
@@ -1444,6 +1461,7 @@ public void renderByMode(FlameTransformationContext pContext, XForm pXForm, XYZP
           xout = pAmount * routx * cos(tcurve);
           yout = pAmount * routy * sin(tcurve);
           break;
+
         case UNCHANGED:   // UNCHANGED -- leave in place (degenerate case of SCALE where spreadx = spready = 1)
           // point is inside curve, leave in place
           xout = pAmount * xin;
