@@ -492,9 +492,9 @@ public class VariationFuncList {
     registerVariationFunc(InversionFunc.class);
     registerVariationFunc(Inversion3dFunc.class);
     registerVariationFunc(SymmetricDrosteFunc.class);
-
     registerVariationFunc(MaurerRoseFunc.class);
     registerVariationFunc(MaurerLinesFunc.class);
+    registerVariationFunc(MobiusWithInverseFunc.class);
 
     resolvedAliasMap = new HashMap<>();
     for (Entry<Class<? extends VariationFunc>, String> funcCls : aliasMap.entrySet()) {
