@@ -33,15 +33,18 @@ public class SymmetricDrosteFunc extends VariationFunc {
   private static final String PARAM_CENTRE_Y = "centre_y";
   private static final String PARAM_SCALE = "scale";
   private static final String PARAM_ORDER = "order";
+  private static final String PARAM_ROTATION = "rotation_degrees";
   private static final String PARAM_PASSTHROUGH = "pass_through";
-  private static final String[] paramNames = { PARAM_CENTRE_X, PARAM_CENTRE_Y, PARAM_ORDER, PARAM_PASSTHROUGH };
+  private static final String[] paramNames = { PARAM_CENTRE_X, PARAM_CENTRE_Y, PARAM_ROTATION, PARAM_ORDER, PARAM_PASSTHROUGH };
 
   private double centre_x = 0;
   private double centre_y = 0;
   private int order = 3;
   double pass_through = 0.5;
   double scale = 0.5;
-
+  double rotation = 0;  // rotation in degrees
+  double theta;  // rotation in radians
+  
   @Override
   public void transform(FlameTransformationContext pContext, XForm pXForm, XYZPoint pAffineTP, XYZPoint pVarTP, double pAmount) {
     double rnd = pContext.random();
@@ -62,14 +65,15 @@ public class SymmetricDrosteFunc extends VariationFunc {
       // double dx = (pAffineTP.x - centre_x) * pAmount;
       // double dy = (pAffineTP.y - centre_y) * pAmount
       
+      // rotate (in degrees)
+      double xrot = xin * cos(theta) - yin * sin(theta);
+      double yrot = xin * sin(theta) + yin * cos(theta);
       
       // scale
-      double xscaled = pAffineTP.x * pAmount;
-      double yscaled = pAffineTP.y * pAmount;
-      
-      double xrot = xscaled;
-      double yrot = yscaled;
-      // rotate
+      double xscaled = xrot * pAmount;
+      double yscaled = yrot* pAmount;
+
+
       int index = (int)(Math.random()*(order+1));
       /*
       double xrot = (xscaled * _cosa[idx]) + (yscaled * _sina[idx]);
@@ -77,6 +81,7 @@ public class SymmetricDrosteFunc extends VariationFunc {
 //      pVarTP.x += centre_x + dx * _cosa[idx] + dy * _sina[idx];
 //      pVarTP.y += centre_y + dy * _cosa[idx] - dx * _sina[idx];
       */
+      // rotate result copies
       double tout = ((double)index / (double)order) * M_2PI;
       double offset = centre_x;
       // translate
@@ -95,22 +100,30 @@ public class SymmetricDrosteFunc extends VariationFunc {
 
   @Override
   public Object[] getParameterValues() {
-    return new Object[] { centre_x, centre_y, order, pass_through };
+    return new Object[] { centre_x, centre_y, rotation, order, pass_through };
   }
 
   @Override
   public void setParameter(String pName, double pValue) {
-    if (PARAM_CENTRE_X.equalsIgnoreCase(pName))
+    if (PARAM_CENTRE_X.equalsIgnoreCase(pName)) {
       centre_x = pValue;
-    else if (PARAM_CENTRE_Y.equalsIgnoreCase(pName))
+    }
+    else if (PARAM_CENTRE_Y.equalsIgnoreCase(pName)) {
       centre_y = pValue;
-    else if (PARAM_ORDER.equalsIgnoreCase(pName))
+    }
+    else if (PARAM_ROTATION.equalsIgnoreCase(pName)) {
+      rotation = pValue;
+    }
+    else if (PARAM_ORDER.equalsIgnoreCase(pName)) {
       order = limitIntVal(Tools.FTOI(pValue), 1, Integer.MAX_VALUE);
+    }
+
     else if (PARAM_PASSTHROUGH.equalsIgnoreCase(pName)) {
       pass_through = pValue;
     }
-    else
+    else {
       throw new IllegalArgumentException(pName);
+    }
   }
 
   @Override
@@ -127,6 +140,7 @@ public class SymmetricDrosteFunc extends VariationFunc {
 
   @Override
   public void init(FlameTransformationContext pContext, Layer pLayer, XForm pXForm, double pAmount) {
+    theta = rotation * M_2PI / 360;
     _sina = new double[order];
     _cosa = new double[order];
     double da = M_2PI / (double) order;
